@@ -19,12 +19,12 @@
     "preview": "astro preview"
   },
   "dependencies": {
-    "@astrojs/netlify": "^8.2.1",
-    "@astrojs/node": "^11.1.2",
+    "@astrojs/netlify": "^8.2.3",
+    "@astrojs/node": "^11.1.4",
     "@astrojs/sitemap": "^3.7.3",
     "@atproto/lex": "^0.3.6",
-    "@lucide/astro": "^1.31.0",
-    "astro": "^7.2.2",
+    "@lucide/astro": "^1.33.0",
+    "astro": "^7.2.4",
     "sharp": "^0.35.3",
     "simple-icons-astro": "^16.1.0"
   },
