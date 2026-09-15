@@ -9,28 +9,26 @@ applyCache(Astro.response, books ? longLivedCache : degradedCache);
 const hasData = Boolean(books && books.length > 0);
 ---
 
-{
-  hasData ? (
-    <div class="books-grid">
-      {books!.map((book) => (
-        <Book
-          title={book.title}
-          authors={book.authors}
-          coverUrl={book.coverUrl}
-          rotation={book.rotation}
-          hiveId={book.hiveId}
-          thickness={book.thickness}
-        />
-      ))}
-    </div>
-  ) : (
-    <Fallback
-      description="My reading log lives on ATproto through Bookhive and isn't reachable right now. You can browse it directly on Bookhive."
-      fallbackHref="https://bookhive.buzz/profile/felixs.dev"
-      fallbackLabel="Browse my bookshelf on Bookhive"
-    />
-  )
-}
+{hasData ? (
+  <div class="books-grid">
+    {books!.map((book) => (
+      <Book
+        title={book.title}
+        authors={book.authors}
+        coverUrl={book.coverUrl}
+        rotation={book.rotation}
+        hiveId={book.hiveId}
+        thickness={book.thickness}
+      />
+    ))}
+  </div>
+) : (
+  <Fallback
+    description="My reading log lives on ATproto through Bookhive and isn't reachable right now. You can browse it directly on Bookhive."
+    fallbackHref="https://bookhive.buzz/profile/felixs.dev"
+    fallbackLabel="Browse my bookshelf on Bookhive"
+  />
+)}
 
 <style>
   .books-grid {

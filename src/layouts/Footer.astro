@@ -35,29 +35,25 @@ const socialLinks = [
       <ul class="nav-groups">
         <li>
           <ul class="text-links">
-            {
-              textLinks.map((link) => (
-                <li>
-                  <a href={link.url}>{link.label}</a>
-                </li>
-              ))
-            }
+            {textLinks.map((link) => (
+              <li>
+                <a href={link.url}>{link.label}</a>
+              </li>
+            ))}
           </ul>
         </li>
         <li>
           <ul class="icon-links">
-            {
-              socialLinks.map((social) => {
-                const Icon = social.iconComponent;
-                return (
-                  <li>
-                    <a href={social.url} aria-label={social.name}>
-                      <Icon size={20} />
-                    </a>
-                  </li>
-                );
-              })
-            }
+            {socialLinks.map((social) => {
+              const Icon = social.iconComponent;
+              return (
+                <li>
+                  <a href={social.url} aria-label={social.name}>
+                    <Icon size={20} />
+                  </a>
+                </li>
+              );
+            })}
           </ul>
         </li>
       </ul>
@@ -67,14 +63,12 @@ const socialLinks = [
       <span>{legal.copyright}</span>
       <span>
         Content:
-        <a href={legal.licenseUrl}>
-          {legal.licenseLabel}
-        </a>
+        <a href={legal.licenseUrl}>{legal.licenseLabel}</a>
       </span>
       <span class="powered-by">
-        Powered by <a href="https://atproto.com/">ATproto</a>, <a
-          href="https://astro.build/">Astro</a
-        > and <a href="https://www.netlify.com/">Netlify</a>
+        Powered by <a href="https://atproto.com/">ATproto</a>,{" "}
+        <a href="https://astro.build/">Astro</a> and{" "}
+        <a href="https://www.netlify.com/">Netlify</a>
       </span>
     </div>
   </div>

@@ -63,56 +63,50 @@ const extraCount =
       <span class="event-time">{timeDisplay}</span>
       <h3 class="event-name">{name}</h3>
 
-      {
-        locationText && (
-          <div class="event-location">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-              <circle cx="12" cy="10" r="3" />
-            </svg>
-            <span>{locationText}</span>
-          </div>
-        )
-      }
+      {locationText && (
+        <div class="event-location">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+          <span>{locationText}</span>
+        </div>
+      )}
 
       <div class="card-footer">
-        {
-          attendees && attendees.length > 0 && (
-            <div class="avatar-stack">
-              {attendees.map((avatar: string) => (
-                <Image src={avatar} class="avatar" alt="Attendee" inferSize />
-              ))}
-              {extraCount > 0 && <span class="more-count">+{extraCount}</span>}
-            </div>
-          )
-        }
+        {attendees && attendees.length > 0 && (
+          <div class="avatar-stack">
+            {attendees.map((avatar: string) => (
+              <Image src={avatar} class="avatar" alt="Attendee" inferSize />
+            ))}
+            {extraCount > 0 && <span class="more-count">+{extraCount}</span>}
+          </div>
+        )}
       </div>
     </div>
 
     <div class="card-image-wrapper">
-      {
-        imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={name}
-            class="event-cover-image"
-            inferSize
-            priority
-          />
-        ) : (
-          <div class="image-placeholder">{initials}</div>
-        )
-      }
+      {imageUrl ? (
+        <Image
+          src={imageUrl}
+          alt={name}
+          class="event-cover-image"
+          inferSize
+          priority
+        />
+      ) : (
+        <div class="image-placeholder">{initials}</div>
+      )}
     </div>
   </a>
 </div>

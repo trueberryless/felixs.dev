@@ -26,25 +26,21 @@ const pathname = Astro.url.pathname;
           <span class="initial">F</span>
           <span class="rest">
             <span class="rest-inner">
-              {
-                firstWordRest.map((char, i) => (
-                  <span class="char" style={`--char-index: ${i}`}>
-                    {char}
-                  </span>
-                ))
-              }
+              {firstWordRest.map((char, i) => (
+                <span class="char" style={`--char-index: ${i}`}>
+                  {char}
+                </span>
+              ))}
             </span>
           </span>
           <span class="initial">S</span>
           <span class="rest">
             <span class="rest-inner">
-              {
-                secondWordRest.map((char, i) => (
-                  <span class="char" style={`--char-index: ${i}`}>
-                    {char}
-                  </span>
-                ))
-              }
+              {secondWordRest.map((char, i) => (
+                <span class="char" style={`--char-index: ${i}`}>
+                  {char}
+                </span>
+              ))}
             </span>
           </span>
           <span class="appendix">
@@ -56,33 +52,32 @@ const pathname = Astro.url.pathname;
       <div class="menu-pill">
         <div class="pill-bg"></div>
         <div class="menu-toggle-wrapper">
-          <button class="menu-toggle" aria-label="Toggle Menu">Menu</button>
+          <button class="menu-toggle" aria-label="Toggle Menu">
+            Menu
+          </button>
         </div>
 
         <nav aria-label="Main Navigation" class="nav-menu">
           <div class="nav-menu-content">
             <ul class="nav-links">
-              {
-                links.map((link, i) => {
-                  const isActive =
-                    link.url === "/"
-                      ? pathname === "/"
-                      : pathname.startsWith(link.url);
-                  return (
-                    <li class="nav-item" style={`--item-index: ${i}`}>
-                      <a href={link.url} class={isActive ? "active" : ""}>
-                        {link.label}
-                      </a>
-                    </li>
-                  );
-                })
-              }
+              {links.map((link, i) => {
+                const isActive =
+                  link.url === "/"
+                    ? pathname === "/"
+                    : pathname.startsWith(link.url);
+                return (
+                  <li class="nav-item" style={`--item-index: ${i}`}>
+                    <a href={link.url} class={isActive ? "active" : ""}>
+                      {link.label}
+                    </a>
+                  </li>
+                );
+              })}
               <li
                 class="nav-item nav-separator"
                 style={`--item-index: ${links.length}`}
                 aria-hidden="true"
-              >
-              </li>
+              ></li>
               <li class="nav-item" style={`--item-index: ${links.length + 1}`}>
                 <button
                   id="theme-toggle"

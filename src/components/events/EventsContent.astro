@@ -24,31 +24,29 @@ const upcoming = processed
 const past = processed.filter((e) => e.isPast);
 ---
 
-{
-  hasData ? (
-    <div class="timeline-container">
-      {upcoming.map((event) => (
-        <EventCard event={event} />
-      ))}
+{hasData ? (
+  <div class="timeline-container">
+    {upcoming.map((event) => (
+      <EventCard event={event} />
+    ))}
 
-      {upcoming.length > 0 && past.length > 0 && (
-        <div class="today-divider">
-          <span class="today-text">Today</span>
-        </div>
-      )}
+    {upcoming.length > 0 && past.length > 0 && (
+      <div class="today-divider">
+        <span class="today-text">Today</span>
+      </div>
+    )}
 
-      {past.map((event) => (
-        <EventCard event={event} />
-      ))}
-    </div>
-  ) : (
-    <Fallback
-      description="My RSVPs live on ATproto and aren't reachable right now. You can view them directly on atmo.rsvp."
-      fallbackHref="https://atmo.rsvp/p/did:plc:pbjvqaziagcyv2vqodldn5op"
-      fallbackLabel="See my RSVPs on atmo.rsvp"
-    />
-  )
-}
+    {past.map((event) => (
+      <EventCard event={event} />
+    ))}
+  </div>
+) : (
+  <Fallback
+    description="My RSVPs live on ATproto and aren't reachable right now. You can view them directly on atmo.rsvp."
+    fallbackHref="https://atmo.rsvp/p/did:plc:pbjvqaziagcyv2vqodldn5op"
+    fallbackLabel="See my RSVPs on atmo.rsvp"
+  />
+)}
 
 <style>
   .timeline-container {

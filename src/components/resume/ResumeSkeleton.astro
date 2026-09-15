@@ -8,37 +8,33 @@ const chipRows = [6, 8, 5];
 ---
 
 <div class="skeleton-resume">
-  {
-    sections.map((section, sIndex) => (
-      <section class="skeleton-section">
-        <div class="skeleton-section-title" />
-        {Array.from({ length: section.lines }).map(() => (
-          <div class="skeleton-card">
-            <div class="skeleton-line title" />
-            <div class="skeleton-line sub" />
-            {section.meta && (
-              <div class="skeleton-chips">
-                <div class="skeleton-chip" />
-                <div class="skeleton-chip" />
-              </div>
-            )}
-          </div>
-        ))}
-      </section>
-    ))
-  }
+  {sections.map((section, sIndex) => (
+    <section class="skeleton-section">
+      <div class="skeleton-section-title" />
+      {Array.from({ length: section.lines }).map(() => (
+        <div class="skeleton-card">
+          <div class="skeleton-line title" />
+          <div class="skeleton-line sub" />
+          {section.meta && (
+            <div class="skeleton-chips">
+              <div class="skeleton-chip" />
+              <div class="skeleton-chip" />
+            </div>
+          )}
+        </div>
+      ))}
+    </section>
+  ))}
 
   <section class="skeleton-section">
     <div class="skeleton-section-title"></div>
-    {
-      chipRows.map((count) => (
-        <div class="skeleton-chip-row">
-          {Array.from({ length: count }).map(() => (
-            <div class="skeleton-chip" />
-          ))}
-        </div>
-      ))
-    }
+    {chipRows.map((count) => (
+      <div class="skeleton-chip-row">
+        {Array.from({ length: count }).map(() => (
+          <div class="skeleton-chip" />
+        ))}
+      </div>
+    ))}
   </section>
 </div>
 

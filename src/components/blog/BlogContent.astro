@@ -14,21 +14,19 @@ const { years, postsByYear } =
 const hasData = years.length > 0;
 ---
 
-{
-  hasData ? (
-    <div class="blog-container">
-      {years.map((year) => (
-        <YearGroup year={year} posts={postsByYear[year]} />
-      ))}
-    </div>
-  ) : (
-    <Fallback
-      description="My blog posts live on ATproto and aren't reachable right now. You can read them directly on Leaflet."
-      fallbackHref="https://leaflet.pub/p/felixs.dev"
-      fallbackLabel="Read on Leaflet"
-    />
-  )
-}
+{hasData ? (
+  <div class="blog-container">
+    {years.map((year) => (
+      <YearGroup year={year} posts={postsByYear[year]} />
+    ))}
+  </div>
+) : (
+  <Fallback
+    description="My blog posts live on ATproto and aren't reachable right now. You can read them directly on Leaflet."
+    fallbackHref="https://leaflet.pub/p/felixs.dev"
+    fallbackLabel="Read on Leaflet"
+  />
+)}
 
 <style>
   .blog-container {
