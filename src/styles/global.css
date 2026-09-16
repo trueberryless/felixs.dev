@@ -33,6 +33,18 @@
     oklch(0.3705 0.0468 73.15) 50%,
     oklch(0.4362 0.0666 73.15) 100%
   );
+
+  --font-family:
+    "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Charter,
+    "Bitstream Charter", Georgia, serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
+  --font-family-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  --font-family-heading:
+    "Fraenkisch", "Old English Text MT", Luminari, "Apple Chancery", Georgia,
+    "Times New Roman", serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
 }
 
 :root.dark {
@@ -137,9 +149,7 @@ html {
 body {
   background: var(--bg-subtle);
   color: var(--text);
-  font-family:
-    "Datatype", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  font-family: var(--font-family);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   display: flex;
@@ -158,6 +168,12 @@ main {
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 0 24px;
+}
+
+h1, h2 {
+  font-family: var(--font-family-heading);
+  /* Optional: Adjust font-weight if Fraenkisch renders too boldly by default */
+  /*font-weight: normal; */
 }
 
 a {
