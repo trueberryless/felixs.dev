@@ -3,38 +3,36 @@ const count = 4;
 ---
 
 <div class="skeleton-timeline">
-  {
-    Array.from({ length: count }).map(() => (
-      <div class="skeleton-event">
-        <div class="skeleton-date">
-          <div class="skeleton-line date-day" />
-          <div class="skeleton-line date-weekday" />
-        </div>
-
-        <div class="skeleton-marker">
-          <div class="skeleton-dot" />
-        </div>
-
-        <div class="skeleton-card">
-          <div class="skeleton-content">
-            <div class="skeleton-line time" />
-            <div class="skeleton-line title" />
-            <div class="skeleton-line loc" />
-
-            <div class="skeleton-avatars">
-              <div class="skeleton-avatar" />
-              <div class="skeleton-avatar" />
-              <div class="skeleton-avatar" />
-              <div class="skeleton-avatar" />
-              <div class="skeleton-avatar" />
-            </div>
-          </div>
-
-          <div class="skeleton-image" />
-        </div>
+  {Array.from({ length: count }).map(() => (
+    <div class="skeleton-event">
+      <div class="skeleton-date">
+        <div class="skeleton-line date-day" />
+        <div class="skeleton-line date-weekday" />
       </div>
-    ))
-  }
+
+      <div class="skeleton-marker">
+        <div class="skeleton-dot" />
+      </div>
+
+      <div class="skeleton-card">
+        <div class="skeleton-content">
+          <div class="skeleton-line time" />
+          <div class="skeleton-line title" />
+          <div class="skeleton-line loc" />
+
+          <div class="skeleton-avatars">
+            <div class="skeleton-avatar" />
+            <div class="skeleton-avatar" />
+            <div class="skeleton-avatar" />
+            <div class="skeleton-avatar" />
+            <div class="skeleton-avatar" />
+          </div>
+        </div>
+
+        <div class="skeleton-image" />
+      </div>
+    </div>
+  ))}
 </div>
 
 <style>

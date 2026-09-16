@@ -10,37 +10,35 @@ const data = await fetchProjects().catch((err) => {
 });
 ---
 
-{
-  data ? (
-    <>
-      {data.contributedProjects.length > 0 && (
-        <Section title="Contributions">
-          <div class="projects-grid">
-            {data.contributedProjects.map((p) => (
-              <Card {...p} />
-            ))}
-          </div>
-        </Section>
-      )}
+{data ? (
+  <>
+    {data.contributedProjects.length > 0 && (
+      <Section title="Contributions">
+        <div class="projects-grid">
+          {data.contributedProjects.map((p) => (
+            <Card {...p} />
+          ))}
+        </div>
+      </Section>
+    )}
 
-      {data.ownProjects.length > 0 && (
-        <Section title="Personal creations">
-          <div class="projects-grid">
-            {data.ownProjects.map((p) => (
-              <Card {...p} />
-            ))}
-          </div>
-        </Section>
-      )}
-    </>
-  ) : (
-    <Fallback
-      description="I couldn't reach GitHub right now. You can browse my repositories directly on GitHub."
-      fallbackHref="https://github.com/trueberryless"
-      fallbackLabel="See my GitHub profile"
-    />
-  )
-}
+    {data.ownProjects.length > 0 && (
+      <Section title="Personal creations">
+        <div class="projects-grid">
+          {data.ownProjects.map((p) => (
+            <Card {...p} />
+          ))}
+        </div>
+      </Section>
+    )}
+  </>
+) : (
+  <Fallback
+    description="I couldn't reach GitHub right now. You can browse my repositories directly on GitHub."
+    fallbackHref="https://github.com/trueberryless"
+    fallbackLabel="See my GitHub profile"
+  />
+)}
 
 <style>
   .projects-grid {

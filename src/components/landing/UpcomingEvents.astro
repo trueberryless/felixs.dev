@@ -19,27 +19,25 @@ const items = events
 const hasUpcoming = items.length > 0;
 ---
 
-{
-  hasUpcoming && (
-    <Section title="Upcoming Events">
-      <ActionLink slot="header-actions" href="/events" text="View all" />
-      <List>
-        {items.map((event) => (
-          <li class="list-item clickable">
-            <a href={event.atmoUrl} class="event-link">
-              <div class="item-left">
-                <span class="item-main">
-                  {event.data.name || "Untitled Network Event"}
-                </span>
-              </div>
-              <ExternalIcon class="row-icon" />
-            </a>
-          </li>
-        ))}
-      </List>
-    </Section>
-  )
-}
+{hasUpcoming && (
+  <Section title="Upcoming Events">
+    <ActionLink slot="header-actions" href="/events" text="View all" />
+    <List>
+      {items.map((event) => (
+        <li class="list-item clickable">
+          <a href={event.atmoUrl} class="event-link">
+            <div class="item-left">
+              <span class="item-main">
+                {event.data.name || "Untitled Network Event"}
+              </span>
+            </div>
+            <ExternalIcon class="row-icon" />
+          </a>
+        </li>
+      ))}
+    </List>
+  </Section>
+)}
 
 <style>
   .event-link {

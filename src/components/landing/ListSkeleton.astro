@@ -7,14 +7,12 @@ const { rows = 3 } = Astro.props;
 ---
 
 <div class="skeleton-list">
-  {
-    Array.from({ length: rows }).map(() => (
-      <div class="skeleton-row">
-        <div class="skeleton-line main" />
-        <div class="skeleton-line meta" />
-      </div>
-    ))
-  }
+  {Array.from({ length: rows }).map(() => (
+    <div class="skeleton-row">
+      <div class="skeleton-line main" />
+      <div class="skeleton-line meta" />
+    </div>
+  ))}
 </div>
 
 <style>

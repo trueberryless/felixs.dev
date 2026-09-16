@@ -26,79 +26,77 @@ const hasData = Boolean(
 );
 ---
 
-{
-  hasData ? (
-    <>
-      {resume!.positions.length > 0 && (
-        <Section title="Experience">
-          <BriefcaseBusiness
-            slot="leading"
-            class="section-icon"
-            width={18}
-            height={18}
-          />
-          <div class="timeline-stack">
-            {resume!.positions.map((p) => (
-              <Timeline
-                start={p.startLabel}
-                end={p.endLabel}
-                isCurrent={p.isCurrent}
-              >
-                <PositionCard position={p} />
-              </Timeline>
-            ))}
-          </div>
-        </Section>
-      )}
+{hasData ? (
+  <>
+    {resume!.positions.length > 0 && (
+      <Section title="Experience">
+        <BriefcaseBusiness
+          slot="leading"
+          class="section-icon"
+          width={18}
+          height={18}
+        />
+        <div class="timeline-stack">
+          {resume!.positions.map((p) => (
+            <Timeline
+              start={p.startLabel}
+              end={p.endLabel}
+              isCurrent={p.isCurrent}
+            >
+              <PositionCard position={p} />
+            </Timeline>
+          ))}
+        </div>
+      </Section>
+    )}
 
-      {resume!.education.length > 0 && (
-        <Section title="Education">
-          <GraduationCap
-            slot="leading"
-            class="section-icon"
-            width={18}
-            height={18}
-          />
-          <div class="timeline-stack">
-            {resume!.education.map((e) => (
-              <Timeline
-                start={e.startLabel}
-                end={e.endLabel}
-                isCurrent={e.isCurrent}
-              >
-                <EducationCard education={e} />
-              </Timeline>
-            ))}
-          </div>
-        </Section>
-      )}
+    {resume!.education.length > 0 && (
+      <Section title="Education">
+        <GraduationCap
+          slot="leading"
+          class="section-icon"
+          width={18}
+          height={18}
+        />
+        <div class="timeline-stack">
+          {resume!.education.map((e) => (
+            <Timeline
+              start={e.startLabel}
+              end={e.endLabel}
+              isCurrent={e.isCurrent}
+            >
+              <EducationCard education={e} />
+            </Timeline>
+          ))}
+        </div>
+      </Section>
+    )}
 
-      {resume!.honors.length > 0 && (
-        <Section title="Awards & Honors">
-          <Trophy slot="leading" class="section-icon" width={18} height={18} />
-          <div class="honor-grid">
-            {resume!.honors.map((h) => (
-              <HonorCard honor={h} />
-            ))}
-          </div>
-        </Section>
-      )}
+    {resume!.honors.length > 0 && (
+      <Section title="Awards & Honors">
+        <Trophy slot="leading" class="section-icon" width={18} height={18} />
+        <div class="honor-grid">
+          {resume!.honors.map((h) => (
+            <HonorCard honor={h} />
+          ))}
+        </div>
+      </Section>
+    )}
 
-      {resume!.skills.length > 0 && (
-        <Section title="Skills">
-          <Wrench slot="leading" class="section-icon" width={18} height={18} />
-          <SkillChips skills={resume!.skills} />
-        </Section>
-      )}
-    </>
-  ) : (
-    <Fallback
-      description="My professional history lives on Sifa, an open profile network on ATproto, and isn't reachable right now."
-      fallbackHref="https://sifa.id/p/felixs.dev"
-      fallbackLabel="See my Sifa profile"
-    />
-  )
-}
+    {resume!.skills.length > 0 && (
+      <Section title="Skills">
+        <Wrench slot="leading" class="section-icon" width={18} height={18} />
+        <SkillChips skills={resume!.skills} />
+      </Section>
+    )}
+  </>
+) : (
+  <Fallback
+    description="My professional history lives on Sifa, an open profile network on ATproto, and isn't reachable right now."
+    fallbackHref="https://sifa.id/p/felixs.dev"
+    fallbackLabel="See my Sifa profile"
+  />
+)}
 
 <style>
   .section-icon {

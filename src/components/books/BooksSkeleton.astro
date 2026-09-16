@@ -3,15 +3,13 @@ const count = 12;
 ---
 
 <div class="skeleton-shelf">
-  {
-    Array.from({ length: count }).map(() => (
-      <div class="skeleton-book">
-        <div class="skeleton-cover" />
-        <div class="skeleton-line title" />
-        <div class="skeleton-line author" />
-      </div>
-    ))
-  }
+  {Array.from({ length: count }).map(() => (
+    <div class="skeleton-book">
+      <div class="skeleton-cover" />
+      <div class="skeleton-line title" />
+      <div class="skeleton-line author" />
+    </div>
+  ))}
 </div>
 
 <style>

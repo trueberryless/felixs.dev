@@ -12,7 +12,9 @@ const { year, posts } = Astro.props;
 <section class="year-group">
   <div class="year-watermark">{year}</div>
   <div class="post-list">
-    {posts.map((post) => <PostItem post={post} />)}
+    {posts.map((post) => (
+      <PostItem post={post} />
+    ))}
   </div>
 </section>
 

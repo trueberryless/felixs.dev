@@ -15,15 +15,13 @@ const isExternal =
 
 <a href={href} class="action-link">
   {text}
-  {
-    isExternal ? (
-      <ExternalIcon class="ext-icon" />
-    ) : (
-      <span class="arrow" aria-hidden="true">
-        →
-      </span>
-    )
-  }
+  {isExternal ? (
+    <ExternalIcon class="ext-icon" />
+  ) : (
+    <span class="arrow" aria-hidden="true">
+      →
+    </span>
+  )}
 </a>
 
 <style>

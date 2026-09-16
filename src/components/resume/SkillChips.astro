@@ -25,21 +25,19 @@ for (const items of groups.values()) {
 }
 ---
 
-{
-  sortedKeys.map((key) => {
-    const items = groups.get(key)!;
-    return (
-      <div class="skill-group">
-        <h4 class="skill-group-title">{key}</h4>
-        <div class="skill-chips">
-          {items.map((s) => (
-            <span class="skill-chip">{s.name}</span>
-          ))}
-        </div>
+{sortedKeys.map((key) => {
+  const items = groups.get(key)!;
+  return (
+    <div class="skill-group">
+      <h4 class="skill-group-title">{key}</h4>
+      <div class="skill-chips">
+        {items.map((s) => (
+          <span class="skill-chip">{s.name}</span>
+        ))}
       </div>
-    );
-  })
-}
+    </div>
+  );
+})}
 
 <style>
   .skill-group {
