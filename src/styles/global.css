@@ -170,7 +170,8 @@ main {
   padding: 0 24px;
 }
 
-h1, h2 {
+h1,
+h2 {
   font-family: var(--font-family-heading);
   /* Optional: Adjust font-weight if Fraenkisch renders too boldly by default */
   /*font-weight: normal; */
