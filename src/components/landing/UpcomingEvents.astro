@@ -9,13 +9,14 @@ import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
 const events = await fetchEvents().catch(() => null);
 applyCache(Astro.response, events ? longLivedCache : degradedCache);
 const now = Date.now();
-const items = events
-  ? events
-      .map((e) => ({ ...e, startDate: new Date(e.startDate) }))
-      .filter((e) => e.startDate.getTime() > now)
-      .sort((a, b) => a.startDate.getTime() - b.startDate.getTime())
-      .slice(0, 3)
-  : [];
+const upcoming = [];
+for (const e of events ?? []) {
+  const startDate = new Date(e.startDate);
+  if (startDate.getTime() > now) upcoming.push({ ...e, startDate });
+}
+const items = upcoming
+  .sort((a, b) => a.startDate.getTime() - b.startDate.getTime())
+  .slice(0, 3);
 const hasUpcoming = items.length > 0;
 ---
 

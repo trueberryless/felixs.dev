@@ -5,10 +5,7 @@ interface Props {
 
 const { skills } = Astro.props;
 
-const groups = new Map<
-  string | null,
-  { name: string; category: string | null }[]
->();
+const groups = new Map<string, { name: string; category: string | null }[]>();
 for (const s of skills) {
   const key = s.category ?? "Other";
   if (!groups.has(key)) groups.set(key, []);

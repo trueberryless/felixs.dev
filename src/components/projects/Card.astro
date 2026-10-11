@@ -3,7 +3,8 @@ import ExternalIcon from "@/components/utils/ExternalIcon.astro";
 
 interface Props {
   name: string;
-  description?: string;
+  description?: string | null;
+  language?: string | null;
   url: string;
   stars?: number;
   contributions?: number;

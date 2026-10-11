@@ -9,14 +9,15 @@ applyCache(Astro.response, events ? longLivedCache : degradedCache);
 const hasData = Boolean(events && events.length > 0);
 
 const now = Date.now();
-const processed = hasData
-  ? events!.map((e) => ({
-      ...e,
-      startDate: new Date(e.startDate),
-      endDate: new Date(e.endDate),
-      isPast: new Date(e.endDate).getTime() < now,
-    }))
-  : [];
+const processed = [];
+for (const e of hasData ? events! : []) {
+  processed.push({
+    ...e,
+    startDate: new Date(e.startDate),
+    endDate: new Date(e.endDate),
+    isPast: new Date(e.endDate).getTime() < now,
+  });
+}
 
 const upcoming = processed
   .filter((e) => !e.isPast)

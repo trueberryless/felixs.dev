@@ -1,38 +1,59 @@
 {
-  "name": "trueberryless",
+  "name": "felixs.dev",
+  "private": true,
   "homepage": "https://felixs.dev",
   "bugs": {
-    "url": "https://github.com/trueberryless-org/trueberryless/issues"
+    "url": "https://github.com/trueberryless/felixs.dev/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/trueberryless-org/trueberryless.git"
+    "url": "https://github.com/trueberryless/felixs.dev.git"
   },
   "license": "MIT",
   "author": "trueberryless <trueberryless@gmail.com> (https://felixs.dev)",
+  "type": "module",
   "scripts": {
     "astro": "astro",
     "build": "lex build --override && astro build",
     "build:netlify": "lex build --override && ADAPTER_TYPE=netlify astro build",
+    "check": "lex build --override && astro check",
     "dev": "lex build --override && astro dev",
-    "format": "prettier --write .",
-    "preview": "astro preview"
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "knip": "knip",
+    "lint": "oxlint",
+    "preview": "astro preview",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "pnpm build && playwright test"
   },
   "dependencies": {
     "@astrojs/netlify": "^8.2.4",
     "@astrojs/node": "^11.1.4",
     "@astrojs/sitemap": "^3.7.3",
-    "@atproto/lex": "^0.3.8",
-    "@lucide/astro": "^1.37.0",
-    "astro": "^7.2.9",
-    "sharp": "^0.35.4",
+    "@atproto/lex": "^0.3.13",
+    "@lucide/astro": "^1.48.0",
+    "astro": "^7.3.5",
+    "sharp": "^0.35.5",
     "simple-icons-astro": "^16.1.0"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
     "@trivago/prettier-plugin-sort-imports": "6.0.2",
-    "fontless": "^0.4.4",
-    "prettier": "3.9.6",
-    "prettier-plugin-astro": "1.0.0"
+    "@types/node": "^26.6.3",
+    "@vitest/coverage-v8": "^5.0.3",
+    "fontless": "^1.2.1",
+    "knip": "^6.39.0",
+    "oxlint": "^1.86.0",
+    "prettier": "3.9.9",
+    "prettier-plugin-astro": "1.1.0",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.3"
   },
-  "packageManager": "pnpm@11.1.2"
+  "packageManager": "pnpm@11.28.0",
+  "engines": {
+    "node": ">=24"
+  }
 }
