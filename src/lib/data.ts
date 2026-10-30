@@ -8,7 +8,6 @@ import {
 
 const GITHUB_API = "https://api.github.com";
 const GITHUB_USERNAME = "trueberryless";
-const GITHUB_ORG = "trueberryless-org";
 const TIMEOUT_MS = 15000;
 
 const SHOWCASE_ORGS: [string, string][] = [
@@ -194,11 +193,10 @@ export interface ProjectsData {
 }
 
 async function fetchOwnRepos(): Promise<OwnProject[]> {
-  const [user, org] = await Promise.all([
-    paginateGithub(`${GITHUB_API}/users/${GITHUB_USERNAME}/repos?per_page=100`),
-    paginateGithub(`${GITHUB_API}/orgs/${GITHUB_ORG}/repos?per_page=100`),
-  ]);
-  return [...user, ...org]
+  const repos = await paginateGithub(
+    `${GITHUB_API}/users/${GITHUB_USERNAME}/repos?per_page=100`
+  );
+  return repos
     .filter((r) => !r.fork && !r.archived)
     .sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0))
     .slice(0, 8)
