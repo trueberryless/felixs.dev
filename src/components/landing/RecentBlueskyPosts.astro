@@ -35,31 +35,29 @@ const items =
     href={`https://bsky.app/profile/${actorDid}`}
     text="View profile"
   />
-  {
-    items ? (
-      <List>
-        {items.map((post) => (
-          <li class="list-item clickable">
-            <a href={post.postUrl} class="bsky-link">
-              <span class="bsky-item-main">
-                <span class="bsky-text">{post.text}</span>
-              </span>
-              <span class="bsky-meta">
-                <Heart class="bsky-icon" />
-                <span>{post.likes}</span>
-              </span>
-            </a>
-          </li>
-        ))}
-      </List>
-    ) : (
-      <Fallback
-        description="My most-liked recent Bluesky posts usually appear here."
-        fallbackHref={`https://bsky.app/profile/${actorDid}`}
-        fallbackLabel="Open my Bluesky profile"
-      />
-    )
-  }
+  {items ? (
+    <List>
+      {items.map((post) => (
+        <li class="list-item clickable">
+          <a href={post.postUrl} class="bsky-link">
+            <span class="bsky-item-main">
+              <span class="bsky-text">{post.text}</span>
+            </span>
+            <span class="bsky-meta">
+              <Heart class="bsky-icon" />
+              <span>{post.likes}</span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </List>
+  ) : (
+    <Fallback
+      description="My most-liked recent Bluesky posts usually appear here."
+      fallbackHref={`https://bsky.app/profile/${actorDid}`}
+      fallbackLabel="Open my Bluesky profile"
+    />
+  )}
 </Section>
 
 <style>

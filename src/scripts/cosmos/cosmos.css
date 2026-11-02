@@ -45,7 +45,7 @@
 /* Typography */
 
 :root.celestial .error-code {
-  font-family: var(--font-display);
+  font-family: var(--font-family-heading);
 }
 
 :root.celestial :is(.hero-text, .error-code) {

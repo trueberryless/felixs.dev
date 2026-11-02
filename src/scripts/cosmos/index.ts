@@ -99,7 +99,8 @@ function createScene(): Scene {
     const time = now / 1000;
     const still = isStill();
     const warpProgress = warpDuration ? (now - warpStart) / warpDuration : 1;
-    const warp = still || warpProgress >= 1 ? 0 : (1 - warpProgress) ** 2.2;
+    const warpStrength =
+      still || warpProgress >= 1 ? 0 : (1 - warpProgress) ** 2.2;
     if (warpProgress >= 1) warpDuration = 0;
 
     const smoothing = still ? 1 : 0.06;
@@ -112,9 +113,24 @@ function createScene(): Scene {
     const scroll = still ? 0 : window.scrollY;
     const sink = Math.min(1, scroll / window.innerHeight);
 
-    stars?.draw({ animate: !still, parallax, pointer, scroll, time, warp });
-    if (nebula && (now - lastNebulaFrame >= NEBULA_FRAME_MS || warp > 0)) {
-      nebula.draw({ parallax, sink, time: still ? 0 : time, warp });
+    stars?.draw({
+      animate: !still,
+      parallax,
+      pointer,
+      scroll,
+      time,
+      warp: warpStrength,
+    });
+    if (
+      nebula &&
+      (now - lastNebulaFrame >= NEBULA_FRAME_MS || warpStrength > 0)
+    ) {
+      nebula.draw({
+        parallax,
+        sink,
+        time: still ? 0 : time,
+        warp: warpStrength,
+      });
       lastNebulaFrame = now;
     }
   }

@@ -2,6 +2,7 @@ import netlify from "@astrojs/netlify";
 import node from "@astrojs/node";
 import sitemap from "@astrojs/sitemap";
 import { defineConfig } from "astro/config";
+import { fontless } from "fontless";
 
 export default defineConfig({
   site: "https://felixs.dev",
@@ -17,5 +18,8 @@ export default defineConfig({
   },
   image: {
     domains: ["cdn.bsky.app", "npmx.social"],
+  },
+  vite: {
+    plugins: [fontless()],
   },
 });

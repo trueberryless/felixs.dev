@@ -24,14 +24,12 @@ const isUrl = /^https?:\/\/\S+$/i.test(desc);
 
   <div class="honor-meta">
     {honor.issuer && <span class="honor-issuer">{honor.issuer}</span>}
-    {
-      isUrl && (
-        <a href={desc} class="honor-link">
-          <ExternalIcon size={12} class="honor-link-icon" />
-          <span>Link</span>
-        </a>
-      )
-    }
+    {isUrl && (
+      <a href={desc} class="honor-link">
+        <ExternalIcon size={12} class="honor-link-icon" />
+        <span>Link</span>
+      </a>
+    )}
   </div>
 
   {desc && !isUrl && <p class="honor-desc">{desc}</p>}

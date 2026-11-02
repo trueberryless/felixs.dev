@@ -6,35 +6,33 @@ const tagWidths = ["60px", "90px", "45px", "75px"];
 ---
 
 <div class="skeleton-years">
-  {
-    rowsPerYear.map((count, yearIndex) => (
-      <section class="skeleton-year">
-        <div class="skeleton-posts">
-          {Array.from({ length: count }).map((_, i) => (
-            <div class="skeleton-post">
-              <div class="skeleton-title-container">
-                <div
-                  class="skeleton-line title"
-                  style={`width: ${titleWidths[i % titleWidths.length]}`}
-                />
-              </div>
-              <div class="skeleton-meta">
-                <div
-                  class="skeleton-line date"
-                  style={`width: ${dateWidths[i % dateWidths.length]}`}
-                />
-                <span class="skeleton-separator">&bull;</span>
-                <div
-                  class="skeleton-line tag"
-                  style={`width: ${tagWidths[i % tagWidths.length]}`}
-                />
-              </div>
+  {rowsPerYear.map((count, yearIndex) => (
+    <section class="skeleton-year">
+      <div class="skeleton-posts">
+        {Array.from({ length: count }).map((_, i) => (
+          <div class="skeleton-post">
+            <div class="skeleton-title-container">
+              <div
+                class="skeleton-line title"
+                style={`width: ${titleWidths[i % titleWidths.length]}`}
+              />
             </div>
-          ))}
-        </div>
-      </section>
-    ))
-  }
+            <div class="skeleton-meta">
+              <div
+                class="skeleton-line date"
+                style={`width: ${dateWidths[i % dateWidths.length]}`}
+              />
+              <span class="skeleton-separator">&bull;</span>
+              <div
+                class="skeleton-line tag"
+                style={`width: ${tagWidths[i % tagWidths.length]}`}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  ))}
 </div>
 
 <style>

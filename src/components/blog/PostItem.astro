@@ -15,11 +15,13 @@ const titleEnd = lastSpaceIdx !== -1 ? title.slice(lastSpaceIdx + 1) : title;
   <a href={postUrl} class="post-link">
     <div class="post-title-container">
       <h3 class="post-title">
-        {titleStart}<span class="nowrap"
-          >{titleEnd}<span class="post-external"
-            ><ExternalIcon size={11} /></span
-          ></span
-        >
+        {titleStart}
+        <span class="nowrap">
+          {titleEnd}
+          <span class="post-external">
+            <ExternalIcon size={11} />
+          </span>
+        </span>
       </h3>
     </div>
 
@@ -28,39 +30,35 @@ const titleEnd = lastSpaceIdx !== -1 ? title.slice(lastSpaceIdx + 1) : title;
         {formattedDate.toLowerCase()}
       </time>
 
-      {
-        firstTag && (
+      {firstTag && (
+        <>
+          <span class="post-separator">&bull;</span>
+          <span class="post-meta-item">{firstTag}</span>
+        </>
+      )}
+
+      {Array.isArray(otherTags) ? (
+        otherTags.map((tag) => (
           <>
             <span class="post-separator">&bull;</span>
-            <span class="post-meta-item">{firstTag}</span>
+            <span class="post-meta-item">{tag}</span>
           </>
-        )
-      }
-
-      {
-        Array.isArray(otherTags) ? (
-          otherTags.map((tag) => (
+        ))
+      ) : typeof otherTags === "string" ? (
+        otherTags.split(",").map((tag) =>
+          tag.trim() ? (
             <>
               <span class="post-separator">&bull;</span>
-              <span class="post-meta-item">{tag}</span>
+              <span class="post-meta-item">{tag.trim()}</span>
             </>
-          ))
-        ) : typeof otherTags === "string" ? (
-          otherTags.split(",").map((tag) =>
-            tag.trim() ? (
-              <>
-                <span class="post-separator">&bull;</span>
-                <span class="post-meta-item">{tag.trim()}</span>
-              </>
-            ) : null
-          )
-        ) : otherTags ? (
-          <>
-            <span class="post-separator">&bull;</span>
-            <span class="post-meta-item">{otherTags}</span>
-          </>
-        ) : null
-      }
+          ) : null
+        )
+      ) : otherTags ? (
+        <>
+          <span class="post-separator">&bull;</span>
+          <span class="post-meta-item">{otherTags}</span>
+        </>
+      ) : null}
     </div>
   </a>
 </article>

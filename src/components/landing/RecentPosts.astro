@@ -24,31 +24,29 @@ const items =
 
 <Section title="Recent Blog Posts">
   <ActionLink slot="header-actions" href="/blog" text="View all" />
-  {
-    items ? (
-      <List>
-        {items.map((post) => {
-          const { title, postUrl } = processPost(post);
-          return (
-            <li class="list-item clickable">
-              <a href={postUrl} class="post-link">
-                <div class="item-left">
-                  <span class="item-main">{title}</span>
-                </div>
-                <ExternalIcon class="row-icon" />
-              </a>
-            </li>
-          );
-        })}
-      </List>
-    ) : (
-      <Fallback
-        description="My blog posts live on ATproto. Once the required domains are reachable they'll appear here."
-        fallbackHref="https://leaflet.pub/p/felixs.dev"
-        fallbackLabel="Read on Leaflet"
-      />
-    )
-  }
+  {items ? (
+    <List>
+      {items.map((post) => {
+        const { title, postUrl } = processPost(post);
+        return (
+          <li class="list-item clickable">
+            <a href={postUrl} class="post-link">
+              <div class="item-left">
+                <span class="item-main">{title}</span>
+              </div>
+              <ExternalIcon class="row-icon" />
+            </a>
+          </li>
+        );
+      })}
+    </List>
+  ) : (
+    <Fallback
+      description="My blog posts live on ATproto. Once the required domains are reachable they'll appear here."
+      fallbackHref="https://leaflet.pub/p/felixs.dev"
+      fallbackLabel="Read on Leaflet"
+    />
+  )}
 </Section>
 
 <style>

@@ -24,36 +24,30 @@ if (position.workplaceType) meta.push(position.workplaceType);
   <h3 class="position-title">{position.title}</h3>
   <p class="position-company">{position.company}</p>
 
-  {
-    meta.length > 0 && (
-      <div class="position-badges">
-        {meta.map((m) => (
-          <span class="badge">{m}</span>
-        ))}
-      </div>
-    )
-  }
+  {meta.length > 0 && (
+    <div class="position-badges">
+      {meta.map((m) => (
+        <span class="badge">{m}</span>
+      ))}
+    </div>
+  )}
 
-  {
-    position.location && (
-      <div class="position-location">
-        <MapPin class="loc-icon" width={14} height={14} />
-        <span>{position.location}</span>
-      </div>
-    )
-  }
+  {position.location && (
+    <div class="position-location">
+      <MapPin class="loc-icon" width={14} height={14} />
+      <span>{position.location}</span>
+    </div>
+  )}
 
   {position.description && <p class="position-desc">{position.description}</p>}
 
-  {
-    position.skills.length > 0 && (
-      <div class="position-skills">
-        {position.skills.map((s) => (
-          <span class="skill-chip">{s}</span>
-        ))}
-      </div>
-    )
-  }
+  {position.skills.length > 0 && (
+    <div class="position-skills">
+      {position.skills.map((s) => (
+        <span class="skill-chip">{s}</span>
+      ))}
+    </div>
+  )}
 </div>
 
 <style>

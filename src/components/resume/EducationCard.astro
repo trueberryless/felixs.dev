@@ -20,11 +20,9 @@ const subline = [education.degree, education.fieldOfStudy]
   <h3 class="education-title">{education.institution}</h3>
   {subline && <p class="education-degree">{subline}</p>}
   {education.grade && <p class="education-grade">Grade: {education.grade}</p>}
-  {
-    education.description && (
-      <p class="education-desc">{education.description}</p>
-    )
-  }
+  {education.description && (
+    <p class="education-desc">{education.description}</p>
+  )}
 </div>
 
 <style>

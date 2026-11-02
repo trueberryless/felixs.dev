@@ -5,14 +5,12 @@ const isSingleSegment = segments.length === 1;
 const backUrl = isSingleSegment ? "/" : "/" + segments.slice(0, -1).join("/");
 ---
 
-{
-  segments.length > 0 && (
-    <a href={backUrl} class="back-link" aria-label="Go back">
-      <span class="arrow">←</span>
-      Back
-    </a>
-  )
-}
+{segments.length > 0 && (
+  <a href={backUrl} class="back-link" aria-label="Go back">
+    <span class="arrow">←</span>
+    Back
+  </a>
+)}
 
 <style>
   .back-link {

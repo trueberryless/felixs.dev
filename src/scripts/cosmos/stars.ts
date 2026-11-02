@@ -270,7 +270,7 @@ function gaussian() {
   return (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
 }
 
-export interface PointerState {
+interface PointerState {
   strength: number;
   x: number;
   y: number;
@@ -281,7 +281,7 @@ export interface Starfield {
   resize: (width: number, height: number, pixelRatio: number) => void;
 }
 
-export interface StarfieldFrame {
+interface StarfieldFrame {
   animate: boolean;
   parallax: { x: number; y: number };
   pointer: PointerState;

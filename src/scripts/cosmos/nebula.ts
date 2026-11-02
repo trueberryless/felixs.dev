@@ -253,7 +253,7 @@ export interface Nebula {
   resize: (width: number, height: number, pixelRatio: number) => void;
 }
 
-export interface NebulaFrame {
+interface NebulaFrame {
   parallax: { x: number; y: number };
   sink: number;
   time: number;

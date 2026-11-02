@@ -87,40 +87,38 @@ const summarize = (item: any): string => {
   <body>
     <main>
       <h1>Live Overview (All Data Dump)</h1>
-      {
-        sections.map(({ label, result }) => (
-          <section>
-            <h2>{label}</h2>
-            {result.status === "rejected" && (
-              <div class="error">
-                <strong>Error loading {label.toLowerCase()}:</strong>{" "}
-                {String(result.reason?.message || result.reason)}
-              </div>
+      {sections.map(({ label, result }) => (
+        <section>
+          <h2>{label}</h2>
+          {result.status === "rejected" && (
+            <div class="error">
+              <strong>Error loading {label.toLowerCase()}:</strong>{" "}
+              {String(result.reason?.message || result.reason)}
+            </div>
+          )}
+          {result.status === "fulfilled" &&
+            (!result.value ||
+              (Array.isArray(result.value) && result.value.length === 0)) && (
+              <div class="empty">No {label.toLowerCase()} returned.</div>
             )}
-            {result.status === "fulfilled" &&
-              (!result.value ||
-                (Array.isArray(result.value) && result.value.length === 0)) && (
-                <div class="empty">No {label.toLowerCase()} returned.</div>
-              )}
-            {result.status === "fulfilled" &&
-              Array.isArray(result.value) &&
-              result.value.map((item: any) => (
-                <details>
-                  <summary>{summarize(item)}</summary>
-                  <pre>{JSON.stringify(item, null, 2)}</pre>
-                </details>
-              ))}
-            {result.status === "fulfilled" &&
-              result.value &&
-              !Array.isArray(result.value) && (
-                <details>
-                  <summary>{summarize(result.value)}</summary>
-                  <pre>{JSON.stringify(result.value, null, 2)}</pre>
-                </details>
-              )}
-          </section>
-        ))
-      }
+          {result.status === "fulfilled" &&
+            Array.isArray(result.value) &&
+            result.value.map((item: any) => (
+              <details>
+                <summary>{summarize(item)}</summary>
+                <pre>{JSON.stringify(item, null, 2)}</pre>
+              </details>
+            ))}
+          {result.status === "fulfilled" &&
+            result.value &&
+            !Array.isArray(result.value) && (
+              <details>
+                <summary>{summarize(result.value)}</summary>
+                <pre>{JSON.stringify(result.value, null, 2)}</pre>
+              </details>
+            )}
+        </section>
+      ))}
     </main>
   </body>
 </html>

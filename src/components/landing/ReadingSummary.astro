@@ -14,171 +14,163 @@ const summary = books ? buildReadingSummary(books) : null;
 
 <Section title="Reading Summary">
   <ActionLink slot="header-actions" href="/books" text="View all" />
-  {
-    summary && summary.latest && Array.isArray(summary.favorites) ? (
-      <List>
-        <li class={summary.latest.hiveId ? "list-item clickable" : "list-item"}>
-          {summary.latest.hiveId ? (
-            <a
-              href={`https://bookhive.buzz/books/${summary.latest.hiveId}`}
-              class="book-link"
-            >
-              <span class="item-main">{summary.latest.title}</span>
-              <div class="book-meta">
-                <span class="item-meta">
-                  {summary.latest.startedAt
-                    ? `Started: ${new Date(summary.latest.startedAt).toLocaleDateString("en-US")}`
-                    : "Started: Unknown"}
-                </span>
-                <ExternalIcon class="row-icon" />
-              </div>
-            </a>
-          ) : (
-            <div class="book-link">
-              <span class="item-main">{summary.latest.title}</span>
-              <div class="book-meta">
-                <span class="item-meta">
-                  {summary.latest.startedAt
-                    ? `Started: ${new Date(summary.latest.startedAt).toLocaleDateString("en-US")}`
-                    : "Started: Unknown"}
-                </span>
-              </div>
+  {summary && summary.latest && Array.isArray(summary.favorites) ? (
+    <List>
+      <li class={summary.latest.hiveId ? "list-item clickable" : "list-item"}>
+        {summary.latest.hiveId ? (
+          <a
+            href={`https://bookhive.buzz/books/${summary.latest.hiveId}`}
+            class="book-link"
+          >
+            <span class="item-main">{summary.latest.title}</span>
+            <div class="book-meta">
+              <span class="item-meta">
+                {summary.latest.startedAt
+                  ? `Started: ${new Date(summary.latest.startedAt).toLocaleDateString("en-US")}`
+                  : "Started: Unknown"}
+              </span>
+              <ExternalIcon class="row-icon" />
             </div>
-          )}
-        </li>
-        {summary.favorites.map((book, bookIndex) => {
-          const stars = (book.stars ?? 0) / 2;
-          const full = Math.floor(stars);
-          const half = stars - full >= 0.5;
-          return (
-            <li class={book.hiveId ? "list-item clickable" : "list-item"}>
-              {book.hiveId ? (
-                <a
-                  href={`https://bookhive.buzz/books/${book.hiveId}`}
-                  class="book-link"
-                >
-                  <span class="item-main">{book.title}</span>
-                  <div class="book-meta">
-                    <span
-                      class="item-meta star-rating"
-                      role="img"
-                      aria-label={`${stars} out of 5 stars`}
-                    >
-                      {Array.from({ length: 5 }).map((_, i) => {
-                        const isFull = i < full;
-                        const isHalf = !isFull && i === full && half;
-                        const gradientId = `half-${book.hiveId ?? bookIndex}-${i}`;
-                        return (
-                          <svg
-                            viewBox="0 0 16 16"
-                            width="14"
-                            height="14"
-                            class:list={[
-                              "icon-star",
-                              {
-                                full: isFull,
-                                half: isHalf,
-                                empty: !isFull && !isHalf,
-                              },
-                            ]}
-                            aria-hidden="true"
-                          >
-                            {isHalf && (
-                              <defs>
-                                <linearGradient id={gradientId}>
-                                  <stop
-                                    offset="50%"
-                                    stop-color="currentColor"
-                                  />
-                                  <stop
-                                    offset="50%"
-                                    stop-color="currentColor"
-                                    stop-opacity="0.25"
-                                  />
-                                </linearGradient>
-                              </defs>
-                            )}
-                            <path
-                              d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"
-                              fill={
-                                isHalf ? `url(#${gradientId})` : "currentColor"
-                              }
-                            />
-                          </svg>
-                        );
-                      })}
-                    </span>
-                    <ExternalIcon class="row-icon" />
-                  </div>
-                </a>
-              ) : (
-                <div class="book-link">
-                  <span class="item-main">{book.title}</span>
-                  <div class="book-meta">
-                    <span
-                      class="item-meta star-rating"
-                      role="img"
-                      aria-label={`${stars} out of 5 stars`}
-                    >
-                      {Array.from({ length: 5 }).map((_, i) => {
-                        const isFull = i < full;
-                        const isHalf = !isFull && i === full && half;
-                        const gradientId = `half-${book.hiveId ?? bookIndex}-${i}`;
-                        return (
-                          <svg
-                            viewBox="0 0 16 16"
-                            width="14"
-                            height="14"
-                            class:list={[
-                              "icon-star",
-                              {
-                                full: isFull,
-                                half: isHalf,
-                                empty: !isFull && !isHalf,
-                              },
-                            ]}
-                            aria-hidden="true"
-                          >
-                            {isHalf && (
-                              <defs>
-                                <linearGradient id={gradientId}>
-                                  <stop
-                                    offset="50%"
-                                    stop-color="currentColor"
-                                  />
-                                  <stop
-                                    offset="50%"
-                                    stop-color="currentColor"
-                                    stop-opacity="0.25"
-                                  />
-                                </linearGradient>
-                              </defs>
-                            )}
-                            <path
-                              d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"
-                              fill={
-                                isHalf ? `url(#${gradientId})` : "currentColor"
-                              }
-                            />
-                          </svg>
-                        );
-                      })}
-                    </span>
-                  </div>
+          </a>
+        ) : (
+          <div class="book-link">
+            <span class="item-main">{summary.latest.title}</span>
+            <div class="book-meta">
+              <span class="item-meta">
+                {summary.latest.startedAt
+                  ? `Started: ${new Date(summary.latest.startedAt).toLocaleDateString("en-US")}`
+                  : "Started: Unknown"}
+              </span>
+            </div>
+          </div>
+        )}
+      </li>
+      {summary.favorites.map((book, bookIndex) => {
+        const stars = (book.stars ?? 0) / 2;
+        const full = Math.floor(stars);
+        const half = stars - full >= 0.5;
+        return (
+          <li class={book.hiveId ? "list-item clickable" : "list-item"}>
+            {book.hiveId ? (
+              <a
+                href={`https://bookhive.buzz/books/${book.hiveId}`}
+                class="book-link"
+              >
+                <span class="item-main">{book.title}</span>
+                <div class="book-meta">
+                  <span
+                    class="item-meta star-rating"
+                    role="img"
+                    aria-label={`${stars} out of 5 stars`}
+                  >
+                    {Array.from({ length: 5 }).map((_, i) => {
+                      const isFull = i < full;
+                      const isHalf = !isFull && i === full && half;
+                      const gradientId = `half-${book.hiveId ?? bookIndex}-${i}`;
+                      return (
+                        <svg
+                          viewBox="0 0 16 16"
+                          width="14"
+                          height="14"
+                          class:list={[
+                            "icon-star",
+                            {
+                              full: isFull,
+                              half: isHalf,
+                              empty: !isFull && !isHalf,
+                            },
+                          ]}
+                          aria-hidden="true"
+                        >
+                          {isHalf && (
+                            <defs>
+                              <linearGradient id={gradientId}>
+                                <stop offset="50%" stop-color="currentColor" />
+                                <stop
+                                  offset="50%"
+                                  stop-color="currentColor"
+                                  stop-opacity="0.25"
+                                />
+                              </linearGradient>
+                            </defs>
+                          )}
+                          <path
+                            d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"
+                            fill={
+                              isHalf ? `url(#${gradientId})` : "currentColor"
+                            }
+                          />
+                        </svg>
+                      );
+                    })}
+                  </span>
+                  <ExternalIcon class="row-icon" />
                 </div>
-              )}
-            </li>
-          );
-        })}
-      </List>
-    ) : (
-      <Fallback
-        description="I track my reading through Bookhive on ATproto."
-        fallbackHref="https://bookhive.buzz/profile/felixs.dev"
-        fallbackLabel="Browse my bookshelf on Bookhive"
-      />
-    )
-  }
+              </a>
+            ) : (
+              <div class="book-link">
+                <span class="item-main">{book.title}</span>
+                <div class="book-meta">
+                  <span
+                    class="item-meta star-rating"
+                    role="img"
+                    aria-label={`${stars} out of 5 stars`}
+                  >
+                    {Array.from({ length: 5 }).map((_, i) => {
+                      const isFull = i < full;
+                      const isHalf = !isFull && i === full && half;
+                      const gradientId = `half-${book.hiveId ?? bookIndex}-${i}`;
+                      return (
+                        <svg
+                          viewBox="0 0 16 16"
+                          width="14"
+                          height="14"
+                          class:list={[
+                            "icon-star",
+                            {
+                              full: isFull,
+                              half: isHalf,
+                              empty: !isFull && !isHalf,
+                            },
+                          ]}
+                          aria-hidden="true"
+                        >
+                          {isHalf && (
+                            <defs>
+                              <linearGradient id={gradientId}>
+                                <stop offset="50%" stop-color="currentColor" />
+                                <stop
+                                  offset="50%"
+                                  stop-color="currentColor"
+                                  stop-opacity="0.25"
+                                />
+                              </linearGradient>
+                            </defs>
+                          )}
+                          <path
+                            d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"
+                            fill={
+                              isHalf ? `url(#${gradientId})` : "currentColor"
+                            }
+                          />
+                        </svg>
+                      );
+                    })}
+                  </span>
+                </div>
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </List>
+  ) : (
+    <Fallback
+      description="I track my reading through Bookhive on ATproto."
+      fallbackHref="https://bookhive.buzz/profile/felixs.dev"
+      fallbackLabel="Browse my bookshelf on Bookhive"
+    />
+  )}
 </Section>
 
 <style>

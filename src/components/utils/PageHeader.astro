@@ -12,13 +12,11 @@ const { title, description } = Astro.props;
 <header class="page-header">
   <div class="page-header-content">
     <h1 class="page-title">{title}</h1>
-    {
-      (Astro.slots.has("description") || description) && (
-        <p class="page-description">
-          <slot name="description">{description}</slot>
-        </p>
-      )
-    }
+    {(Astro.slots.has("description") || description) && (
+      <p class="page-description">
+        <slot name="description">{description}</slot>
+      </p>
+    )}
   </div>
   <div class="page-header-aside">
     <Breadcrumbs />
