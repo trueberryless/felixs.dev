@@ -1,0 +1,19 @@
+<script>
+  import { loadCosmos } from "@/scripts/cosmos/load";
+
+  const root = document.documentElement;
+  let isActive = false;
+
+  const sync = () => {
+    const shouldBeActive = root.classList.contains("celestial");
+    if (shouldBeActive === isActive) return;
+    isActive = shouldBeActive;
+    loadCosmos().then((cosmos) => (isActive ? cosmos.start() : cosmos.stop()));
+  };
+
+  new MutationObserver(sync).observe(root, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  sync();
+</script>

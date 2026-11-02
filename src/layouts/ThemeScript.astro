@@ -1,7 +1,9 @@
 <script is:inline>
   const setDarkMode = () => {
     let theme = localStorage.getItem("theme");
-    const specialThemes = [];
+    const specialThemes = ["celestial"];
+    // Special themes build on a base theme so its assets (logos, shadows) apply.
+    const baseThemes = { celestial: "dark" };
 
     if (!theme) {
       theme = window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -12,8 +14,23 @@
 
     document.documentElement.classList.remove("dark", ...specialThemes);
 
+    if (baseThemes[theme]) {
+      document.documentElement.classList.add(baseThemes[theme]);
+    }
+
     if (theme && theme !== "light") {
       document.documentElement.classList.add(theme);
+    }
+
+    // Start fetching the celestial fonts as early as possible for returning
+    // visitors; everyone else never downloads them.
+    if (theme === "celestial" && !document.getElementById("celestial-fonts")) {
+      const fonts = document.createElement("link");
+      fonts.id = "celestial-fonts";
+      fonts.rel = "stylesheet";
+      fonts.href =
+        "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Space+Mono:wght@400;700&display=swap";
+      document.head.append(fonts);
     }
   };
 

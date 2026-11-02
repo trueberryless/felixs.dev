@@ -19,6 +19,12 @@
   --radius-pill: 9999px;
   --radius-card: 12px;
   --max-width: 760px;
+  --font-body:
+    "Datatype", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  --font-display:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
   --book-pages: oklch(0.96 0.02 85);
   --book-pages-darker: oklch(0.92 0.02 85);
   --book-cover-bg: var(--card-bg);
@@ -68,55 +74,80 @@
 }
 
 :root.celestial {
-  --bg: linear-gradient(135deg, oklch(0.12 0.05 280), oklch(0.04 0.02 295));
-  --bg-subtle: linear-gradient(
-    135deg,
-    oklch(0.15 0.06 280),
-    oklch(0.06 0.03 295)
-  );
-  --card-bg: linear-gradient(
-    135deg,
-    oklch(0.2 0.08 290 / 0.3),
-    oklch(0.12 0.05 300 / 0.2)
-  );
-  --badge-bg: linear-gradient(
-    135deg,
-    oklch(0.3 0.1 300 / 0.4),
-    oklch(0.2 0.08 310 / 0.3)
-  );
-  --text: oklch(0.96 0.01 315);
-  --text-muted: oklch(0.82 0.03 315);
-  --border: oklch(0.3 0.06 315 / 0.25);
+  color-scheme: dark;
+  --font-body:
+    "Space Mono", "Datatype", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-display:
+    "Space Grotesk", "JetBrains Mono", ui-sans-serif, system-ui, sans-serif;
+  --bg: transparent;
+  --bg-subtle: oklch(0.15 0.05 285 / 0.5);
+  --card-bg: oklch(0.27 0.07 290 / 0.3);
+  --badge-bg: oklch(0.34 0.09 295 / 0.38);
+  --text: oklch(0.97 0.015 300);
+  --text-muted: oklch(0.85 0.045 295);
+  --border: oklch(0.86 0.09 300 / 0.22);
   --blob-1: oklch(0.3 0.14 330 / 0.4);
   --blob-2: oklch(0.25 0.12 290 / 0.4);
   --blob-3: oklch(0.28 0.13 315 / 0.4);
-  --header-bg: linear-gradient(
-    135deg,
-    oklch(0.12 0.05 280 / 0.7),
-    oklch(0.06 0.03 295 / 0.7)
-  );
-  --header-bg-solid: linear-gradient(
-    135deg,
-    oklch(0.12 0.05 280),
-    oklch(0.06 0.03 295)
-  );
-  --header-shadow: oklch(0.02 0.01 295 / 0.5);
-  --hover-bg: oklch(0.96 0.01 315 / 0.08);
-  --lift-shadow: 0 10px 24px -8px oklch(0.02 0.01 295 / 0.6);
-  --book-pages: oklch(0.94 0.02 315);
-  --book-pages-darker: oklch(0.86 0.03 315);
-  --book-cover-bg: var(--card-bg);
-  --book-back: oklch(0.15 0.04 315);
-  --glow-star: oklch(0.88 0.12 330);
-  --glow-pr: oklch(0.75 0.14 310);
-  --accent: oklch(0.8 0.13 160);
-  --accent-glow: oklch(0.8 0.13 160 / 0.5);
+  --header-bg: oklch(0.2 0.06 290 / 0.42);
+  --header-bg-solid: oklch(0.17 0.05 288);
+  --header-shadow: oklch(0.05 0.03 290 / 0.6);
+  --hover-bg: oklch(0.9 0.08 300 / 0.09);
+  --lift-shadow:
+    0 14px 34px -10px oklch(0.55 0.22 300 / 0.5),
+    0 0 0 1px oklch(0.8 0.12 300 / 0.25);
+  --book-pages: oklch(0.94 0.02 300);
+  --book-pages-darker: oklch(0.84 0.04 300);
+  --book-cover-bg: oklch(0.22 0.06 290);
+  --book-back: oklch(0.3 0.09 295);
+  --glow-star: oklch(0.9 0.13 90);
+  --glow-pr: oklch(0.8 0.15 310);
+  --accent: oklch(0.84 0.13 195);
+  --accent-glow: oklch(0.84 0.13 195 / 0.55);
   --text-gradient: linear-gradient(
-    135deg,
-    oklch(0.96 0.01 315) 0%,
-    oklch(0.82 0.1 320) 50%,
-    oklch(0.96 0.01 315) 100%
+    100deg,
+    oklch(0.9 0.1 200) 0%,
+    oklch(0.88 0.1 290) 30%,
+    oklch(0.84 0.14 330) 50%,
+    oklch(0.88 0.1 290) 70%,
+    oklch(0.9 0.1 200) 100%
   );
+
+  /* Painted before the lazily loaded nebula canvas fades in, and kept as the
+     fallback when WebGL is unavailable. */
+  background:
+    radial-gradient(
+      140% 60% at 70% 118%,
+      oklch(0.5 0.2 285 / 0.55),
+      transparent 62%
+    ),
+    radial-gradient(
+      70% 50% at 12% 18%,
+      oklch(0.36 0.15 320 / 0.35),
+      transparent 70%
+    ),
+    linear-gradient(160deg, oklch(0.17 0.06 285), oklch(0.08 0.035 280));
+  background-attachment: fixed;
+  background-color: oklch(0.08 0.035 280);
+}
+
+:root.celestial body {
+  background: transparent;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root.celestial {
+    --card-bg: oklch(0.22 0.06 288);
+    --badge-bg: oklch(0.28 0.07 292);
+    --bg-subtle: oklch(0.15 0.05 285);
+  }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 * {
@@ -137,9 +168,7 @@ html {
 body {
   background: var(--bg-subtle);
   color: var(--text);
-  font-family:
-    "Datatype", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  font-family: var(--font-body);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   display: flex;

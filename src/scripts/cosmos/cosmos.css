@@ -1,0 +1,401 @@
+/* Loaded together with the scene, so only visitors of the celestial theme
+   ever download these rules. Colors live as tokens in `global.css`. */
+
+.cosmos-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+  contain: strict;
+}
+
+.cosmos-layer.is-visible {
+  opacity: 1;
+}
+
+.cosmos-layer canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.cosmos-launch {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 3000;
+  pointer-events: none;
+  /* Captured on its own during the reveal so the exhaust keeps moving. */
+  view-transition-name: cosmos-launch;
+}
+
+::view-transition-old(cosmos-launch) {
+  display: none;
+}
+
+::view-transition-new(cosmos-launch) {
+  animation: none;
+}
+
+/* Typography */
+
+:root.celestial .error-code {
+  font-family: var(--font-display);
+}
+
+:root.celestial :is(.hero-text, .error-code) {
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  background-size: 200% 100%;
+  background-repeat: repeat-x;
+  animation: cosmos-shimmer 16s linear infinite;
+}
+
+:root.celestial ::selection {
+  background: oklch(0.6 0.2 300 / 0.6);
+  color: oklch(1 0 0);
+}
+
+:root.celestial {
+  scrollbar-color: oklch(0.62 0.12 295 / 0.7) transparent;
+}
+
+/* Text sitting directly on the sky keeps a soft halo for contrast. */
+:root.celestial main,
+:root.celestial footer {
+  text-shadow: 0 1px 14px oklch(0.06 0.03 285 / 0.9);
+}
+
+:root.celestial :is(.hero-text, .error-code) {
+  text-shadow: none;
+}
+
+:root.celestial :focus-visible {
+  outline: 2px solid oklch(0.86 0.12 200);
+  outline-offset: 3px;
+}
+
+/* Glass */
+
+:root.celestial
+  :is(
+    .list,
+    .fallback,
+    .card-container,
+    .honor-card,
+    .skeleton-list,
+    .skeleton-card,
+    .easter-egg-toast
+  ) {
+  background:
+    linear-gradient(140deg, oklch(1 0 0 / 0.09), transparent 45%),
+    var(--card-bg);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.1),
+    0 18px 40px -24px oklch(0.02 0.02 290 / 0.95);
+}
+
+:root.celestial
+  :is(.action-link, .back-link, .skill-chip, .badge, .fallback-link) {
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+  backdrop-filter: blur(10px) saturate(150%);
+}
+
+:root.celestial .card-link:hover .card-container,
+:root.celestial a.card-container:hover {
+  border-color: oklch(0.82 0.12 300 / 0.6);
+}
+
+:root.celestial footer {
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+}
+
+:root.celestial .easter-egg-toast {
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.12),
+    0 0 32px -6px oklch(0.6 0.22 300 / 0.6);
+}
+
+/* Hero and 404 */
+
+:root.celestial :is(.hero-viewport, .not-found-viewport) {
+  background: transparent;
+}
+
+:root.celestial .hex {
+  --b-color: oklch(0.86 0.1 300 / 0.55);
+  --drift: 14px;
+  background: linear-gradient(
+    160deg,
+    oklch(0.55 0.16 295 / 0.18),
+    oklch(0.2 0.08 285 / 0.1)
+  );
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+
+:root.celestial.dark .logo-wrapper {
+  background: oklch(0.3 0.08 290 / 0.35);
+  border-color: oklch(0.86 0.1 300 / 0.3);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  backdrop-filter: blur(10px) saturate(160%);
+  box-shadow:
+    0 10px 30px oklch(0.04 0.03 290 / 0.6),
+    0 0 26px -8px oklch(0.62 0.22 300 / 0.6),
+    inset 0 1px 0 oklch(1 0 0 / 0.16);
+}
+
+:root.celestial.dark .logo-wrapper:hover {
+  border-color: oklch(0.9 0.1 300 / 0.6);
+  box-shadow:
+    0 20px 44px oklch(0.04 0.03 290 / 0.7),
+    0 0 36px -6px oklch(0.7 0.2 300 / 0.75),
+    inset 0 1px 0 oklch(1 0 0 / 0.22);
+}
+
+/* Floating: every element traces its own slow ∞ through space. */
+
+:root.celestial
+  :is(
+    .action-link,
+    .back-link,
+    .book-item,
+    .card-link,
+    .fallback,
+    .honor-card,
+    .list,
+    .skill-chip,
+    .timeline-row > .card-container,
+    .year-watermark
+  ) {
+  animation: cosmos-drift var(--drift-duration, 20s) linear
+    var(--drift-delay, 0s) infinite;
+}
+
+:root.celestial :is(.action-link, .back-link, .skill-chip) {
+  --drift: 2.5px;
+}
+
+:root.celestial .year-watermark {
+  --drift: 12px;
+}
+
+:root.celestial .hex {
+  animation:
+    cosmos-drift var(--drift-duration, 24s) linear var(--drift-delay, 0s)
+      infinite,
+    cosmos-sway calc(var(--drift-duration, 24s) * 1.7) ease-in-out
+      var(--drift-delay, 0s) infinite alternate;
+}
+
+:root.celestial.cosmos-still
+  :is(
+    .action-link,
+    .back-link,
+    .book-item,
+    .card-link,
+    .error-code,
+    .fallback,
+    .hero-text,
+    .hex,
+    .honor-card,
+    .list,
+    .logo-wrapper,
+    .skill-chip,
+    .timeline-row > .card-container,
+    .year-watermark
+  ) {
+  animation-play-state: paused;
+}
+
+/* Bernoulli's lemniscate, sampled every 15°. */
+@keyframes cosmos-drift {
+  0% {
+    translate: calc(var(--drift, 5px) * 1) 0;
+  }
+  4.167% {
+    translate: calc(var(--drift, 5px) * 0.905) calc(var(--drift, 5px) * 0.351);
+  }
+  8.333% {
+    translate: calc(var(--drift, 5px) * 0.693) calc(var(--drift, 5px) * 0.52);
+  }
+  12.5% {
+    translate: calc(var(--drift, 5px) * 0.471) calc(var(--drift, 5px) * 0.5);
+  }
+  16.667% {
+    translate: calc(var(--drift, 5px) * 0.286) calc(var(--drift, 5px) * 0.371);
+  }
+  20.833% {
+    translate: calc(var(--drift, 5px) * 0.134) calc(var(--drift, 5px) * 0.194);
+  }
+  25% {
+    translate: 0 0;
+  }
+  29.167% {
+    translate: calc(var(--drift, 5px) * -0.134) calc(var(--drift, 5px) * -0.194);
+  }
+  33.333% {
+    translate: calc(var(--drift, 5px) * -0.286) calc(var(--drift, 5px) * -0.371);
+  }
+  37.5% {
+    translate: calc(var(--drift, 5px) * -0.471) calc(var(--drift, 5px) * -0.5);
+  }
+  41.667% {
+    translate: calc(var(--drift, 5px) * -0.693) calc(var(--drift, 5px) * -0.52);
+  }
+  45.833% {
+    translate: calc(var(--drift, 5px) * -0.905) calc(var(--drift, 5px) * -0.351);
+  }
+  50% {
+    translate: calc(var(--drift, 5px) * -1) 0;
+  }
+  54.167% {
+    translate: calc(var(--drift, 5px) * -0.905) calc(var(--drift, 5px) * 0.351);
+  }
+  58.333% {
+    translate: calc(var(--drift, 5px) * -0.693) calc(var(--drift, 5px) * 0.52);
+  }
+  62.5% {
+    translate: calc(var(--drift, 5px) * -0.471) calc(var(--drift, 5px) * 0.5);
+  }
+  66.667% {
+    translate: calc(var(--drift, 5px) * -0.286) calc(var(--drift, 5px) * 0.371);
+  }
+  70.833% {
+    translate: calc(var(--drift, 5px) * -0.134) calc(var(--drift, 5px) * 0.194);
+  }
+  75% {
+    translate: 0 0;
+  }
+  79.167% {
+    translate: calc(var(--drift, 5px) * 0.134) calc(var(--drift, 5px) * -0.194);
+  }
+  83.333% {
+    translate: calc(var(--drift, 5px) * 0.286) calc(var(--drift, 5px) * -0.371);
+  }
+  87.5% {
+    translate: calc(var(--drift, 5px) * 0.471) calc(var(--drift, 5px) * -0.5);
+  }
+  91.667% {
+    translate: calc(var(--drift, 5px) * 0.693) calc(var(--drift, 5px) * -0.52);
+  }
+  95.833% {
+    translate: calc(var(--drift, 5px) * 0.905) calc(var(--drift, 5px) * -0.351);
+  }
+  100% {
+    translate: calc(var(--drift, 5px) * 1) 0;
+  }
+}
+
+@keyframes cosmos-sway {
+  from {
+    rotate: -4deg;
+  }
+  to {
+    rotate: 4deg;
+  }
+}
+
+@keyframes cosmos-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Pause control */
+
+.cosmos-still-toggle {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 900;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--header-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: 0 8px 30px var(--header-shadow);
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+:root.celestial .cosmos-still-toggle {
+  display: inline-flex;
+}
+
+.cosmos-still-toggle:hover {
+  color: var(--text);
+  border-color: oklch(0.86 0.1 300 / 0.5);
+}
+
+.cosmos-still-toggle svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.cosmos-still-toggle[aria-pressed="true"] .cosmos-icon-pause,
+.cosmos-still-toggle[aria-pressed="false"] .cosmos-icon-play {
+  display: none;
+}
+
+.cosmos-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Preferences */
+
+@media (prefers-reduced-motion: reduce) {
+  :root.celestial :is(*, ::before, ::after) {
+    animation: none !important;
+  }
+
+  .cosmos-layer {
+    transition: none;
+  }
+
+  .cosmos-still-toggle {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root.celestial :is(*, ::before, ::after) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .cosmos-layer,
+  .cosmos-launch {
+    display: none;
+  }
+
+  :root.celestial :is(main, footer) {
+    text-shadow: none;
+  }
+}

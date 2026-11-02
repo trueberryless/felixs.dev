@@ -53,6 +53,9 @@ const { name } = Astro.props;
     </div>
   </div>
 
+  <div class="hero-dust" aria-hidden="true"></div>
+  <span class="hero-shooting-star" aria-hidden="true"></span>
+
   <div class="floating-logos">
     <div class="logo-parallax" style="top: 15%; left: 35%; --speed: 0.58;">
       <a
@@ -206,6 +209,113 @@ const { name } = Astro.props;
     transform: rotate(120deg);
   }
 
+  /* Two tiled layers of motes; each loop moves exactly one tile so it is seamless. */
+  .hero-dust {
+    --dust: color-mix(in oklch, var(--text-muted) 55%, transparent);
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .hero-dust::before,
+  .hero-dust::after {
+    content: "";
+    position: absolute;
+    inset: -260px;
+    background-image:
+      radial-gradient(circle at 18px 34px, var(--dust) 1px, transparent 1.6px),
+      radial-gradient(
+        circle at 132px 88px,
+        var(--dust) 0.8px,
+        transparent 1.4px
+      ),
+      radial-gradient(
+        circle at 64px 176px,
+        var(--dust) 1.2px,
+        transparent 1.8px
+      ),
+      radial-gradient(
+        circle at 196px 214px,
+        var(--dust) 0.7px,
+        transparent 1.3px
+      );
+    background-size: 240px 240px;
+    opacity: 0.55;
+    animation: dust-drift 90s linear infinite;
+  }
+
+  .hero-dust::after {
+    background-size: 160px 160px;
+    opacity: 0.35;
+    animation-name: dust-drift-small;
+    animation-duration: 140s;
+    animation-direction: reverse;
+  }
+
+  @keyframes dust-drift {
+    to {
+      transform: translate3d(-240px, -240px, 0);
+    }
+  }
+
+  @keyframes dust-drift-small {
+    to {
+      transform: translate3d(-160px, -160px, 0);
+    }
+  }
+
+  :global(:root.celestial) .hero-dust {
+    display: none;
+  }
+
+  .hero-shooting-star {
+    display: none;
+  }
+
+  :global(:root.dark:not(.celestial)) .hero-shooting-star {
+    display: block;
+    position: absolute;
+    top: 14%;
+    left: 74%;
+    z-index: 3;
+    width: 150px;
+    height: 1.5px;
+    border-radius: 1px;
+    background: linear-gradient(
+      90deg,
+      oklch(1 0 0 / 0.9),
+      oklch(0.85 0.05 270 / 0.4) 35%,
+      transparent
+    );
+    transform-origin: left center;
+    rotate: -34.7deg;
+    opacity: 0;
+    pointer-events: none;
+    animation: hero-shoot 19s ease-in 7s infinite;
+  }
+
+  @keyframes hero-shoot {
+    0% {
+      opacity: 0;
+      translate: 0 0;
+      scale: 0.2 1;
+    }
+    1.5% {
+      opacity: 1;
+    }
+    5% {
+      opacity: 0;
+      translate: -300px 208px;
+      scale: 1 1;
+    }
+    100% {
+      opacity: 0;
+      translate: -300px 208px;
+    }
+  }
+
   .floating-logos {
     position: absolute;
     top: 50%;
@@ -332,9 +442,7 @@ const { name } = Astro.props;
   .hero-text {
     position: relative;
     z-index: 2;
-    font-family:
-      "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-      "Liberation Mono", "Courier New", monospace;
+    font-family: var(--font-display);
     font-size: clamp(3.25rem, 8vw, 7.5rem);
     font-weight: 800;
     letter-spacing: -0.08em;
@@ -366,6 +474,15 @@ const { name } = Astro.props;
     .logo-wrapper {
       animation: none !important;
       transition: none;
+    }
+
+    .hero-dust::before,
+    .hero-dust::after {
+      animation: none;
+    }
+
+    .hero-shooting-star {
+      animation: none !important;
     }
 
     .logo-wrapper:hover {
