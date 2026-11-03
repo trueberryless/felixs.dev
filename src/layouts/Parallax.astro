@@ -13,18 +13,31 @@
     let footer: HTMLElement | null = null;
     let isTicking = false;
 
+    const root = document.documentElement;
+
     const update = () => {
+      // The space theme's pause button stops the parallax as well, and eases
+      // everything into place from here.
+      const isPaused = root.classList.contains("cosmos-still");
       const scrollY = window.scrollY;
-      const maxScroll =
-        document.documentElement.scrollHeight - window.innerHeight;
+      const maxScroll = root.scrollHeight - window.innerHeight;
       for (const { element, speed } of layers) {
-        element.style.transform = `translate3d(0, ${scrollY * speed}px, 0)`;
+        element.style.transform = isPaused
+          ? ""
+          : `translate3d(0, ${scrollY * speed}px, 0)`;
       }
       if (footer) {
-        footer.style.transform = `translate3d(0, ${(maxScroll - scrollY) * -0.35}px, 0)`;
+        footer.style.transform = isPaused
+          ? ""
+          : `translate3d(0, ${(maxScroll - scrollY) * -0.35}px, 0)`;
       }
       isTicking = false;
     };
+
+    new MutationObserver(update).observe(root, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
 
     window.addEventListener(
       "scroll",

@@ -1,5 +1,5 @@
 ---
-import { Image } from "astro:assets";
+import { Image, getImage } from "astro:assets";
 
 import astroLight from "@/assets/logos/light/astro.png";
 import npmxLight from "@/assets/logos/light/npmx.png";
@@ -11,6 +11,11 @@ import npmxDark from "@/assets/logos/dark/npmx.png";
 import starlightDark from "@/assets/logos/dark/starlight.png";
 import catppuccinDark from "@/assets/logos/dark/catppuccin.png";
 import emdashDark from "@/assets/logos/dark/emdash-cms.png";
+import astroPrint from "@/assets/logos/planets/astro.png";
+import catppuccinPrint from "@/assets/logos/planets/catppuccin.png";
+import emdashPrint from "@/assets/logos/planets/emdash-cms.png";
+import npmxPrint from "@/assets/logos/planets/npmx.png";
+import starlightPrint from "@/assets/logos/planets/starlight.png";
 
 interface Props {
   name: string;
@@ -77,53 +82,75 @@ const logos = [
     dark: astroDark,
     delay: "0s",
     depth: 0.7,
+    duration: "6s",
     href: "https://astro.build",
     left: "35%",
     light: astroLight,
     name: "Astro",
+    planet: "mars",
+    print: astroPrint,
     top: "15%",
   },
   {
     dark: emdashDark,
     delay: "-4.5s",
     depth: 0.72,
+    duration: "7.2s",
     href: "https://www.emdashcms.com/",
     left: "77%",
     light: emdashLight,
     name: "EmDash",
+    planet: "jupiter",
+    print: emdashPrint,
     top: "25%",
   },
   {
     dark: catppuccinDark,
     delay: "-4.8s",
     depth: 0.75,
+    duration: "6.6s",
     href: "https://catppuccin.com",
     left: "5%",
     light: catppuccinLight,
     name: "Catppuccin",
+    planet: "saturn",
+    print: catppuccinPrint,
     top: "35%",
   },
   {
     dark: npmxDark,
     delay: "-1.4s",
     depth: 0.78,
+    duration: "5.6s",
     href: "https://npmx.dev",
     left: "57%",
     light: npmxLight,
     name: "npmx",
+    planet: "neptune",
+    print: npmxPrint,
     top: "75%",
   },
   {
     dark: starlightDark,
     delay: "-3.1s",
     depth: 0.82,
+    duration: "5.2s",
     href: "https://starlight.astro.build",
     left: "25%",
     light: starlightLight,
     name: "Starlight",
+    planet: "mercury",
+    print: starlightPrint,
     top: "80%",
   },
 ];
+
+// The space theme turns every logo into a planet with the logo printed on
+// its surface. Only a custom property points at the print, so nobody
+// downloads it until a stylesheet uses it.
+const prints = await Promise.all(
+  logos.map((logo) => getImage({ format: "webp", src: logo.print, width: 192 }))
+);
 ---
 
 <section class="hero-viewport" id="hero-section">
@@ -142,7 +169,7 @@ const logos = [
   </div>
 
   <div class="floating-logos">
-    {logos.map((logo) => (
+    {logos.map((logo, index) => (
       <div
         class="logo-parallax parallax"
         style={`top: ${logo.top}; left: ${logo.left}; --depth: ${logo.depth};`}
@@ -150,9 +177,11 @@ const logos = [
         <a
           href={logo.href}
           class="logo-wrapper"
-          style={`animation-delay: ${logo.delay};`}
+          data-planet={logo.planet}
+          style={`animation-delay: ${logo.delay}; animation-duration: ${logo.duration}; --planet-print: url(${prints[index]?.src});`}
           aria-label={logo.name}
         >
+          <span class="planet-print" />
           <Image
             src={logo.light}
             alt={`${logo.name} Logo`}
@@ -338,6 +367,18 @@ const logos = [
       inset 0 1px 0 oklch(1 0 0 / 0.2),
       inset 0 -1px 0 oklch(0 0 0 / 0.4);
     border-color: oklch(0.65 0.01 250);
+  }
+
+  .planet-print {
+    display: none;
+  }
+
+  /* The space theme's styles arrive after the first paint. Until they turn
+     the logos into planets, keep them out of sight instead of showing tiles
+     that change shape. Kept weak on purpose: after a client-side navigation
+     this rule comes after those styles. */
+  :where(:root.space) .logo-wrapper {
+    opacity: 0;
   }
 
   .tech-logo {

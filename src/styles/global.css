@@ -81,12 +81,12 @@
 
 :root.space {
   color-scheme: dark;
-  --font-family:
-    "Exo 2", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-family-heading:
-    "Audiowide", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  /* No emoji fonts here, unlike the other stacks: fontless derives a fallback
+     from every named family and lists them first, and the emoji fonts' wide
+     spaces would rewrap the text until the web fonts arrive. Browsers find
+     an emoji font on their own. */
+  --font-family: "Exo 2", ui-sans-serif, system-ui, sans-serif;
+  --font-family-heading: "Audiowide", ui-sans-serif, system-ui, sans-serif;
   --bg: transparent;
   --bg-subtle: oklch(0.15 0.05 285 / 0.62);
   --card-bg: oklch(0.22 0.07 290 / 0.66);
@@ -166,9 +166,12 @@
   padding: 0;
 }
 
+/* `clip` rather than `hidden`: a hidden overflow would make the body a scroll
+   container that never scrolls, and every view timeline on the page would
+   follow it instead of the page. */
 html,
 body {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 html {
