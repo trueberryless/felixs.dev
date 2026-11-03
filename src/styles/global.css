@@ -79,7 +79,7 @@
   );
 }
 
-:root.celestial {
+:root.space {
   color-scheme: dark;
   --font-family:
     "Exo 2", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
@@ -139,12 +139,12 @@
   background-color: oklch(0.08 0.035 280);
 }
 
-:root.celestial body {
+:root.space body {
   background: transparent;
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  :root.celestial {
+  :root.space {
     --card-bg: oklch(0.22 0.06 288);
     --badge-bg: oklch(0.28 0.07 292);
     --bg-subtle: oklch(0.15 0.05 285);

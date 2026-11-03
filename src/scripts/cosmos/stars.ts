@@ -18,6 +18,12 @@ const SHOOTING_STAR_GAP = [5, 13] as const;
 // Clicks this close together share a direction, so spam-clicking fires
 // parallel arrows instead of stars crossing each other.
 const AIM_LOCK_S = 1.5;
+// Successive clicks fan out sideways from the click, so they fly side by side
+// instead of along one line.
+const SHOT_OFFSETS = [0, 36, -36, 72, -72, 18, -18, 54, -54] as const;
+// Now and then shooting stars travel together.
+const FAMILY_ODDS = { pair: 0.25, trio: 0.07 } as const;
+const FAMILY_SPACING = 26;
 const LINK_RADIUS = 150;
 const MAX_LINKED_STARS = 9;
 const LINKS_PER_STAR = 2;
@@ -92,6 +98,7 @@ export function createSkyEffects(
   let nextShootingStar = 0;
   let aimAngle = 0;
   let lastShotAt = -Infinity;
+  let shotIndex = 0;
   let isDirty = false;
 
   function resize(
@@ -135,14 +142,22 @@ export function createSkyEffects(
 
   /** Fires one shooting star through a point, like an arrow. */
   function fireShot(x: number, y: number, time: number) {
-    if (time - lastShotAt > AIM_LOCK_S) aimAngle = random(0, Math.PI * 2);
+    if (time - lastShotAt > AIM_LOCK_S) {
+      aimAngle = random(0, Math.PI * 2);
+      shotIndex = 0;
+    }
     lastShotAt = time;
+    const offset =
+      SHOT_OFFSETS[shotIndex++ % SHOT_OFFSETS.length]! + random(-6, 6);
     shootingStars.push(
       createShootingStar({
         angle: aimAngle,
         born: time,
         isNear: true,
-        through: { x, y },
+        through: {
+          x: x - Math.sin(aimAngle) * offset,
+          y: y + Math.cos(aimAngle) * offset,
+        },
       })
     );
   }
@@ -224,17 +239,37 @@ export function createSkyEffects(
     if (nextShootingStar === 0) nextShootingStar = time + random(2, 5);
     if (time >= nextShootingStar) {
       // Ambient ones come from anywhere, aimed to cross the upper sky.
-      shootingStars.push(
-        createShootingStar({
-          angle: random(0, Math.PI * 2),
-          born: time,
-          isNear: false,
-          through: {
-            x: random(0.15, 0.85) * width,
-            y: random(0.1, 0.6) * height,
-          },
-        })
-      );
+      const angle = random(0, Math.PI * 2);
+      const through = {
+        x: random(0.15, 0.85) * width,
+        y: random(0.1, 0.6) * height,
+      };
+      const roll = Math.random();
+      const size =
+        roll < FAMILY_ODDS.trio
+          ? 3
+          : roll < FAMILY_ODDS.trio + FAMILY_ODDS.pair
+            ? 2
+            : 1;
+      // A family shares its speed and lifetime, so it stays together.
+      const speed = random(700, 1100);
+      const life = random(0.7, 1.1);
+      for (let member = 0; member < size; member++) {
+        const offset = member * FAMILY_SPACING * (member % 2 ? 1 : -1);
+        shootingStars.push(
+          createShootingStar({
+            angle,
+            born: time + member * random(0.05, 0.25),
+            isNear: false,
+            life,
+            speed,
+            through: {
+              x: through.x - Math.sin(angle) * offset,
+              y: through.y + Math.cos(angle) * offset,
+            },
+          })
+        );
+      }
       nextShootingStar = time + random(...SHOOTING_STAR_GAP);
     }
     shootingStars = shootingStars.filter(
@@ -290,10 +325,10 @@ function createShootingStar({
   angle,
   born,
   isNear,
+  life = random(0.7, 1.1),
+  speed = isNear ? random(1100, 1400) : random(700, 1100),
   through,
 }: ShootingStarInput): ShootingStar {
-  const speed = isNear ? random(1100, 1400) : random(700, 1100);
-  const life = random(0.7, 1.1);
   const vx = Math.cos(angle) * speed;
   const vy = Math.sin(angle) * speed;
 
@@ -375,6 +410,8 @@ interface ShootingStarInput {
   angle: number;
   born: number;
   isNear: boolean;
+  life?: number;
+  speed?: number;
   through: { x: number; y: number };
 }
 

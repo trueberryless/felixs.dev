@@ -1,9 +1,9 @@
 <script is:inline>
   const setDarkMode = () => {
     let theme = localStorage.getItem("theme");
-    const specialThemes = ["celestial"];
+    const specialThemes = ["space"];
     // Special themes build on a base theme so its assets (logos, shadows) apply.
-    const baseThemes = { celestial: "dark" };
+    const baseThemes = { space: "dark" };
 
     if (!theme) {
       theme = window.matchMedia("(prefers-color-scheme: dark)").matches

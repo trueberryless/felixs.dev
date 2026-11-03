@@ -8,7 +8,7 @@
   let isActive = false;
 
   const sync = () => {
-    const shouldBeActive = root.classList.contains("celestial");
+    const shouldBeActive = root.classList.contains("space");
     if (shouldBeActive === isActive) return;
     isActive = shouldBeActive;
     loadCosmos().then((cosmos) => (isActive ? cosmos.start() : cosmos.stop()));

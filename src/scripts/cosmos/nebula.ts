@@ -78,9 +78,11 @@ vec3 paintNebula(vec2 p, float t) {
     vec3(0.07, 0.035, 0.15),
     smoothstep(-0.8, 0.9, -p.y * 0.9 + p.x * 0.25)
   );
-  vec2 q = p * 1.7 + vec2(t * 0.012, -t * 0.006);
+  // The clouds drift on a slow closed loop, so the fog around the planet
+  // keeps coming back instead of wandering off for good.
+  vec2 q = p * 1.7 + vec2(sin(t * 0.011), cos(t * 0.008)) * 0.45;
   vec2 warp = vec2(fbm(q), fbm(q + vec2(5.2, 1.3)));
-  float density = fbm(q + 2.4 * warp + vec2(t * 0.008, 0.0));
+  float density = fbm(q + 2.4 * warp + vec2(sin(t * 0.006), cos(t * 0.009)) * 0.3);
   float band = exp(-pow((p.y + p.x * 0.55 - 0.16) * 2.3, 2.0));
   float nebula = smoothstep(0.32, 0.95, density) * (0.22 + 0.78 * band);
   vec3 tint = mix(vec3(0.3, 0.1, 0.58), vec3(0.78, 0.24, 0.7), smoothstep(0.3, 0.8, warp.x));

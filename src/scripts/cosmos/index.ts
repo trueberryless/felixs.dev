@@ -2,7 +2,7 @@
 // render-blocking stylesheet on every page.
 import { DEPTH, POINTER_REACH, getBodies } from "./bodies";
 import stylesUrl from "./cosmos.css?url";
-import { launchRocket } from "./launch";
+import { landRocket, launchRocket } from "./launch";
 import { createSpaceMusic } from "./music";
 import { createNebula } from "./nebula";
 import { createStarfield } from "./starfield";
@@ -13,7 +13,7 @@ import { createSkyEffects, createStars } from "./stars";
 const FONTS = ['400 1em "Exo 2"', '600 1em "Exo 2"', '700 1em "Space Grotesk"'];
 const FONTS_TIMEOUT_MS = 1500;
 const STILL_CLASS = "cosmos-still";
-const STILL_KEY = "celestialStill";
+const STILL_KEY = "spaceStill";
 // Slow motion (twinkling, the spinning planet) renders at 30 fps; scrolling,
 // the pointer, shooting stars and the warp get every frame. Idle frames are
 // skipped with a timer rather than an early return, because every animation
@@ -55,7 +55,7 @@ export async function start(options?: StartOptions) {
   void prepare();
   await styles;
   // The theme may have been switched away while the styles were loading.
-  if (!document.documentElement.classList.contains("celestial")) return;
+  if (!document.documentElement.classList.contains("space")) return;
 
   scene ??= createScene();
   if (options?.warp) scene.warp(WARP_MS[options.warp]);
@@ -92,6 +92,19 @@ export async function launch(
       void start({ warp: "arrival" });
     },
   });
+}
+
+/**
+ * Brings the rocket back down onto the given element. `onSwitch` applies the
+ * new theme while space covers the page; without motion it applies right away.
+ */
+export async function land(to: Element | null, onSwitch: () => void) {
+  await styles;
+  if (prefersReducedMotion()) {
+    onSwitch();
+    return;
+  }
+  await landRocket(to, { onSwitch });
 }
 
 function createScene(): Scene {
@@ -385,10 +398,16 @@ function getMount() {
 }
 
 function loadStylesheet(href: string) {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = href;
+  // The client router drops head elements the next page does not have. A copy
+  // in the incoming head makes it keep this one instead.
+  document.addEventListener("astro:before-swap", (event) => {
+    event.newDocument.head.append(link.cloneNode());
+  });
+
   return new Promise<void>((resolve) => {
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = href;
     link.addEventListener("load", () => resolve(), { once: true });
     // Without the styles the scene would render unpositioned, but the theme
     // itself still works, so carry on rather than reject.

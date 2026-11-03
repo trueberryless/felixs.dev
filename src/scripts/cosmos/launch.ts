@@ -2,6 +2,10 @@ const ASCENT_MS = 1500;
 // How long after liftoff the sky has turned into space and covers the page.
 const COVER_MS = 1250;
 const REVEAL_MS = 900;
+const LANDING_COVER_MS = 450;
+const LANDING_DESCENT_MS = 1300;
+const LANDING_FLIGHT_MS = 1700;
+const LANDING_FADE_MS = 500;
 const ROCKET_WIDTH = 34;
 const ROCKET_HEIGHT = 60;
 const ROCKET_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 72">
@@ -28,26 +32,8 @@ export function launchRocket(
   from: Element | null,
   { beforeReveal, ignitionMs, onSwitch }: LaunchRocketOptions
 ): Promise<void> {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-  const canvas = document.createElement("canvas");
-  canvas.className = "cosmos-launch";
-  canvas.setAttribute("aria-hidden", "true");
-  canvas.width = Math.round(width * pixelRatio);
-  canvas.height = Math.round(height * pixelRatio);
-  const context = canvas.getContext("2d");
-  context?.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-  const sky = document.createElement("div");
-  sky.className = "cosmos-sky";
-  sky.setAttribute("aria-hidden", "true");
-  document.body.append(sky, canvas);
-
-  const rect = from?.getBoundingClientRect();
-  const padX = rect ? rect.left + rect.width / 2 : width / 2;
-  const padY = rect ? rect.top - 6 : height - 64;
-  const rocket = new Image();
-  rocket.src = `data:image/svg+xml,${encodeURIComponent(ROCKET_SVG)}`;
+  const { canvas, context, height, padX, padY, rocket, sky, width } =
+    createStage(from);
 
   return new Promise((resolve) => {
     let particles: Particle[] = [];
@@ -154,6 +140,151 @@ export function launchRocket(
   });
 }
 
+/**
+ * The way back: space fades in over the page, the theme switches out of
+ * sight, then the sky slides up through the atmosphere while the rocket brakes
+ * down onto the given element.
+ */
+export function landRocket(
+  to: Element | null,
+  { onSwitch }: LandRocketOptions
+): Promise<void> {
+  const { canvas, context, height, padX, padY, rocket, sky, width } =
+    createStage(to);
+  sky.style.transform = "translate3d(0, 0, 0) scaleY(2)";
+
+  return new Promise((resolve) => {
+    let particles: Particle[] = [];
+    let startedAt = 0;
+    let isRocketDone = false;
+    let isSkyDone = false;
+
+    function finish() {
+      if (!isRocketDone || !isSkyDone) return;
+      canvas.remove();
+      sky.remove();
+      resolve();
+    }
+
+    sky
+      .animate([{ opacity: 0 }, { opacity: 1 }], {
+        duration: LANDING_COVER_MS,
+        easing: "ease-in",
+        fill: "forwards",
+      })
+      .finished.then(() => {
+        onSwitch();
+        return new Promise((next) =>
+          requestAnimationFrame(() => requestAnimationFrame(next))
+        );
+      })
+      .then(
+        () =>
+          sky.animate(
+            [
+              { transform: "translate3d(0, 0, 0) scaleY(2)" },
+              { transform: "translate3d(0, -200vh, 0) scaleY(2)" },
+            ],
+            {
+              duration: LANDING_DESCENT_MS,
+              easing: "cubic-bezier(0.2, 0.6, 0.35, 1)",
+              fill: "forwards",
+            }
+          ).finished
+      )
+      .catch(() => onSwitch())
+      .finally(() => {
+        isSkyDone = true;
+        finish();
+      });
+
+    function tick(now: number) {
+      startedAt ||= now;
+      const elapsed = now - startedAt;
+      // Falls fast, then brakes hard just above the pad.
+      const descent = Math.min(1, elapsed / LANDING_FLIGHT_MS);
+      const settle = 1 - (1 - descent) ** 3;
+      const afterTouchdown = elapsed - LANDING_FLIGHT_MS;
+      const x = padX + Math.sin((1 - descent) * Math.PI) * 10;
+      const y = -ROCKET_HEIGHT + (padY + ROCKET_HEIGHT) * settle;
+      const fade = Math.max(
+        0,
+        Math.min(1, 1 - afterTouchdown / LANDING_FADE_MS)
+      );
+
+      if (descent < 1) {
+        particles.push(...createExhaust(x, y, 1, 0.4 + descent * 0.4));
+      } else if (afterTouchdown < 300) {
+        // Dust kicked up at touchdown.
+        particles.push(...createExhaust(x, y, 1, 0));
+      }
+      particles = particles.filter((particle) => particle.age < particle.life);
+
+      context!.clearRect(0, 0, width, height);
+      for (const particle of particles) drawParticle(context!, particle);
+      if (descent < 1) drawFlame(context!, x, y, descent, 0.2 + descent * 0.5);
+      context!.globalAlpha = fade;
+      context!.drawImage(
+        rocket,
+        x - ROCKET_WIDTH / 2,
+        y - ROCKET_HEIGHT,
+        ROCKET_WIDTH,
+        ROCKET_HEIGHT
+      );
+
+      if (fade > 0 || particles.length > 0) {
+        requestAnimationFrame(tick);
+        return;
+      }
+      isRocketDone = true;
+      finish();
+    }
+
+    if (!context) {
+      isRocketDone = true;
+      return;
+    }
+    rocket
+      .decode()
+      .catch(() => undefined)
+      .then(() => requestAnimationFrame(tick));
+  });
+}
+
+// The full-screen canvas for the rocket, the sky behind it and the pad it
+// starts from or lands on.
+function createStage(pad: Element | null) {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  const canvas = document.createElement("canvas");
+  canvas.className = "cosmos-launch";
+  canvas.setAttribute("aria-hidden", "true");
+  canvas.width = Math.round(width * pixelRatio);
+  canvas.height = Math.round(height * pixelRatio);
+  const context = canvas.getContext("2d");
+  context?.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  const sky = document.createElement("div");
+  sky.className = "cosmos-sky";
+  sky.setAttribute("aria-hidden", "true");
+  document.body.append(sky, canvas);
+
+  const rect = pad?.getBoundingClientRect();
+  const rocket = new Image();
+  rocket.src = `data:image/svg+xml,${encodeURIComponent(ROCKET_SVG)}`;
+
+  return {
+    canvas,
+    context,
+    height,
+    padX: rect ? rect.left + rect.width / 2 : width / 2,
+    padY: rect ? rect.top - 6 : height - 64,
+    rocket,
+    sky,
+    width,
+  };
+}
+
 function createExhaust(
   x: number,
   y: number,
@@ -244,5 +375,9 @@ interface LaunchRocketOptions {
   /** Held back until this settles, so the reveal shows the final fonts. */
   beforeReveal: Promise<unknown>;
   ignitionMs: number;
+  onSwitch: () => void;
+}
+
+interface LandRocketOptions {
   onSwitch: () => void;
 }

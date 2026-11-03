@@ -111,9 +111,9 @@ const pathname = Astro.url.pathname;
   import { loadCosmos } from "@/scripts/cosmos/load";
 
   const THEMES = ["light", "dark"];
-  const SPECIAL_THEMES: string[] = ["celestial"];
+  const SPECIAL_THEMES: string[] = ["space"];
   // Special themes build on a base theme so its assets (logos, shadows) apply.
-  const BASE_THEMES: Record<string, string> = { celestial: "dark" };
+  const BASE_THEMES: Record<string, string> = { space: "dark" };
   const UNLOCK_CLICKS = 7;
   const COUNTDOWN = [
     "T-minus 4… running pre-flight checks",
@@ -127,6 +127,12 @@ const pathname = Astro.url.pathname;
     "3, 2, 1… liftoff ✦",
     "Back to the stars ✦",
     "Cleared for takeoff ✦",
+  ];
+  const LANDING_MESSAGES = [
+    "Touchdown. Welcome back to Earth ✦",
+    "The Eagle has landed ✦",
+    "Smooth landing. Mind the gap ✦",
+    "Back on solid ground ✦",
   ];
 
   const root = document.documentElement;
@@ -290,10 +296,32 @@ const pathname = Astro.url.pathname;
     }
   };
 
+  // And every way back is a landing.
+  const returnToEarth = async (theme: string) => {
+    isLaunching = true;
+    showToast(
+      LANDING_MESSAGES[Math.floor(Math.random() * LANDING_MESSAGES.length)],
+      3000
+    );
+
+    try {
+      const cosmos = await loadCosmos();
+      await cosmos.land(toast, () => setTheme(theme));
+    } catch {
+      setTheme(theme);
+    } finally {
+      isLaunching = false;
+    }
+  };
+
   const applyTheme = (theme: string) => {
     if (theme === displayedTheme) return;
     if (SPECIAL_THEMES.includes(theme)) {
       launchIntoSpace(theme);
+      return;
+    }
+    if (SPECIAL_THEMES.includes(displayedTheme)) {
+      returnToEarth(theme);
       return;
     }
     setTheme(theme);
@@ -801,17 +829,17 @@ const pathname = Astro.url.pathname;
     transform: rotate(0deg) scale(1);
   }
 
-  :global(.celestial) .theme-icon.sun {
+  :global(.space) .theme-icon.sun {
     opacity: 0;
     transform: rotate(-90deg) scale(0);
   }
 
-  :global(.celestial) .theme-icon.moon {
+  :global(.space) .theme-icon.moon {
     opacity: 0;
     transform: rotate(-90deg) scale(0);
   }
 
-  :global(.celestial) .theme-icon.orbit {
+  :global(.space) .theme-icon.orbit {
     opacity: 1;
     transform: rotate(0deg) scale(1);
   }

@@ -7,8 +7,9 @@
  * deploy pays the fetch cost while everyone else gets an instant edge hit and
  * revalidation happens in the background.
  *
- * - `Cache-Control`      -> the browser (always revalidate, never store stale
- *                            personal-looking HTML locally).
+ * - `Cache-Control`      -> the browser: reuse a response for a minute, then
+ *                            show it while fetching a fresh copy in the
+ *                            background, so returning visits render instantly.
  * - `CDN-Cache-Control`  -> generic CDNs.
  * - `Netlify-CDN-Cache-Control` -> Netlify's Durable cache (takes precedence
  *                            on Netlify and understands `durable`).
@@ -16,6 +17,7 @@
 
 const ONE_MINUTE = 60;
 const ONE_HOUR = 60 * 60;
+const ONE_WEEK = 60 * 60 * 24 * 7;
 const SIX_MONTHS = 60 * 60 * 24 * 30 * 6;
 
 export interface CacheProfile {
@@ -32,7 +34,7 @@ const cdn = (maxAge: number, swr: number, sie: number) =>
  * weekly deploy is more than enough to keep it fresh.
  */
 export const longLivedCache: CacheProfile = {
-  browser: "public, max-age=0, must-revalidate",
+  browser: `public, max-age=${ONE_MINUTE}, stale-while-revalidate=${ONE_WEEK}`,
   cdn: cdn(ONE_MINUTE, SIX_MONTHS, SIX_MONTHS),
 };
 

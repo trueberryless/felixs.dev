@@ -5,7 +5,7 @@
 export const DEPTH = {
   moon: 0.022,
   nebula: 0.004,
-  planet: 0.03,
+  planet: 0.042,
   starsFar: 0.002,
   starsNear: 0.016,
 } as const;

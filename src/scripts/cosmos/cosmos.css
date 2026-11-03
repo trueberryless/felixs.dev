@@ -1,4 +1,4 @@
-/* Loaded together with the scene, so only visitors of the celestial theme
+/* Loaded together with the scene, so only visitors of the space theme
    ever download these rules. Colors live as tokens in `global.css`.
 
    Performance rules for everything below: animate only transform, translate,
@@ -12,7 +12,7 @@
   z-index: -1;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 1.2s ease;
+  transition: opacity 0.5s ease;
   contain: strict;
 }
 
@@ -64,32 +64,36 @@
 
 /* Typography */
 
-:root.celestial .error-code {
+:root.space .error-code {
   font-family: var(--font-family-heading);
 }
 
-:root.celestial :is(.hero-text, .error-code) {
+:root.space .hero-text {
+  font-size: clamp(3.5rem, 10vw, 9.5rem);
+}
+
+:root.space :is(.hero-text, .error-code) {
   font-weight: 700;
   letter-spacing: -0.045em;
   text-shadow: none;
 }
 
-:root.celestial ::selection {
+:root.space ::selection {
   background: oklch(0.6 0.2 300 / 0.6);
   color: oklch(1 0 0);
 }
 
-:root.celestial {
+:root.space {
   scrollbar-color: oklch(0.62 0.12 295 / 0.7) transparent;
 }
 
 /* Text sitting directly on the sky keeps a soft halo for contrast. */
-:root.celestial main,
-:root.celestial footer {
+:root.space main,
+:root.space footer {
   text-shadow: 0 1px 14px oklch(0.06 0.03 285 / 0.9);
 }
 
-:root.celestial :focus-visible {
+:root.space :focus-visible {
   outline: 2px solid oklch(0.86 0.12 200);
   outline-offset: 3px;
 }
@@ -97,7 +101,7 @@
 /* Tinted glass: a sheen, an inner highlight and a glowing edge over a deep
    translucent violet, without a live backdrop blur. */
 
-:root.celestial
+:root.space
   :is(
     .list,
     .fallback,
@@ -114,20 +118,20 @@
     0 18px 40px -24px oklch(0.02 0.02 290 / 0.95);
 }
 
-:root.celestial .card-link:hover .card-container,
-:root.celestial a.card-container:hover {
+:root.space .card-link:hover .card-container,
+:root.space a.card-container:hover {
   border-color: oklch(0.82 0.12 300 / 0.6);
 }
 
 /* The header floats over the moving sky, so a backdrop blur would be redone
    on every frame. A deeper tint keeps it legible instead. */
-:root.celestial :is(.unified-bg, .pill-bg) {
+:root.space :is(.unified-bg, .pill-bg) {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
 
 /* The toast only shows for a moment, so it can afford a real blur. */
-:root.celestial .easter-egg-toast {
+:root.space .easter-egg-toast {
   -webkit-backdrop-filter: blur(14px) saturate(150%);
   backdrop-filter: blur(14px) saturate(150%);
   box-shadow:
@@ -137,11 +141,11 @@
 
 /* Hero and 404 */
 
-:root.celestial :is(.hero-viewport, .not-found-viewport) {
+:root.space :is(.hero-viewport, .not-found-viewport) {
   background: transparent;
 }
 
-:root.celestial .hex {
+:root.space .hex {
   --b-color: oklch(0.86 0.1 300 / 0.55);
   background: linear-gradient(
     160deg,
@@ -150,7 +154,7 @@
   );
 }
 
-:root.celestial.dark .logo-wrapper {
+:root.space.dark .logo-wrapper {
   background: oklch(0.26 0.08 290 / 0.75);
   border-color: oklch(0.86 0.1 300 / 0.3);
   box-shadow:
@@ -159,7 +163,7 @@
     inset 0 1px 0 oklch(1 0 0 / 0.16);
 }
 
-:root.celestial.dark .logo-wrapper:hover {
+:root.space.dark .logo-wrapper:hover {
   border-color: oklch(0.9 0.1 300 / 0.6);
   box-shadow:
     0 20px 44px oklch(0.04 0.03 290 / 0.7),
@@ -170,7 +174,7 @@
 /* Floating: every element traces its own slow ∞ through space. Phases and
    paces come from `index.ts`. */
 
-:root.celestial
+:root.space
   :is(
     .action-link,
     .back-link,
@@ -187,20 +191,20 @@
     var(--drift-delay, 0s) infinite;
 }
 
-:root.celestial :is(.action-link, .back-link, .skill-chip) {
+:root.space :is(.action-link, .back-link, .skill-chip) {
   animation-name: cosmos-drift-small;
 }
 
-:root.celestial .year-watermark {
+:root.space .year-watermark {
   animation-name: cosmos-drift-large;
 }
 
-:root.celestial .hex {
+:root.space .hex {
   animation: cosmos-drift-hex var(--drift-duration, 24s) linear
     var(--drift-delay, 0s) infinite;
 }
 
-:root.celestial.cosmos-still
+:root.space.cosmos-still
   :is(
     .action-link,
     .back-link,
@@ -462,7 +466,7 @@
     border-color 0.2s ease;
 }
 
-:root.celestial .cosmos-still-toggle {
+:root.space .cosmos-still-toggle {
   display: inline-flex;
 }
 
@@ -495,7 +499,7 @@
 /* Preferences */
 
 @media (prefers-reduced-motion: reduce) {
-  :root.celestial :is(*, ::before, ::after) {
+  :root.space :is(*, ::before, ::after) {
     animation: none !important;
   }
 
@@ -505,7 +509,7 @@
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  :root.celestial :is(*, ::before, ::after) {
+  :root.space :is(*, ::before, ::after) {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
@@ -517,7 +521,7 @@
     display: none;
   }
 
-  :root.celestial :is(main, footer) {
+  :root.space :is(main, footer) {
     text-shadow: none;
   }
 }
