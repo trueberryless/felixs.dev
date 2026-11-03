@@ -159,7 +159,7 @@
    around a sphere ahead of time, so here it is only a mask in the planet's
    ink, lit together with the surface by the shading on top. */
 
-:root.space.dark .logo-wrapper {
+:root.space.dark .logo-wrapper[data-planet] {
   --planet-size: 72px;
 
   position: relative;
@@ -180,7 +180,7 @@
     box-shadow 0.4s ease;
 }
 
-:root.space.dark .logo-wrapper:hover {
+:root.space.dark .logo-wrapper[data-planet]:hover {
   scale: 1.08;
   box-shadow:
     0 0 44px -4px var(--planet-glow),
@@ -202,7 +202,7 @@
 }
 
 /* Sunlight from the upper left: a soft highlight and a night side. */
-:root.space.dark .logo-wrapper::after {
+:root.space.dark .logo-wrapper[data-planet]::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -456,10 +456,13 @@
     .timeline-row > .card-container,
     .year-watermark,
     .hex,
-    .logo-wrapper
+    .logo-wrapper,
+    .parallax,
+    .year-depth,
+    .footer-container
   ) {
-  /* Stopped rather than frozen, so everything lines up again. `index.ts`
-     eases each element back into place. */
+  /* Stopped rather than frozen, so everything lines up again, the parallax
+     included. `index.ts` eases each element back into place. */
   animation: none;
 }
 

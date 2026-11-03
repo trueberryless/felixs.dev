@@ -375,8 +375,9 @@ const prints = await Promise.all(
 
   /* The space theme's styles arrive after the first paint. Until they turn
      the logos into planets, keep them out of sight instead of showing tiles
-     that change shape. */
-  :root.space .logo-wrapper {
+     that change shape. Kept weak on purpose: after a client-side navigation
+     this rule comes after those styles. */
+  :where(:root.space) .logo-wrapper {
     opacity: 0;
   }
 
