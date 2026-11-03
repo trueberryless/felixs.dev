@@ -1,5 +1,5 @@
 ---
-import { Moon, Sun, Star } from "@lucide/astro";
+import { Moon, Orbit, Sun } from "@lucide/astro";
 
 const links = [
   { label: "Blog", url: "/blog" },
@@ -82,13 +82,13 @@ const pathname = Astro.url.pathname;
                 <button
                   id="theme-toggle"
                   class="theme-toggle"
-                  aria-label="Toggle Theme"
+                  aria-label="Switch theme"
                 >
                   <span class="theme-text">Light</span>
-                  <span class="theme-icon-wrapper">
+                  <span class="theme-icon-wrapper" aria-hidden="true">
                     <Sun class="theme-icon sun" width={18} height={18} />
                     <Moon class="theme-icon moon" width={18} height={18} />
-                    <Star class="theme-icon star" width={18} height={18} />
+                    <Orbit class="theme-icon orbit" width={18} height={18} />
                   </span>
                 </button>
               </li>
@@ -99,18 +99,56 @@ const pathname = Astro.url.pathname;
     </div>
   </div>
 </header>
-<div id="easter-egg-toast" class="easter-egg-toast"></div>
+<div
+  id="easter-egg-toast"
+  class="easter-egg-toast"
+  role="status"
+  aria-live="polite"
+  aria-atomic="true"
+></div>
 
 <script>
-  const THEMES = ["light", "dark"];
-  const SPECIAL_THEMES: string[] = [];
+  import { loadCosmos } from "@/scripts/cosmos/load";
 
-  const button = document.querySelector(".menu-toggle");
-  const headerInner = document.querySelector(".header-inner");
-  const header = document.querySelector(".glass-header");
-  const themeToggle = document.getElementById("theme-toggle");
-  const themeText = themeToggle?.querySelector(".theme-text");
-  const toast = document.getElementById("easter-egg-toast");
+  // Dark follows space in the cycle, so nobody lands from space straight into
+  // bright light.
+  const THEMES = ["dark", "light"];
+  // Light is the default look; the other themes add a class to the root.
+  const CLASS_THEMES = THEMES.filter((theme) => theme !== "light");
+  const SPECIAL_THEMES: string[] = ["space"];
+  // Special themes build on a base theme so its assets (logos, shadows) apply.
+  const BASE_THEMES: Record<string, string> = { space: "dark" };
+  const UNLOCK_CLICKS = 7;
+  const COUNTDOWN = [
+    "T-minus 4… running pre-flight checks",
+    "T-minus 3… fasten your seatbelts",
+    "T-minus 2… ignition sequence start",
+    "T-minus 1… hold on to your snacks",
+  ];
+  const RELAUNCH_MESSAGES = [
+    "Engines on. Next stop: the Atmosphere ✦",
+    "Buckle up, we're heading back up ✦",
+    "3, 2, 1… liftoff ✦",
+    "Back to the stars ✦",
+    "Cleared for takeoff ✦",
+  ];
+  const LANDING_MESSAGES = [
+    "Touchdown. Welcome back to Earth ✦",
+    "The Eagle has landed ✦",
+    "Smooth landing. Mind the gap ✦",
+    "Back on solid ground ✦",
+  ];
+
+  const root = document.documentElement;
+  // With the client router this script runs once, while the header is
+  // rendered anew on every page, so its elements are looked up per page.
+  let button: Element | null = null;
+  let headerInner: Element | null = null;
+  let header: Element | null = null;
+  let themeToggle: HTMLElement | null = null;
+  let themeText: Element | null | undefined = null;
+  let toast: HTMLElement | null = null;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   const SCROLL_THRESHOLD_DIVISOR = 1.8;
 
@@ -122,41 +160,46 @@ const pathname = Astro.url.pathname;
   let lastClickTime = 0;
   let toastTimeout: ReturnType<typeof setTimeout> | undefined;
   let isToastVisible = false;
+  let isLaunching = false;
+  let displayedTheme =
+    [...SPECIAL_THEMES, ...CLASS_THEMES].find((t) =>
+      root.classList.contains(t)
+    ) ?? "light";
 
-  const showToast = (message: string) => {
+  const showToast = (message: string, duration = 2000) => {
     if (toast) {
       toast.textContent = message;
       toast.classList.add("show");
       isToastVisible = true;
       clearTimeout(toastTimeout);
       toastTimeout = setTimeout(() => {
-        toast.classList.remove("show");
+        toast?.classList.remove("show");
         isToastVisible = false;
-      }, 2000);
+      }, duration);
     }
   };
 
-  button?.addEventListener("click", (event) => {
+  const onMenuToggleClick = (event: Event) => {
     event.stopPropagation();
 
     if (headerInner?.classList.contains("is-open")) {
       headerInner.classList.remove("is-open");
       headerInner.classList.add("is-closing");
       setTimeout(() => {
-        headerInner.classList.remove("is-closing");
+        headerInner?.classList.remove("is-closing");
       }, 500);
     } else {
       headerInner?.classList.remove("is-closing");
       headerInner?.classList.add("is-open");
     }
-  });
+  };
 
   const closeMenu = () => {
     if (!headerInner?.classList.contains("is-open")) return;
     headerInner.classList.remove("is-open");
     headerInner.classList.add("is-closing");
     setTimeout(() => {
-      headerInner.classList.remove("is-closing");
+      headerInner?.classList.remove("is-closing");
     }, 500);
   };
 
@@ -202,65 +245,113 @@ const pathname = Astro.url.pathname;
     { passive: true }
   );
 
-  window.requestAnimationFrame(() => {
-    window.requestAnimationFrame(() => {
-      header?.classList.add("is-ready");
-      checkScroll();
-    });
-  });
-
-  const setTheme = (theme: string) => {
-    document.documentElement.classList.remove(
-      ...THEMES.slice(1),
-      ...SPECIAL_THEMES
-    );
-    if (theme !== "light") {
-      document.documentElement.classList.add(theme);
-    }
-    if (themeText) {
-      themeText.textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
-    }
-  };
+  const formatTheme = (theme: string) =>
+    theme.charAt(0).toUpperCase() + theme.slice(1);
 
   const syncThemeText = () => {
     const activeTheme =
-      [...THEMES.slice(1), ...SPECIAL_THEMES].find((t) =>
-        document.documentElement.classList.contains(t)
+      [...SPECIAL_THEMES, ...CLASS_THEMES].find((t) =>
+        root.classList.contains(t)
       ) || "light";
-    if (themeText) {
-      themeText.textContent =
-        activeTheme.charAt(0).toUpperCase() + activeTheme.slice(1);
+    const label = formatTheme(activeTheme);
+    if (themeText) themeText.textContent = label;
+    themeToggle?.setAttribute("aria-label", `Switch theme (current: ${label})`);
+  };
+
+  let switchingFrame = 0;
+
+  const setTheme = (theme: string) => {
+    // Without this, every themed element would run its own color transition,
+    // which keeps the main thread busy for the whole switch.
+    root.classList.add("theme-switching");
+    root.classList.remove(...CLASS_THEMES, ...SPECIAL_THEMES);
+    const baseTheme = BASE_THEMES[theme];
+    if (baseTheme) root.classList.add(baseTheme);
+    if (theme !== "light") root.classList.add(theme);
+    displayedTheme = theme;
+    syncThemeText();
+
+    cancelAnimationFrame(switchingFrame);
+    switchingFrame = requestAnimationFrame(() => {
+      switchingFrame = requestAnimationFrame(() =>
+        root.classList.remove("theme-switching")
+      );
+    });
+  };
+
+  // Every trip to a special theme is a rocket launch; the first one, right
+  // after the countdown, gets the long ignition.
+  const launchIntoSpace = async (theme: string, isFirstFlight = false) => {
+    isLaunching = true;
+    const message = isFirstFlight
+      ? "Liftoff! Welcome to the Atmosphere ✦"
+      : RELAUNCH_MESSAGES[Math.floor(Math.random() * RELAUNCH_MESSAGES.length)];
+    showToast(message, isFirstFlight ? 3600 : 3000);
+
+    try {
+      const cosmos = await loadCosmos();
+      // The launch covers the page with the sky while it switches the theme,
+      // so the restyle happens out of sight and needs no view transition.
+      await cosmos.launch(toast, () => setTheme(theme), { isFirstFlight });
+    } catch {
+      setTheme(theme);
+    } finally {
+      isLaunching = false;
     }
   };
 
-  themeToggle?.addEventListener("click", () => {
-    const now = Date.now();
-    if (now - lastClickTime < 400 || isToastVisible) {
-      clickCount++;
-    } else {
-      clickCount = 1;
+  // And every way back is a landing.
+  const returnToEarth = async (theme: string) => {
+    isLaunching = true;
+    showToast(
+      LANDING_MESSAGES[Math.floor(Math.random() * LANDING_MESSAGES.length)],
+      3000
+    );
+
+    try {
+      const cosmos = await loadCosmos();
+      await cosmos.land(toast, () => setTheme(theme));
+    } catch {
+      setTheme(theme);
+    } finally {
+      isLaunching = false;
     }
+  };
+
+  const applyTheme = (theme: string) => {
+    if (theme === displayedTheme) return;
+    if (SPECIAL_THEMES.includes(theme)) {
+      launchIntoSpace(theme);
+      return;
+    }
+    if (SPECIAL_THEMES.includes(displayedTheme)) {
+      returnToEarth(theme);
+      return;
+    }
+    setTheme(theme);
+  };
+
+  const onThemeToggleClick = () => {
+    if (isLaunching) return;
+
+    const now = Date.now();
+    const isBurst = now - lastClickTime < 400 || isToastVisible;
+    clickCount = isBurst ? clickCount + 1 : 1;
     lastClickTime = now;
 
     if (!specialThemesUnlocked) {
-      if (clickCount >= 7) {
-        if (SPECIAL_THEMES.length === 0) {
-          showToast("No special themes configured yet.");
-          clickCount = 0;
-        } else {
-          specialThemesUnlocked = true;
-          localStorage.setItem("specialThemesUnlocked", "true");
-          showToast("Special themes unlocked!");
-          currentTheme = SPECIAL_THEMES[0];
-          setTheme(currentTheme);
-          localStorage.setItem("theme", currentTheme);
-          return;
-        }
-      } else if (clickCount >= 3) {
-        if (SPECIAL_THEMES.length > 0) {
-          const remaining = 7 - clickCount;
-          showToast(`${remaining} more clicks...`);
-        }
+      if (clickCount >= UNLOCK_CLICKS) {
+        specialThemesUnlocked = true;
+        localStorage.setItem("specialThemesUnlocked", "true");
+        currentTheme = SPECIAL_THEMES[0];
+        localStorage.setItem("theme", currentTheme);
+        launchIntoSpace(currentTheme, true);
+        return;
+      }
+      if (clickCount >= UNLOCK_CLICKS - COUNTDOWN.length) {
+        // Warm up the launch pad while the countdown is still running.
+        loadCosmos().then((cosmos) => cosmos.prepare());
+        showToast(COUNTDOWN[clickCount - (UNLOCK_CLICKS - COUNTDOWN.length)]);
       }
     }
 
@@ -271,12 +362,50 @@ const pathname = Astro.url.pathname;
 
     const currentIndex = availableThemes.indexOf(currentTheme);
     currentTheme = availableThemes[(currentIndex + 1) % availableThemes.length];
-
-    setTheme(currentTheme);
     localStorage.setItem("theme", currentTheme);
-  });
 
-  syncThemeText();
+    applyTheme(currentTheme);
+  };
+
+  // Fetch the space scene before a click that will need it, so its reveal
+  // never waits for the network.
+  const prepareNextTheme = () => {
+    if (!specialThemesUnlocked) return;
+    const availableThemes = [...THEMES, ...SPECIAL_THEMES];
+    const nextTheme =
+      availableThemes[
+        (availableThemes.indexOf(currentTheme) + 1) % availableThemes.length
+      ];
+    if (SPECIAL_THEMES.includes(nextTheme)) {
+      loadCosmos().then((cosmos) => cosmos.prepare());
+    }
+  };
+
+  const bindPage = () => {
+    button = document.querySelector(".menu-toggle");
+    headerInner = document.querySelector(".header-inner");
+    header = document.querySelector(".glass-header");
+    themeToggle = document.getElementById("theme-toggle");
+    themeText = themeToggle?.querySelector(".theme-text");
+    toast = document.getElementById("easter-egg-toast");
+    isToastVisible = false;
+
+    button?.addEventListener("click", onMenuToggleClick);
+    themeToggle?.addEventListener("click", onThemeToggleClick);
+    themeToggle?.addEventListener("pointerenter", prepareNextTheme);
+    themeToggle?.addEventListener("focus", prepareNextTheme);
+    syncThemeText();
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        header?.classList.add("is-ready");
+        checkScroll();
+      });
+    });
+  };
+
+  // Fires on the first load and after every client-side navigation.
+  document.addEventListener("astro:page-load", bindPage);
 </script>
 
 <style>
@@ -660,6 +789,12 @@ const pathname = Astro.url.pathname;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    transition: scale 0.12s ease;
+  }
+
+  /* Immediate feedback on press, before the new theme is painted. */
+  .theme-toggle:active .theme-icon-wrapper {
+    scale: 0.8;
   }
 
   .theme-icon {
@@ -683,7 +818,7 @@ const pathname = Astro.url.pathname;
     transform: rotate(90deg) scale(0);
   }
 
-  .theme-icon.star {
+  .theme-icon.orbit {
     opacity: 0;
     transform: rotate(90deg) scale(0);
   }
@@ -698,17 +833,17 @@ const pathname = Astro.url.pathname;
     transform: rotate(0deg) scale(1);
   }
 
-  :global(.celestial) .theme-icon.sun {
+  :global(.space) .theme-icon.sun {
     opacity: 0;
     transform: rotate(-90deg) scale(0);
   }
 
-  :global(.celestial) .theme-icon.moon {
+  :global(.space) .theme-icon.moon {
     opacity: 0;
     transform: rotate(-90deg) scale(0);
   }
 
-  :global(.celestial) .theme-icon.star {
+  :global(.space) .theme-icon.orbit {
     opacity: 1;
     transform: rotate(0deg) scale(1);
   }
@@ -716,6 +851,8 @@ const pathname = Astro.url.pathname;
   .easter-egg-toast {
     position: fixed;
     bottom: 24px;
+    max-width: calc(100vw - 136px);
+    text-align: center;
     left: 50%;
     transform: translateX(-50%) translateY(20px);
     background: var(--card-bg);
@@ -727,8 +864,11 @@ const pathname = Astro.url.pathname;
     font-weight: 500;
     opacity: 0;
     pointer-events: none;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    z-index: 2000;
+    transition:
+      opacity 0.3s ease,
+      transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* Above the launch sky, since the toast is the launch pad. */
+    z-index: 3100;
     box-shadow: 0 4px 12px var(--header-shadow);
   }
 

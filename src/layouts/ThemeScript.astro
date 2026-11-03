@@ -1,7 +1,9 @@
 <script is:inline>
   const setDarkMode = () => {
     let theme = localStorage.getItem("theme");
-    const specialThemes = [];
+    const specialThemes = ["space"];
+    // Special themes build on a base theme so its assets (logos, shadows) apply.
+    const baseThemes = { space: "dark" };
 
     if (!theme) {
       theme = window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -12,11 +14,22 @@
 
     document.documentElement.classList.remove("dark", ...specialThemes);
 
+    if (baseThemes[theme]) {
+      document.documentElement.classList.add(baseThemes[theme]);
+    }
+
     if (theme && theme !== "light") {
       document.documentElement.classList.add(theme);
     }
   };
 
   setDarkMode();
+  // The client router replaces the root's classes with the next page's. Carry
+  // them over before the swap, so the theme (and its running scene) never
+  // drops out for a moment.
+  document.addEventListener("astro:before-swap", (event) => {
+    event.newDocument.documentElement.className =
+      document.documentElement.className;
+  });
   document.addEventListener("astro:after-swap", setDarkMode);
 </script>

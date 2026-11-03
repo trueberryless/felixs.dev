@@ -37,14 +37,14 @@ const isExternal =
     border-radius: var(--radius-pill);
     text-decoration: none;
     transition:
-      transform 0.2s ease,
+      translate 0.2s ease,
       box-shadow 0.2s ease,
       background 0.2s ease,
       border-color 0.2s ease;
   }
 
   .action-link:hover {
-    transform: translateY(-2px);
+    translate: 0 -2px;
     box-shadow: var(--lift-shadow);
     background: var(--card-bg);
     border-color: var(--text-muted);
@@ -71,7 +71,7 @@ const isExternal =
       transition: none;
     }
     .action-link:hover {
-      transform: none;
+      translate: none;
     }
     .action-link:hover .arrow,
     .action-link:hover .ext-icon {

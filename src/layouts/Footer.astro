@@ -62,8 +62,7 @@ const socialLinks = [
     <div class="legal">
       <span>{legal.copyright}</span>
       <span>
-        Content:
-        <a href={legal.licenseUrl}>{legal.licenseLabel}</a>
+        Content: <a href={legal.licenseUrl}>{legal.licenseLabel}</a>
       </span>
       <span class="powered-by">
         Powered by <a href="https://atproto.com/">ATproto</a>,{" "}
@@ -73,20 +72,6 @@ const socialLinks = [
     </div>
   </div>
 </footer>
-
-<script>
-  const updateMaxScroll = () => {
-    const maxScroll =
-      document.documentElement.scrollHeight - window.innerHeight;
-    document.documentElement.style.setProperty(
-      "--max-scroll",
-      `${maxScroll}px`
-    );
-  };
-  window.addEventListener("resize", updateMaxScroll);
-  new ResizeObserver(updateMaxScroll).observe(document.body);
-  updateMaxScroll();
-</script>
 
 <style>
   footer {
@@ -111,12 +96,45 @@ const socialLinks = [
     text-align: center;
     max-width: 1440px;
     margin: 0 auto;
-    will-change: transform;
-    transform: translate3d(
-      0,
-      calc((var(--max-scroll, 0px) - var(--scroll-y, 0px)) * -0.35),
-      0
-    );
+  }
+
+  /* The content trails the page by 35% while the footer scrolls into view,
+     driven by the compositor. The offsets include the footer's padding. */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      footer {
+        view-timeline: --footer block;
+      }
+
+      .footer-container {
+        will-change: transform;
+        animation: footer-reveal linear both;
+        animation-range: entry 0% entry 100%;
+      }
+
+      /* Separate on purpose, see the parallax in \`Hero.astro\`. */
+      .footer-container.footer-container {
+        animation-timeline: --footer;
+      }
+
+      @media (max-width: 768px) {
+        .footer-container {
+          animation-name: footer-reveal-compact;
+        }
+      }
+    }
+  }
+
+  @keyframes footer-reveal {
+    from {
+      transform: translate3d(0, calc(-35% - 45px), 0);
+    }
+  }
+
+  @keyframes footer-reveal-compact {
+    from {
+      transform: translate3d(0, calc(-35% - 22px), 0);
+    }
   }
 
   .nav-groups {

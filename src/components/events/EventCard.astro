@@ -186,7 +186,7 @@ const extraCount =
     padding: 0;
     transition:
       box-shadow 0.2s ease,
-      transform 0.2s ease,
+      translate 0.2s ease,
       border-color 0.2s ease;
     min-width: 0;
     text-decoration: none;
@@ -196,7 +196,7 @@ const extraCount =
   }
 
   .card-container:hover {
-    transform: translateY(-2px);
+    translate: 0 -2px;
     box-shadow: var(--lift-shadow);
     border-color: var(--text-muted);
   }
@@ -206,7 +206,7 @@ const extraCount =
       transition: none;
     }
     .card-container:hover {
-      transform: none;
+      translate: none;
       box-shadow: none;
       border-color: var(--border);
     }

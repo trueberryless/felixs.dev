@@ -24,7 +24,7 @@ import LayoutMinimal from "@/layouts/LayoutMinimal.astro";
     </div>
 
     <div class="content-wrapper-404">
-      <div class="error-blur" aria-hidden="true"></div>
+      <div class="error-halo" aria-hidden="true"></div>
       <h1 class="error-code">404</h1>
       <p class="error-text">Page not found</p>
       <a href="/" class="back-link">
@@ -110,7 +110,7 @@ import LayoutMinimal from "@/layouts/LayoutMinimal.astro";
     gap: 1.5rem;
   }
 
-  .error-blur {
+  .error-halo {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -119,14 +119,11 @@ import LayoutMinimal from "@/layouts/LayoutMinimal.astro";
     min-height: 220px;
     transform: translate(-50%, -50%);
     z-index: 1;
-    backdrop-filter: blur(60px);
-    -webkit-backdrop-filter: blur(60px);
-    -webkit-mask-image: radial-gradient(
-      ellipse at center,
-      black 40%,
-      transparent 80%
+    background: radial-gradient(
+      ellipse closest-side,
+      var(--bg-subtle) 45%,
+      transparent
     );
-    mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
     pointer-events: none;
   }
 
@@ -173,31 +170,23 @@ import LayoutMinimal from "@/layouts/LayoutMinimal.astro";
     border-radius: var(--radius-pill);
     font-weight: 500;
     transition:
-      transform 0.2s ease,
+      translate 0.2s ease,
       box-shadow 0.2s ease,
       background 0.2s ease,
       border-color 0.2s ease;
     margin-top: 1rem;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     z-index: 2;
   }
 
   .back-link:hover {
     background: var(--card-bg);
-    transform: translateY(-2px);
+    translate: 0 -2px;
     box-shadow: var(--lift-shadow);
     border-color: var(--text-muted);
   }
 
   @media (prefers-reduced-transparency: reduce) {
-    .error-blur {
-      display: none;
-    }
-
     .back-link {
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
       background: var(--bg-subtle);
     }
   }

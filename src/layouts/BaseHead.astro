@@ -1,4 +1,6 @@
 ---
+import { ClientRouter } from "astro:transitions";
+
 import ThemeScript from "./ThemeScript.astro";
 
 interface Props {
@@ -39,6 +41,7 @@ const ogImage = new URL("/og-image.png", Astro.site ?? Astro.url);
 <meta name="twitter:image" content={ogImage} />
 
 <ThemeScript />
+<ClientRouter />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link

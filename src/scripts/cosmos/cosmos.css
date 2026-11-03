@@ -1,0 +1,527 @@
+/* Loaded together with the scene, so only visitors of the space theme
+   ever download these rules. Colors live as tokens in `global.css`.
+
+   Performance rules for everything below: animate only transform, translate,
+   rotate and opacity with literal keyframes, so the compositor runs them; and
+   keep backdrop blurs to small surfaces, because every blurred element is
+   re-blurred on each frame the sky behind it moves. */
+
+.cosmos-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  contain: strict;
+}
+
+.cosmos-layer.is-visible {
+  opacity: 1;
+}
+
+.cosmos-layer canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Launch: the rocket climbs over a sky that darkens from atmosphere into
+   space. The sky is drawn at half height and scaled up to keep its texture
+   small. */
+.cosmos-launch,
+.cosmos-sky {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cosmos-launch {
+  width: 100vw;
+  height: 100vh;
+  z-index: 3000;
+}
+
+.cosmos-sky {
+  bottom: auto;
+  height: 100vh;
+  z-index: 2900;
+  transform-origin: top;
+  transform: translate3d(0, -200vh, 0) scaleY(2);
+  background: linear-gradient(
+    to bottom,
+    oklch(0.08 0.035 280) 0%,
+    oklch(0.08 0.035 280) 50%,
+    oklch(0.16 0.08 285) 58%,
+    oklch(0.3 0.15 280) 67%,
+    oklch(0.5 0.16 265) 77%,
+    oklch(0.78 0.1 230 / 0.85) 88%,
+    oklch(0.9 0.05 220 / 0) 100%
+  );
+}
+
+/* Typography */
+
+:root.space .error-code {
+  font-family: var(--font-family-heading);
+}
+
+:root.space .hero-text {
+  font-size: clamp(3.5rem, 10vw, 9.5rem);
+}
+
+:root.space :is(.hero-text, .error-code) {
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  text-shadow: none;
+}
+
+:root.space ::selection {
+  background: oklch(0.6 0.2 300 / 0.6);
+  color: oklch(1 0 0);
+}
+
+:root.space {
+  scrollbar-color: oklch(0.62 0.12 295 / 0.7) transparent;
+}
+
+/* Text sitting directly on the sky keeps a soft halo for contrast. */
+:root.space main,
+:root.space footer {
+  text-shadow: 0 1px 14px oklch(0.06 0.03 285 / 0.9);
+}
+
+:root.space :focus-visible {
+  outline: 2px solid oklch(0.86 0.12 200);
+  outline-offset: 3px;
+}
+
+/* Tinted glass: a sheen, an inner highlight and a glowing edge over a deep
+   translucent violet, without a live backdrop blur. */
+
+:root.space
+  :is(
+    .list,
+    .fallback,
+    .card-container,
+    .honor-card,
+    .skeleton-list,
+    .skeleton-card
+  ) {
+  background:
+    linear-gradient(140deg, oklch(1 0 0 / 0.1), transparent 40%), var(--card-bg);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.12),
+    inset 0 0 0 1px oklch(0.8 0.12 300 / 0.06),
+    0 18px 40px -24px oklch(0.02 0.02 290 / 0.95);
+}
+
+:root.space .card-link:hover .card-container,
+:root.space a.card-container:hover {
+  border-color: oklch(0.82 0.12 300 / 0.6);
+}
+
+/* The header floats over the moving sky, so a backdrop blur would be redone
+   on every frame. A deeper tint keeps it legible instead. */
+:root.space :is(.unified-bg, .pill-bg) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* The toast only shows for a moment, so it can afford a real blur. */
+:root.space .easter-egg-toast {
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.12),
+    0 0 32px -6px oklch(0.6 0.22 300 / 0.6);
+}
+
+/* Hero and 404 */
+
+:root.space :is(.hero-viewport, .not-found-viewport) {
+  background: transparent;
+}
+
+:root.space .hex {
+  --b-color: oklch(0.86 0.1 300 / 0.55);
+  background: linear-gradient(
+    160deg,
+    oklch(0.42 0.14 295 / 0.32),
+    oklch(0.16 0.07 285 / 0.5)
+  );
+}
+
+:root.space.dark .logo-wrapper {
+  background: oklch(0.26 0.08 290 / 0.75);
+  border-color: oklch(0.86 0.1 300 / 0.3);
+  box-shadow:
+    0 10px 30px oklch(0.04 0.03 290 / 0.6),
+    0 0 26px -8px oklch(0.62 0.22 300 / 0.6),
+    inset 0 1px 0 oklch(1 0 0 / 0.16);
+}
+
+:root.space.dark .logo-wrapper:hover {
+  border-color: oklch(0.9 0.1 300 / 0.6);
+  box-shadow:
+    0 20px 44px oklch(0.04 0.03 290 / 0.7),
+    0 0 36px -6px oklch(0.7 0.2 300 / 0.75),
+    inset 0 1px 0 oklch(1 0 0 / 0.22);
+}
+
+/* Floating: every element traces its own slow ∞ through space. Phases and
+   paces come from `index.ts`. */
+
+:root.space
+  :is(
+    .action-link,
+    .back-link,
+    .book-item,
+    .card-link,
+    .fallback,
+    .honor-card,
+    .list,
+    .skill-chip,
+    .timeline-row > .card-container,
+    .year-watermark
+  ) {
+  animation: cosmos-drift var(--drift-duration, 20s) linear
+    var(--drift-delay, 0s) infinite;
+}
+
+:root.space :is(.action-link, .back-link, .skill-chip) {
+  animation-name: cosmos-drift-small;
+}
+
+:root.space .year-watermark {
+  animation-name: cosmos-drift-large;
+}
+
+:root.space .hex {
+  animation: cosmos-drift-hex var(--drift-duration, 24s) linear
+    var(--drift-delay, 0s) infinite;
+}
+
+:root.space.cosmos-still
+  :is(
+    .action-link,
+    .back-link,
+    .book-item,
+    .card-link,
+    .fallback,
+    .honor-card,
+    .list,
+    .skill-chip,
+    .timeline-row > .card-container,
+    .year-watermark,
+    .hex,
+    .logo-wrapper
+  ) {
+  animation-play-state: paused;
+}
+
+/* Bernoulli's lemniscate in three sizes, sampled every 22.5°. Keyframes
+   animate `transform` with literal values so the compositor runs them; hover
+   lifts on drifting elements use `translate`, which composes with it. The
+   hexagons also tilt as they go. */
+@keyframes cosmos-drift {
+  0% {
+    transform: translate(5px, 0);
+  }
+  6.25% {
+    transform: translate(4.03px, 2.31px);
+  }
+  12.5% {
+    transform: translate(2.36px, 2.5px);
+  }
+  18.75% {
+    transform: translate(1.03px, 1.43px);
+  }
+  25% {
+    transform: translate(0, 0);
+  }
+  31.25% {
+    transform: translate(-1.03px, -1.43px);
+  }
+  37.5% {
+    transform: translate(-2.36px, -2.5px);
+  }
+  43.75% {
+    transform: translate(-4.03px, -2.31px);
+  }
+  50% {
+    transform: translate(-5px, 0);
+  }
+  56.25% {
+    transform: translate(-4.03px, 2.31px);
+  }
+  62.5% {
+    transform: translate(-2.36px, 2.5px);
+  }
+  68.75% {
+    transform: translate(-1.03px, 1.43px);
+  }
+  75% {
+    transform: translate(0, 0);
+  }
+  81.25% {
+    transform: translate(1.03px, -1.43px);
+  }
+  87.5% {
+    transform: translate(2.36px, -2.5px);
+  }
+  93.75% {
+    transform: translate(4.03px, -2.31px);
+  }
+  100% {
+    transform: translate(5px, 0);
+  }
+}
+
+@keyframes cosmos-drift-small {
+  0% {
+    transform: translate(2.5px, 0);
+  }
+  6.25% {
+    transform: translate(2.01px, 1.16px);
+  }
+  12.5% {
+    transform: translate(1.18px, 1.25px);
+  }
+  18.75% {
+    transform: translate(0.52px, 0.72px);
+  }
+  25% {
+    transform: translate(0, 0);
+  }
+  31.25% {
+    transform: translate(-0.52px, -0.72px);
+  }
+  37.5% {
+    transform: translate(-1.18px, -1.25px);
+  }
+  43.75% {
+    transform: translate(-2.01px, -1.16px);
+  }
+  50% {
+    transform: translate(-2.5px, 0);
+  }
+  56.25% {
+    transform: translate(-2.01px, 1.16px);
+  }
+  62.5% {
+    transform: translate(-1.18px, 1.25px);
+  }
+  68.75% {
+    transform: translate(-0.52px, 0.72px);
+  }
+  75% {
+    transform: translate(0, 0);
+  }
+  81.25% {
+    transform: translate(0.52px, -0.72px);
+  }
+  87.5% {
+    transform: translate(1.18px, -1.25px);
+  }
+  93.75% {
+    transform: translate(2.01px, -1.16px);
+  }
+  100% {
+    transform: translate(2.5px, 0);
+  }
+}
+
+@keyframes cosmos-drift-large {
+  0% {
+    transform: translate(13px, 0);
+  }
+  6.25% {
+    transform: translate(10.48px, 6.01px);
+  }
+  12.5% {
+    transform: translate(6.13px, 6.5px);
+  }
+  18.75% {
+    transform: translate(2.68px, 3.72px);
+  }
+  25% {
+    transform: translate(0, 0);
+  }
+  31.25% {
+    transform: translate(-2.68px, -3.72px);
+  }
+  37.5% {
+    transform: translate(-6.13px, -6.5px);
+  }
+  43.75% {
+    transform: translate(-10.48px, -6.01px);
+  }
+  50% {
+    transform: translate(-13px, 0);
+  }
+  56.25% {
+    transform: translate(-10.48px, 6.01px);
+  }
+  62.5% {
+    transform: translate(-6.13px, 6.5px);
+  }
+  68.75% {
+    transform: translate(-2.68px, 3.72px);
+  }
+  75% {
+    transform: translate(0, 0);
+  }
+  81.25% {
+    transform: translate(2.68px, -3.72px);
+  }
+  87.5% {
+    transform: translate(6.13px, -6.5px);
+  }
+  93.75% {
+    transform: translate(10.48px, -6.01px);
+  }
+  100% {
+    transform: translate(13px, 0);
+  }
+}
+
+@keyframes cosmos-drift-hex {
+  0% {
+    transform: translate(13px, 0) rotate(0deg);
+  }
+  6.25% {
+    transform: translate(10.48px, 6.01px) rotate(1.53deg);
+  }
+  12.5% {
+    transform: translate(6.13px, 6.5px) rotate(2.83deg);
+  }
+  18.75% {
+    transform: translate(2.68px, 3.72px) rotate(3.7deg);
+  }
+  25% {
+    transform: translate(0, 0) rotate(4deg);
+  }
+  31.25% {
+    transform: translate(-2.68px, -3.72px) rotate(3.7deg);
+  }
+  37.5% {
+    transform: translate(-6.13px, -6.5px) rotate(2.83deg);
+  }
+  43.75% {
+    transform: translate(-10.48px, -6.01px) rotate(1.53deg);
+  }
+  50% {
+    transform: translate(-13px, 0) rotate(0deg);
+  }
+  56.25% {
+    transform: translate(-10.48px, 6.01px) rotate(-1.53deg);
+  }
+  62.5% {
+    transform: translate(-6.13px, 6.5px) rotate(-2.83deg);
+  }
+  68.75% {
+    transform: translate(-2.68px, 3.72px) rotate(-3.7deg);
+  }
+  75% {
+    transform: translate(0, 0) rotate(-4deg);
+  }
+  81.25% {
+    transform: translate(2.68px, -3.72px) rotate(-3.7deg);
+  }
+  87.5% {
+    transform: translate(6.13px, -6.5px) rotate(-2.83deg);
+  }
+  93.75% {
+    transform: translate(10.48px, -6.01px) rotate(-1.53deg);
+  }
+  100% {
+    transform: translate(13px, 0) rotate(0deg);
+  }
+}
+
+/* Pause control */
+
+.cosmos-still-toggle {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 900;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--header-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  box-shadow: 0 8px 30px var(--header-shadow);
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+:root.space .cosmos-still-toggle {
+  display: inline-flex;
+}
+
+.cosmos-still-toggle:hover {
+  color: var(--text);
+  border-color: oklch(0.86 0.1 300 / 0.5);
+}
+
+.cosmos-still-toggle svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.cosmos-still-toggle[aria-pressed="true"] .cosmos-icon-pause,
+.cosmos-still-toggle[aria-pressed="false"] .cosmos-icon-play {
+  display: none;
+}
+
+.cosmos-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Preferences */
+
+@media (prefers-reduced-motion: reduce) {
+  :root.space :is(*, ::before, ::after) {
+    animation: none !important;
+  }
+
+  .cosmos-layer {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root.space :is(*, ::before, ::after) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .cosmos-layer,
+  .cosmos-launch {
+    display: none;
+  }
+
+  :root.space :is(main, footer) {
+    text-shadow: none;
+  }
+}

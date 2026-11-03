@@ -1,0 +1,22 @@
+<!-- Kept across client-side navigations, so the scene and its music never stop. -->
+<div id="cosmos" transition:persist="cosmos"></div>
+
+<script>
+  import { loadCosmos } from "@/scripts/cosmos/load";
+
+  const root = document.documentElement;
+  let isActive = false;
+
+  const sync = () => {
+    const shouldBeActive = root.classList.contains("space");
+    if (shouldBeActive === isActive) return;
+    isActive = shouldBeActive;
+    loadCosmos().then((cosmos) => (isActive ? cosmos.start() : cosmos.stop()));
+  };
+
+  new MutationObserver(sync).observe(root, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  sync();
+</script>
