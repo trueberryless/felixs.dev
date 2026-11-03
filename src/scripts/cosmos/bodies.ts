@@ -5,7 +5,7 @@
 export const DEPTH = {
   moon: 0.022,
   nebula: 0.004,
-  planet: 0.042,
+  planet: 0.062,
   starsFar: 0.002,
   starsNear: 0.016,
 } as const;
@@ -13,7 +13,7 @@ export const DEPTH = {
 export const POINTER_REACH = 420;
 
 /** The furthest the planet rises on long pages, as a share of the viewport. */
-const MAX_PLANET_RISE = 0.22;
+const MAX_PLANET_RISE = 0.42;
 
 /**
  * Positions the planet and the moon in CSS pixels. The nebula shader paints
