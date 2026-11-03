@@ -110,7 +110,11 @@ const pathname = Astro.url.pathname;
 <script>
   import { loadCosmos } from "@/scripts/cosmos/load";
 
-  const THEMES = ["light", "dark"];
+  // Dark follows space in the cycle, so nobody lands from space straight into
+  // bright light.
+  const THEMES = ["dark", "light"];
+  // Light is the default look; the other themes add a class to the root.
+  const CLASS_THEMES = THEMES.filter((theme) => theme !== "light");
   const SPECIAL_THEMES: string[] = ["space"];
   // Special themes build on a base theme so its assets (logos, shadows) apply.
   const BASE_THEMES: Record<string, string> = { space: "dark" };
@@ -158,7 +162,7 @@ const pathname = Astro.url.pathname;
   let isToastVisible = false;
   let isLaunching = false;
   let displayedTheme =
-    [...SPECIAL_THEMES, ...THEMES.slice(1)].find((t) =>
+    [...SPECIAL_THEMES, ...CLASS_THEMES].find((t) =>
       root.classList.contains(t)
     ) ?? "light";
 
@@ -246,7 +250,7 @@ const pathname = Astro.url.pathname;
 
   const syncThemeText = () => {
     const activeTheme =
-      [...SPECIAL_THEMES, ...THEMES.slice(1)].find((t) =>
+      [...SPECIAL_THEMES, ...CLASS_THEMES].find((t) =>
         root.classList.contains(t)
       ) || "light";
     const label = formatTheme(activeTheme);
@@ -260,7 +264,7 @@ const pathname = Astro.url.pathname;
     // Without this, every themed element would run its own color transition,
     // which keeps the main thread busy for the whole switch.
     root.classList.add("theme-switching");
-    root.classList.remove(...THEMES.slice(1), ...SPECIAL_THEMES);
+    root.classList.remove(...CLASS_THEMES, ...SPECIAL_THEMES);
     const baseTheme = BASE_THEMES[theme];
     if (baseTheme) root.classList.add(baseTheme);
     if (theme !== "light") root.classList.add(theme);
