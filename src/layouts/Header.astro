@@ -115,8 +115,6 @@ const pathname = Astro.url.pathname;
   // Special themes build on a base theme so its assets (logos, shadows) apply.
   const BASE_THEMES: Record<string, string> = { celestial: "dark" };
   const UNLOCK_CLICKS = 7;
-  // Clicks closer together than this count as one burst.
-  const BURST_MS = 400;
   const COUNTDOWN = [
     "T-minus 4… running pre-flight checks",
     "T-minus 3… fasten your seatbelts",
@@ -151,8 +149,6 @@ const pathname = Astro.url.pathname;
   let toastTimeout: ReturnType<typeof setTimeout> | undefined;
   let isToastVisible = false;
   let isLaunching = false;
-  let activeTransition: ViewTransition | undefined;
-  let settleTimer: ReturnType<typeof setTimeout> | undefined;
   let displayedTheme =
     [...SPECIAL_THEMES, ...THEMES.slice(1)].find((t) =>
       root.classList.contains(t)
@@ -196,7 +192,6 @@ const pathname = Astro.url.pathname;
   };
 
   document.addEventListener("click", (event) => {
-    if (activeTransition) return;
     if (!headerInner?.classList.contains("is-open")) return;
     const target = event.target as Node | null;
     if (target && header?.contains(target)) return;
@@ -279,43 +274,10 @@ const pathname = Astro.url.pathname;
     });
   };
 
-  // Reveals the new theme as a circle growing from where it was triggered.
-  // The animation itself lives in CSS (`global.css`), so it applies from the
-  // very first frame of the transition and the new theme can never flash.
-  const revealTheme = (theme: string, origin: { x: number; y: number }) => {
-    if (!document.startViewTransition || reducedMotion.matches) {
-      setTheme(theme);
-      return;
-    }
-
-    activeTransition?.skipTransition();
-    const radius = Math.hypot(
-      Math.max(origin.x, window.innerWidth - origin.x),
-      Math.max(origin.y, window.innerHeight - origin.y)
-    );
-    root.style.setProperty("--reveal-x", `${origin.x}px`);
-    root.style.setProperty("--reveal-y", `${origin.y}px`);
-    root.style.setProperty("--reveal-radius", `${radius}px`);
-    const transition = document.startViewTransition(() => setTheme(theme));
-    activeTransition = transition;
-    transition.finished.finally(() => {
-      if (activeTransition === transition) activeTransition = undefined;
-    });
-  };
-
-  const getToggleOrigin = () => {
-    const rect = themeToggle?.getBoundingClientRect();
-    return rect
-      ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
-      : { x: window.innerWidth / 2, y: 0 };
-  };
-
   // Every trip to a special theme is a rocket launch; the first one, right
   // after the countdown, gets the long ignition.
   const launchIntoSpace = async (theme: string, isFirstFlight = false) => {
     isLaunching = true;
-    clearTimeout(settleTimer);
-    activeTransition?.skipTransition();
     const message = isFirstFlight
       ? "Liftoff! Welcome to the Atmosphere ✦"
       : RELAUNCH_MESSAGES[Math.floor(Math.random() * RELAUNCH_MESSAGES.length)];
@@ -339,29 +301,14 @@ const pathname = Astro.url.pathname;
       launchIntoSpace(theme);
       return;
     }
-    revealTheme(theme, getToggleOrigin());
+    setTheme(theme);
   };
-
-  // While a view transition runs, the page is a snapshot and clicks land on
-  // the root element, so forward clicks on the toggle to keep rapid clicking
-  // (and the easter egg) working.
-  document.addEventListener("click", (event) => {
-    if (!activeTransition || !themeToggle) return;
-    const rect = themeToggle.getBoundingClientRect();
-    const isOnToggle =
-      event.clientX >= rect.left &&
-      event.clientX <= rect.right &&
-      event.clientY >= rect.top &&
-      event.clientY <= rect.bottom;
-    if (!isOnToggle || themeToggle.contains(event.target as Node)) return;
-    onThemeToggleClick();
-  });
 
   const onThemeToggleClick = () => {
     if (isLaunching) return;
 
     const now = Date.now();
-    const isBurst = now - lastClickTime < BURST_MS || isToastVisible;
+    const isBurst = now - lastClickTime < 400 || isToastVisible;
     clickCount = isBurst ? clickCount + 1 : 1;
     lastClickTime = now;
 
@@ -390,15 +337,7 @@ const pathname = Astro.url.pathname;
     currentTheme = availableThemes[(currentIndex + 1) % availableThemes.length];
     localStorage.setItem("theme", currentTheme);
 
-    // A burst of clicks never repaints the page on every click, which would
-    // flash between light and dark several times a second. The first click
-    // switches right away; the rest settle into one reveal once clicking stops.
-    clearTimeout(settleTimer);
-    if (clickCount === 1) {
-      applyTheme(currentTheme);
-      return;
-    }
-    settleTimer = setTimeout(() => applyTheme(currentTheme), BURST_MS);
+    applyTheme(currentTheme);
   };
 
   // Fetch the space scene before a click that will need it, so its reveal

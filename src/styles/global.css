@@ -82,12 +82,8 @@
 :root.celestial {
   color-scheme: dark;
   --font-family:
-    "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace, "Apple Color Emoji",
+    "Exo 2", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-family-mono:
-    "Space Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
-    Consolas, "Liberation Mono", "Courier New", monospace;
   --font-family-heading:
     "Space Grotesk", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -152,32 +148,6 @@
     --card-bg: oklch(0.22 0.06 288);
     --badge-bg: oklch(0.28 0.07 292);
     --bg-subtle: oklch(0.15 0.05 285);
-  }
-}
-
-/* The theme reveal: the new theme grows as a circle from the toggle. Defined
-   here rather than started from script so that it applies from the very first
-   frame; otherwise the new theme flashes in for a frame before the circle. */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  ::view-transition-new(root) {
-    animation: theme-reveal 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  }
-}
-
-@keyframes theme-reveal {
-  from {
-    clip-path: circle(0 at var(--reveal-x, 50%) var(--reveal-y, 0));
-  }
-  to {
-    clip-path: circle(
-      var(--reveal-radius, 150vmax) at var(--reveal-x, 50%) var(--reveal-y, 0)
-    );
   }
 }
 

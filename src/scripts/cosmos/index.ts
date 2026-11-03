@@ -10,11 +10,7 @@ import { createSkyEffects, createStars } from "./stars";
 
 // Self-hosted by fontless, which also gives them metric-matched fallbacks.
 // Loading them up front means the switch never shows a font swap.
-const FONTS = [
-  '400 1em "Space Mono"',
-  '700 1em "Space Mono"',
-  '700 1em "Space Grotesk"',
-];
+const FONTS = ['400 1em "Exo 2"', '600 1em "Exo 2"', '700 1em "Space Grotesk"'];
 const FONTS_TIMEOUT_MS = 1500;
 const STILL_CLASS = "cosmos-still";
 const STILL_KEY = "celestialStill";
@@ -258,7 +254,7 @@ function createScene(): Scene {
 
   function onClick(event: MouseEvent) {
     if (isStill()) return;
-    effects?.fireVolley(event.clientX, event.clientY, performance.now() / 1000);
+    effects?.fireShot(event.clientX, event.clientY, performance.now() / 1000);
     wake();
   }
 

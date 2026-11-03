@@ -15,9 +15,9 @@ const MIN_STARS = 90;
 const MAX_STARS = 420;
 const BAND_SHARE = 0.35;
 const SHOOTING_STAR_GAP = [5, 13] as const;
-const VOLLEY_SIZE = 6;
-const VOLLEY_SPACING = 22;
-const VOLLEY_STAGGER_S = 0.12;
+// Clicks this close together share a direction, so spam-clicking fires
+// parallel arrows instead of stars crossing each other.
+const AIM_LOCK_S = 1.5;
 const LINK_RADIUS = 150;
 const MAX_LINKED_STARS = 9;
 const LINKS_PER_STAR = 2;
@@ -90,8 +90,8 @@ export function createSkyEffects(
   let stars: Star[] = [];
   let shootingStars: ShootingStar[] = [];
   let nextShootingStar = 0;
-  // Picked on the first click, then every volley flies the same way.
-  let volleyAngle: number | undefined;
+  let aimAngle = 0;
+  let lastShotAt = -Infinity;
   let isDirty = false;
 
   function resize(
@@ -133,22 +133,18 @@ export function createSkyEffects(
     return shootingStars.length > 0;
   }
 
-  /** Looses a volley of parallel shooting stars through a point, like arrows. */
-  function fireVolley(x: number, y: number, time: number) {
-    volleyAngle ??= random(0, Math.PI * 2);
-    const normalX = -Math.sin(volleyAngle);
-    const normalY = Math.cos(volleyAngle);
-    for (let index = 0; index < VOLLEY_SIZE; index++) {
-      const offset = (index - (VOLLEY_SIZE - 1) / 2) * VOLLEY_SPACING;
-      shootingStars.push(
-        createShootingStar({
-          angle: volleyAngle,
-          born: time + Math.random() * VOLLEY_STAGGER_S,
-          isNear: true,
-          through: { x: x + normalX * offset, y: y + normalY * offset },
-        })
-      );
-    }
+  /** Fires one shooting star through a point, like an arrow. */
+  function fireShot(x: number, y: number, time: number) {
+    if (time - lastShotAt > AIM_LOCK_S) aimAngle = random(0, Math.PI * 2);
+    lastShotAt = time;
+    shootingStars.push(
+      createShootingStar({
+        angle: aimAngle,
+        born: time,
+        isNear: true,
+        through: { x, y },
+      })
+    );
   }
 
   function drawWarpTails(
@@ -256,7 +252,7 @@ export function createSkyEffects(
       if (age < 0) continue;
       const headX = star.x + star.vx * age;
       const headY = star.y + star.vy * age;
-      // Ambient ones burn up far behind the planet; volleys fly in front.
+      // Ambient ones burn up far behind the planet; clicked ones fly in front.
       if (!star.isNear && isOccluded(bodies, headX, headY)) continue;
 
       const speed = Math.hypot(star.vx, star.vy);
@@ -275,7 +271,7 @@ export function createSkyEffects(
       ctx.moveTo(headX, headY);
       ctx.lineTo(tailX, tailY);
       ctx.stroke();
-      // A glowing head makes the volleys read as arrows of light.
+      // A glowing head makes clicked stars read as arrows of light.
       ctx.fillStyle = "rgb(255, 255, 255)";
       ctx.shadowColor = "rgb(200, 170, 255)";
       ctx.shadowBlur = star.isNear ? 10 : 6;
@@ -286,7 +282,7 @@ export function createSkyEffects(
     }
   }
 
-  return { draw, fireVolley, hasShootingStar, resize };
+  return { draw, fireShot, hasShootingStar, resize };
 }
 
 // Starts half a flight before the given point, so the star passes through it.
@@ -339,7 +335,7 @@ export interface Star {
 
 export interface SkyEffects {
   draw: (frame: EffectsFrame) => void;
-  fireVolley: (x: number, y: number, time: number) => void;
+  fireShot: (x: number, y: number, time: number) => void;
   hasShootingStar: () => boolean;
   resize: (
     width: number,
