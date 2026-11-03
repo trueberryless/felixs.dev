@@ -278,8 +278,14 @@ const logos = [
     @supports (animation-timeline: scroll()) {
       .parallax {
         animation: hero-parallax linear both;
-        animation-timeline: scroll(root block);
         animation-range: 0 calc(100vh / var(--speed));
+      }
+
+      /* A separate rule on purpose: minifiers fold a neighbouring
+         `animation-timeline` into the `animation` shorthand, which browsers
+         reject as a whole. */
+      .parallax.parallax {
+        animation-timeline: scroll(root block);
       }
     }
   }

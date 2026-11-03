@@ -1,7 +1,6 @@
-const IGNITION_MS = 700;
 const ASCENT_MS = 1500;
-// When the sky has turned into space and covers the whole page.
-const COVERED_MS = IGNITION_MS + 1250;
+// How long after liftoff the sky has turned into space and covers the page.
+const COVER_MS = 1250;
 const REVEAL_MS = 900;
 const ROCKET_WIDTH = 34;
 const ROCKET_HEIGHT = 60;
@@ -27,7 +26,7 @@ const ROCKET_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 72">
  */
 export function launchRocket(
   from: Element | null,
-  onSwitch: () => void
+  { beforeReveal, ignitionMs, onSwitch }: LaunchRocketOptions
 ): Promise<void> {
   const width = window.innerWidth;
   const height = window.innerHeight;
@@ -72,8 +71,8 @@ export function launchRocket(
         { transform: "translate3d(0, 0, 0) scaleY(2)" },
       ],
       {
-        delay: IGNITION_MS,
-        duration: COVERED_MS - IGNITION_MS,
+        delay: ignitionMs,
+        duration: COVER_MS,
         easing: "cubic-bezier(0.45, 0, 0.85, 0.4)",
         fill: "forwards",
       }
@@ -81,11 +80,16 @@ export function launchRocket(
     descent.finished
       .then(() => {
         onSwitch();
-        // Two frames let the new theme and the first sky frame paint.
-        return new Promise((next) =>
-          requestAnimationFrame(() => requestAnimationFrame(next))
-        );
+        // The sky stays until the fonts are in, then two frames let the new
+        // theme and the first frame of the scene paint.
+        return beforeReveal;
       })
+      .then(
+        () =>
+          new Promise((next) =>
+            requestAnimationFrame(() => requestAnimationFrame(next))
+          )
+      )
       .then(
         () =>
           sky.animate([{ opacity: 1 }, { opacity: 0 }], {
@@ -103,10 +107,10 @@ export function launchRocket(
     function tick(now: number) {
       startedAt ||= now;
       const elapsed = now - startedAt;
-      const ignition = Math.min(1, elapsed / IGNITION_MS);
+      const ignition = Math.min(1, elapsed / ignitionMs);
       const ascent = Math.max(
         0,
-        Math.min(1, (elapsed - IGNITION_MS) / ASCENT_MS)
+        Math.min(1, (elapsed - ignitionMs) / ASCENT_MS)
       );
       const lift = ascent ** 3;
       const shake = ascent < 0.2 ? (Math.random() - 0.5) * 2.4 * ignition : 0;
@@ -234,4 +238,11 @@ interface Particle {
   vy: number;
   x: number;
   y: number;
+}
+
+interface LaunchRocketOptions {
+  /** Held back until this settles, so the reveal shows the final fonts. */
+  beforeReveal: Promise<unknown>;
+  ignitionMs: number;
+  onSwitch: () => void;
 }

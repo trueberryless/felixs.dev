@@ -3,13 +3,19 @@
 import { DEPTH, POINTER_REACH, getBodies } from "./bodies";
 import stylesUrl from "./cosmos.css?url";
 import { launchRocket } from "./launch";
+import { createSpaceMusic } from "./music";
 import { createNebula } from "./nebula";
 import { createStarfield } from "./starfield";
 import { createSkyEffects, createStars } from "./stars";
 
-const FONTS_ID = "celestial-fonts";
-const FONTS_URL =
-  "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Space+Mono:wght@400;700&display=swap";
+// Self-hosted by fontless, which also gives them metric-matched fallbacks.
+// Loading them up front means the switch never shows a font swap.
+const FONTS = [
+  '400 1em "Space Mono"',
+  '700 1em "Space Mono"',
+  '700 1em "Space Grotesk"',
+];
+const FONTS_TIMEOUT_MS = 1500;
 const STILL_CLASS = "cosmos-still";
 const STILL_KEY = "celestialStill";
 // Slow motion (twinkling, the spinning planet) renders at 30 fps; scrolling,
@@ -19,7 +25,7 @@ const STILL_KEY = "celestialStill";
 const IDLE_FRAME_MS = 1000 / 30;
 const ACTIVE_FOR_MS = 250;
 const POINTER_LINGER_S = 2.5;
-const WARP_MS = { arrival: 2400, cruise: 1300 } as const;
+const WARP_MS = { arrival: 2400 } as const;
 // Keep in sync with the drifting elements in `cosmos.css`.
 const DRIFT_SELECTOR = [
   ".action-link",
@@ -36,12 +42,13 @@ const DRIFT_SELECTOR = [
 ].join(",");
 
 const styles = loadStylesheet(stylesUrl);
+let fonts: Promise<unknown> | undefined;
 let scene: Scene | undefined;
 
 /** Fetches the fonts and styles ahead of time, so switching never waits. */
 export function prepare() {
-  ensureFonts();
-  return styles;
+  fonts ??= loadFonts();
+  return Promise.all([styles, fonts]);
 }
 
 /**
@@ -49,7 +56,8 @@ export function prepare() {
  * mounted only adds the warp.
  */
 export async function start(options?: StartOptions) {
-  await prepare();
+  void prepare();
+  await styles;
   // The theme may have been switched away while the styles were loading.
   if (!document.documentElement.classList.contains("celestial")) return;
 
@@ -67,15 +75,26 @@ export function stop() {
  * Lifts a rocket off from the given element into space. `onSwitch` applies the
  * theme once the sky covers the page; without motion it applies right away.
  */
-export async function launch(from: Element | null, onSwitch: () => void) {
-  await prepare();
+export async function launch(
+  from: Element | null,
+  onSwitch: () => void,
+  options?: LaunchOptions
+) {
+  const ready = prepare();
+  await styles;
   if (prefersReducedMotion()) {
     onSwitch();
     return;
   }
-  await launchRocket(from, () => {
-    onSwitch();
-    void start({ warp: "arrival" });
+  await launchRocket(from, {
+    beforeReveal: ready,
+    // The first flight builds up slowly after the countdown; later ones are
+    // eager to go.
+    ignitionMs: options?.isFirstFlight ? 700 : 380,
+    onSwitch: () => {
+      onSwitch();
+      void start({ warp: "arrival" });
+    },
   });
 }
 
@@ -97,6 +116,7 @@ function createScene(): Scene {
   if (!starfield) starCanvas.remove();
   const effects = createSkyEffects(effectsCanvas);
   const stillToggle = createStillToggle(root);
+  const music = createSpaceMusic();
   const driftObserver = new MutationObserver(scheduleDriftPhases);
   driftObserver.observe(document.body, { childList: true, subtree: true });
 
@@ -236,6 +256,12 @@ function createScene(): Scene {
     wake();
   }
 
+  function onClick(event: MouseEvent) {
+    if (isStill()) return;
+    effects?.fireVolley(event.clientX, event.clientY, performance.now() / 1000);
+    wake();
+  }
+
   function onScroll() {
     lastScroll = performance.now();
     wake();
@@ -253,6 +279,14 @@ function createScene(): Scene {
     wake();
   }
 
+  // The music follows the pause button, not the motion preference, and rests
+  // while the tab is in the background.
+  function syncMusic() {
+    const isPaused = root.classList.contains(STILL_CLASS);
+    if (isPaused || document.hidden) music.pause();
+    else music.play();
+  }
+
   function destroy() {
     isDestroyed = true;
     cancelAnimationFrame(driftFrame);
@@ -260,8 +294,12 @@ function createScene(): Scene {
     window.removeEventListener("resize", resize);
     window.removeEventListener("pointermove", onPointerMove);
     window.removeEventListener("scroll", onScroll);
+    window.removeEventListener("click", onClick);
     reducedMotion.removeEventListener("change", play);
     stillToggle.removeEventListener("toggle", play);
+    stillToggle.removeEventListener("toggle", syncMusic);
+    document.removeEventListener("visibilitychange", syncMusic);
+    music.destroy();
     stillToggle.remove();
     root.classList.remove(STILL_CLASS);
     layer.classList.remove("is-visible");
@@ -278,14 +316,18 @@ function createScene(): Scene {
   window.addEventListener("resize", resize, { passive: true });
   window.addEventListener("pointermove", onPointerMove, { passive: true });
   window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("click", onClick, { passive: true });
   reducedMotion.addEventListener("change", play);
   stillToggle.addEventListener("toggle", play);
+  stillToggle.addEventListener("toggle", syncMusic);
+  document.addEventListener("visibilitychange", syncMusic);
 
   setDriftPhases();
   resize();
   render(performance.now());
   play();
   requestAnimationFrame(() => layer.classList.add("is-visible"));
+  syncMusic();
 
   return { destroy, warp };
 }
@@ -306,22 +348,25 @@ function setDriftPhases() {
   }
 }
 
-// WCAG 2.2.2: anything that moves for more than five seconds needs a pause.
+// WCAG 2.2.2 and 1.4.2: motion longer than five seconds and audio that plays
+// on its own both need a way to pause them.
 function createStillToggle(root: HTMLElement) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "cosmos-still-toggle";
-  button.title = "Pause space motion";
+  button.title = "Pause space motion and music";
   button.innerHTML = [
     '<svg class="cosmos-icon-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>',
     '<svg class="cosmos-icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5Z"/></svg>',
-    '<span class="cosmos-visually-hidden">Pause space motion</span>',
+    '<span class="cosmos-visually-hidden">Pause space motion and music</span>',
   ].join("");
 
   function apply(isPaused: boolean) {
     root.classList.toggle(STILL_CLASS, isPaused);
     button.setAttribute("aria-pressed", String(isPaused));
-    button.title = isPaused ? "Resume space motion" : "Pause space motion";
+    button.title = isPaused
+      ? "Resume space motion and music"
+      : "Pause space motion and music";
   }
 
   apply(readStorage(STILL_KEY) === "true");
@@ -349,13 +394,13 @@ function loadStylesheet(href: string) {
   });
 }
 
-function ensureFonts() {
-  if (document.getElementById(FONTS_ID)) return;
-  const fonts = document.createElement("link");
-  fonts.id = FONTS_ID;
-  fonts.rel = "stylesheet";
-  fonts.href = FONTS_URL;
-  document.head.append(fonts);
+function loadFonts() {
+  const timeout = new Promise((resolve) =>
+    setTimeout(resolve, FONTS_TIMEOUT_MS)
+  );
+  const loaded = Promise.all(FONTS.map((font) => document.fonts.load(font)));
+  // A slow font only means a late swap, never a stuck switch.
+  return Promise.race([loaded.catch(() => undefined), timeout]);
 }
 
 function prefersReducedMotion() {
@@ -381,6 +426,10 @@ function writeStorage(key: string, value: string) {
 interface Scene {
   destroy: () => void;
   warp: (duration: number) => void;
+}
+
+interface LaunchOptions {
+  isFirstFlight?: boolean;
 }
 
 interface StartOptions {

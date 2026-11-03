@@ -15,6 +15,9 @@ const MIN_STARS = 90;
 const MAX_STARS = 420;
 const BAND_SHARE = 0.35;
 const SHOOTING_STAR_GAP = [5, 13] as const;
+const VOLLEY_SIZE = 6;
+const VOLLEY_SPACING = 22;
+const VOLLEY_STAGGER_S = 0.12;
 const LINK_RADIUS = 150;
 const MAX_LINKED_STARS = 9;
 const LINKS_PER_STAR = 2;
@@ -87,6 +90,8 @@ export function createSkyEffects(
   let stars: Star[] = [];
   let shootingStars: ShootingStar[] = [];
   let nextShootingStar = 0;
+  // Picked on the first click, then every volley flies the same way.
+  let volleyAngle: number | undefined;
   let isDirty = false;
 
   function resize(
@@ -126,6 +131,24 @@ export function createSkyEffects(
 
   function hasShootingStar() {
     return shootingStars.length > 0;
+  }
+
+  /** Looses a volley of parallel shooting stars through a point, like arrows. */
+  function fireVolley(x: number, y: number, time: number) {
+    volleyAngle ??= random(0, Math.PI * 2);
+    const normalX = -Math.sin(volleyAngle);
+    const normalY = Math.cos(volleyAngle);
+    for (let index = 0; index < VOLLEY_SIZE; index++) {
+      const offset = (index - (VOLLEY_SIZE - 1) / 2) * VOLLEY_SPACING;
+      shootingStars.push(
+        createShootingStar({
+          angle: volleyAngle,
+          born: time + Math.random() * VOLLEY_STAGGER_S,
+          isNear: true,
+          through: { x: x + normalX * offset, y: y + normalY * offset },
+        })
+      );
+    }
   }
 
   function drawWarpTails(
@@ -204,7 +227,18 @@ export function createSkyEffects(
   function updateShootingStars(time: number) {
     if (nextShootingStar === 0) nextShootingStar = time + random(2, 5);
     if (time >= nextShootingStar) {
-      shootingStars.push(createShootingStar(width, height, time));
+      // Ambient ones come from anywhere, aimed to cross the upper sky.
+      shootingStars.push(
+        createShootingStar({
+          angle: random(0, Math.PI * 2),
+          born: time,
+          isNear: false,
+          through: {
+            x: random(0.15, 0.85) * width,
+            y: random(0.1, 0.6) * height,
+          },
+        })
+      );
       nextShootingStar = time + random(...SHOOTING_STAR_GAP);
     }
     shootingStars = shootingStars.filter(
@@ -219,10 +253,11 @@ export function createSkyEffects(
   ) {
     for (const star of shootingStars) {
       const age = time - star.born;
+      if (age < 0) continue;
       const headX = star.x + star.vx * age;
       const headY = star.y + star.vy * age;
-      // They burn up far behind the planet.
-      if (isOccluded(bodies, headX, headY)) continue;
+      // Ambient ones burn up far behind the planet; volleys fly in front.
+      if (!star.isNear && isOccluded(bodies, headX, headY)) continue;
 
       const speed = Math.hypot(star.vx, star.vy);
       const tailX = headX - (star.vx / speed) * star.length;
@@ -234,34 +269,47 @@ export function createSkyEffects(
 
       ctx.globalAlpha = Math.sin((Math.PI * age) / star.life);
       ctx.strokeStyle = gradient;
-      ctx.lineWidth = 1.4;
+      ctx.lineWidth = star.isNear ? 2.2 : 1.4;
       ctx.lineCap = "round";
       ctx.beginPath();
       ctx.moveTo(headX, headY);
       ctx.lineTo(tailX, tailY);
       ctx.stroke();
+      // A glowing head makes the volleys read as arrows of light.
+      ctx.fillStyle = "rgb(255, 255, 255)";
+      ctx.shadowColor = "rgb(200, 170, 255)";
+      ctx.shadowBlur = star.isNear ? 10 : 6;
+      ctx.beginPath();
+      ctx.arc(headX, headY, star.isNear ? 1.8 : 1.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
     }
   }
 
-  return { draw, hasShootingStar, resize };
+  return { draw, fireVolley, hasShootingStar, resize };
 }
 
-function createShootingStar(
-  width: number,
-  height: number,
-  time: number
-): ShootingStar {
-  const angle = random(2.35, 2.75);
-  const speed = random(700, 1100);
+// Starts half a flight before the given point, so the star passes through it.
+function createShootingStar({
+  angle,
+  born,
+  isNear,
+  through,
+}: ShootingStarInput): ShootingStar {
+  const speed = isNear ? random(1100, 1400) : random(700, 1100);
+  const life = random(0.7, 1.1);
+  const vx = Math.cos(angle) * speed;
+  const vy = Math.sin(angle) * speed;
 
   return {
-    born: time,
-    length: random(120, 220),
-    life: random(0.7, 1.1),
-    vx: Math.cos(angle) * speed,
-    vy: Math.sin(angle) * speed,
-    x: random(0.25, 1.05) * width,
-    y: random(-0.05, 0.35) * height,
+    born,
+    isNear,
+    length: isNear ? random(150, 200) : random(120, 220),
+    life,
+    vx,
+    vy,
+    x: through.x - vx * life * 0.5,
+    y: through.y - vy * life * 0.5,
   };
 }
 
@@ -291,6 +339,7 @@ export interface Star {
 
 export interface SkyEffects {
   draw: (frame: EffectsFrame) => void;
+  fireVolley: (x: number, y: number, time: number) => void;
   hasShootingStar: () => boolean;
   resize: (
     width: number,
@@ -326,8 +375,16 @@ interface EffectsFrame {
   warp: number;
 }
 
+interface ShootingStarInput {
+  angle: number;
+  born: number;
+  isNear: boolean;
+  through: { x: number; y: number };
+}
+
 interface ShootingStar {
   born: number;
+  isNear: boolean;
   length: number;
   life: number;
   vx: number;

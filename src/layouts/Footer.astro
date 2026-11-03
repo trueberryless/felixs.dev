@@ -110,8 +110,12 @@ const socialLinks = [
       .footer-container {
         will-change: transform;
         animation: footer-reveal linear both;
-        animation-timeline: --footer;
         animation-range: entry 0% entry 100%;
+      }
+
+      /* Separate on purpose, see the parallax in \`Hero.astro\`. */
+      .footer-container.footer-container {
+        animation-timeline: --footer;
       }
 
       @media (max-width: 768px) {

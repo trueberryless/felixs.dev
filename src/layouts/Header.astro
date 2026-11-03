@@ -115,11 +115,20 @@ const pathname = Astro.url.pathname;
   // Special themes build on a base theme so its assets (logos, shadows) apply.
   const BASE_THEMES: Record<string, string> = { celestial: "dark" };
   const UNLOCK_CLICKS = 7;
+  // Clicks closer together than this count as one burst.
+  const BURST_MS = 400;
   const COUNTDOWN = [
     "T-minus 4… running pre-flight checks",
     "T-minus 3… fasten your seatbelts",
     "T-minus 2… ignition sequence start",
     "T-minus 1… hold on to your snacks",
+  ];
+  const RELAUNCH_MESSAGES = [
+    "Engines on. Next stop: the Atmosphere ✦",
+    "Buckle up, we're heading back up ✦",
+    "3, 2, 1… liftoff ✦",
+    "Back to the stars ✦",
+    "Cleared for takeoff ✦",
   ];
 
   const root = document.documentElement;
@@ -143,6 +152,11 @@ const pathname = Astro.url.pathname;
   let isToastVisible = false;
   let isLaunching = false;
   let activeTransition: ViewTransition | undefined;
+  let settleTimer: ReturnType<typeof setTimeout> | undefined;
+  let displayedTheme =
+    [...SPECIAL_THEMES, ...THEMES.slice(1)].find((t) =>
+      root.classList.contains(t)
+    ) ?? "light";
 
   const showToast = (message: string, duration = 2000) => {
     if (toast) {
@@ -254,6 +268,7 @@ const pathname = Astro.url.pathname;
     const baseTheme = BASE_THEMES[theme];
     if (baseTheme) root.classList.add(baseTheme);
     if (theme !== "light") root.classList.add(theme);
+    displayedTheme = theme;
     syncThemeText();
 
     cancelAnimationFrame(switchingFrame);
@@ -265,48 +280,27 @@ const pathname = Astro.url.pathname;
   };
 
   // Reveals the new theme as a circle growing from where it was triggered.
-  const revealTheme = (
-    theme: string,
-    origin: { x: number; y: number },
-    onSwap?: () => Promise<unknown> | void
-  ) => {
-    // The callback runs a frame later; by then more clicks may have landed,
-    // so always apply the latest theme rather than the one captured here.
-    const swap = () => {
-      setTheme(currentTheme);
-      return onSwap?.();
-    };
+  // The animation itself lives in CSS (`global.css`), so it applies from the
+  // very first frame of the transition and the new theme can never flash.
+  const revealTheme = (theme: string, origin: { x: number; y: number }) => {
     if (!document.startViewTransition || reducedMotion.matches) {
-      swap();
+      setTheme(theme);
       return;
     }
 
-    const transition = document.startViewTransition(swap);
-    activeTransition = transition;
-    transition.finished.finally(() => {
-      if (activeTransition === transition) activeTransition = undefined;
-    });
+    activeTransition?.skipTransition();
     const radius = Math.hypot(
       Math.max(origin.x, window.innerWidth - origin.x),
       Math.max(origin.y, window.innerHeight - origin.y)
     );
-    transition.ready
-      .then(() => {
-        root.animate(
-          {
-            clipPath: [
-              `circle(0px at ${origin.x}px ${origin.y}px)`,
-              `circle(${radius}px at ${origin.x}px ${origin.y}px)`,
-            ],
-          },
-          {
-            duration: SPECIAL_THEMES.includes(theme) ? 700 : 420,
-            easing: "cubic-bezier(0.22, 1, 0.36, 1)",
-            pseudoElement: "::view-transition-new(root)",
-          }
-        );
-      })
-      .catch(() => undefined);
+    root.style.setProperty("--reveal-x", `${origin.x}px`);
+    root.style.setProperty("--reveal-y", `${origin.y}px`);
+    root.style.setProperty("--reveal-radius", `${radius}px`);
+    const transition = document.startViewTransition(() => setTheme(theme));
+    activeTransition = transition;
+    transition.finished.finally(() => {
+      if (activeTransition === transition) activeTransition = undefined;
+    });
   };
 
   const getToggleOrigin = () => {
@@ -316,22 +310,36 @@ const pathname = Astro.url.pathname;
       : { x: window.innerWidth / 2, y: 0 };
   };
 
-  const launchIntoSpace = async () => {
+  // Every trip to a special theme is a rocket launch; the first one, right
+  // after the countdown, gets the long ignition.
+  const launchIntoSpace = async (theme: string, isFirstFlight = false) => {
     isLaunching = true;
-    currentTheme = SPECIAL_THEMES[0];
-    localStorage.setItem("theme", currentTheme);
-    showToast("Liftoff! Welcome to the Atmosphere ✦", 3600);
+    clearTimeout(settleTimer);
+    activeTransition?.skipTransition();
+    const message = isFirstFlight
+      ? "Liftoff! Welcome to the Atmosphere ✦"
+      : RELAUNCH_MESSAGES[Math.floor(Math.random() * RELAUNCH_MESSAGES.length)];
+    showToast(message, isFirstFlight ? 3600 : 3000);
 
     try {
       const cosmos = await loadCosmos();
       // The launch covers the page with the sky while it switches the theme,
       // so the restyle happens out of sight and needs no view transition.
-      await cosmos.launch(toast, () => setTheme(currentTheme));
+      await cosmos.launch(toast, () => setTheme(theme), { isFirstFlight });
     } catch {
-      setTheme(currentTheme);
+      setTheme(theme);
     } finally {
       isLaunching = false;
     }
+  };
+
+  const applyTheme = (theme: string) => {
+    if (theme === displayedTheme) return;
+    if (SPECIAL_THEMES.includes(theme)) {
+      launchIntoSpace(theme);
+      return;
+    }
+    revealTheme(theme, getToggleOrigin());
   };
 
   // While a view transition runs, the page is a snapshot and clicks land on
@@ -346,7 +354,6 @@ const pathname = Astro.url.pathname;
       event.clientY >= rect.top &&
       event.clientY <= rect.bottom;
     if (!isOnToggle || themeToggle.contains(event.target as Node)) return;
-    activeTransition.skipTransition();
     onThemeToggleClick();
   });
 
@@ -354,18 +361,17 @@ const pathname = Astro.url.pathname;
     if (isLaunching) return;
 
     const now = Date.now();
-    if (now - lastClickTime < 400 || isToastVisible) {
-      clickCount++;
-    } else {
-      clickCount = 1;
-    }
+    const isBurst = now - lastClickTime < BURST_MS || isToastVisible;
+    clickCount = isBurst ? clickCount + 1 : 1;
     lastClickTime = now;
 
     if (!specialThemesUnlocked) {
       if (clickCount >= UNLOCK_CLICKS) {
         specialThemesUnlocked = true;
         localStorage.setItem("specialThemesUnlocked", "true");
-        launchIntoSpace();
+        currentTheme = SPECIAL_THEMES[0];
+        localStorage.setItem("theme", currentTheme);
+        launchIntoSpace(currentTheme, true);
         return;
       }
       if (clickCount >= UNLOCK_CLICKS - COUNTDOWN.length) {
@@ -384,16 +390,15 @@ const pathname = Astro.url.pathname;
     currentTheme = availableThemes[(currentIndex + 1) % availableThemes.length];
     localStorage.setItem("theme", currentTheme);
 
-    // Rapid clicks hunting for the easter egg skip the reveal animation.
-    if (clickCount > 1) {
-      activeTransition?.skipTransition();
-      setTheme(currentTheme);
+    // A burst of clicks never repaints the page on every click, which would
+    // flash between light and dark several times a second. The first click
+    // switches right away; the rest settle into one reveal once clicking stops.
+    clearTimeout(settleTimer);
+    if (clickCount === 1) {
+      applyTheme(currentTheme);
       return;
     }
-    revealTheme(currentTheme, getToggleOrigin(), () => {
-      if (!SPECIAL_THEMES.includes(currentTheme)) return;
-      return loadCosmos().then((cosmos) => cosmos.start({ warp: "cruise" }));
-    });
+    settleTimer = setTimeout(() => applyTheme(currentTheme), BURST_MS);
   };
 
   // Fetch the space scene before a click that will need it, so its reveal

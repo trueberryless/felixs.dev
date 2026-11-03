@@ -502,10 +502,6 @@
   .cosmos-layer {
     transition: none;
   }
-
-  .cosmos-still-toggle {
-    display: none !important;
-  }
 }
 
 @media (prefers-reduced-transparency: reduce) {

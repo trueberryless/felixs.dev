@@ -21,17 +21,6 @@
     if (theme && theme !== "light") {
       document.documentElement.classList.add(theme);
     }
-
-    // Start fetching the celestial fonts as early as possible for returning
-    // visitors; everyone else never downloads them.
-    if (theme === "celestial" && !document.getElementById("celestial-fonts")) {
-      const fonts = document.createElement("link");
-      fonts.id = "celestial-fonts";
-      fonts.rel = "stylesheet";
-      fonts.href =
-        "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Space+Mono:wght@400;700&display=swap";
-      document.head.append(fonts);
-    }
   };
 
   setDarkMode();
