@@ -25,6 +25,8 @@ const POINTER_LINGER_S = 2.5;
 // sky any further than this, so it never jumps ahead.
 const MAX_FRAME_S = 0.1;
 const SETTLE = { duration: 1200, easing: "cubic-bezier(0.22, 1, 0.36, 1)" };
+// The longest the easing waits for restarted animations to take effect.
+const SETTLE_WAIT_MS = 100;
 const WARP_MS = { arrival: 2400 } as const;
 // Keep in sync with the drifting elements in `cosmos.css`.
 const DRIFT_SELECTOR = [
@@ -40,10 +42,19 @@ const DRIFT_SELECTOR = [
   ".timeline-row > .card-container",
   ".year-watermark",
 ].join(",");
-// Everything the pause button stops: the drift and the hero's own motion.
-const PAUSABLE_SELECTOR = `${DRIFT_SELECTOR},.logo-wrapper`;
+// Everything the pause button stops: the drift, the hero's own motion and the
+// parallax of the hero, the blog's years and the footer.
+const PAUSABLE_SELECTOR = [
+  DRIFT_SELECTOR,
+  ".footer-container",
+  ".logo-wrapper",
+  ".parallax",
+  ".year-depth",
+].join(",");
 
 const styles = loadStylesheet(stylesUrl);
+// The easing each element is still running from the last toggle.
+const settling = new WeakMap<Element, Animation>();
 let fonts: Promise<unknown> | undefined;
 let scene: Scene | undefined;
 
@@ -152,6 +163,9 @@ function createScene(): Scene {
   let warpDuration = 0;
   let isDestroyed = false;
   let driftFrame = 0;
+  // How much of the page's scroll the sky follows. Pausing lets it glide back
+  // to where it rests at the top of the page, resuming lets it catch up.
+  let scrollShare = isStill() ? 0 : 1;
 
   function isPaused() {
     return root.classList.contains(STILL_CLASS);
@@ -165,8 +179,8 @@ function createScene(): Scene {
   function render(now: number) {
     const time = now / 1000;
     const still = isStill();
-    // Motion-free visitors get the sky at rest. A paused sky still follows
-    // the page while scrolling, like the rest of the parallax.
+    // Motion-free visitors get the sky at rest right away, a paused sky eases
+    // into it.
     const isFixed = reducedMotion.matches;
     if (!still) motionTime += Math.min(MAX_FRAME_S, (now - lastFrame) / 1000);
     lastFrame = now;
@@ -176,6 +190,7 @@ function createScene(): Scene {
     if (warpProgress >= 1) warpDuration = 0;
 
     const viewTarget = still ? { x: 0, y: 0 } : pointerTarget;
+    const scrollShareTarget = still ? 0 : 1;
     const isActive =
       !isFixed &&
       (warpStrength > 0 ||
@@ -183,6 +198,7 @@ function createScene(): Scene {
         now - lastPointerMove * 1000 < ACTIVE_FOR_MS ||
         Math.abs(view.x - viewTarget.x) + Math.abs(view.y - viewTarget.y) >
           0.002 ||
+        Math.abs(scrollShare - scrollShareTarget) > 0.001 ||
         Boolean(effects?.hasShootingStar()) ||
         // A paused sky only draws while the pointer's glow fades out.
         (still && pointer.strength > 0));
@@ -191,10 +207,14 @@ function createScene(): Scene {
     const smoothing = isFixed ? 1 : 0.08;
     view.x += (viewTarget.x - view.x) * smoothing;
     view.y += (viewTarget.y - view.y) * smoothing;
+    scrollShare += (scrollShareTarget - scrollShare) * smoothing;
+    if (Math.abs(scrollShare - scrollShareTarget) <= 0.001) {
+      scrollShare = scrollShareTarget;
+    }
     pointer.strength = isFixed
       ? 0
       : Math.max(0, Math.min(1, POINTER_LINGER_S - (time - lastPointerMove)));
-    const scroll = isFixed ? 0 : window.scrollY;
+    const scroll = window.scrollY * scrollShare;
     const width = window.innerWidth;
     const height = window.innerHeight;
     const bodies = getBodies({
@@ -243,7 +263,7 @@ function createScene(): Scene {
       frame = requestAnimationFrame(loop);
       return;
     }
-    // A still sky has nothing left to draw until it is scrolled or resized.
+    // A still sky has nothing left to draw until it is resized.
     if (isStill()) {
       isAsleep = true;
       return;
@@ -301,7 +321,7 @@ function createScene(): Scene {
   }
 
   function onScroll() {
-    if (reducedMotion.matches) return;
+    if (isStill()) return;
     lastScroll = performance.now();
     wake();
   }
@@ -410,10 +430,13 @@ function createStillToggle(root: HTMLElement) {
   apply(readStorage(STILL_KEY) === "true");
   button.addEventListener("click", () => {
     const isPaused = !root.classList.contains(STILL_CLASS);
-    // Read where everything is before the animations stop.
-    const settle = isPaused ? captureMotion() : restartMotionAtRest;
+    // Read where everything is before the animations stop or start again.
+    const settle = captureMotion();
+    if (!isPaused) restartMotionAtRest();
     apply(isPaused);
-    settle();
+    // Waits for the parallax fallback, which follows the class change in a
+    // microtask of its own.
+    queueMicrotask(() => void settle());
     writeStorage(STILL_KEY, String(isPaused));
     button.dispatchEvent(new Event("toggle"));
   });
@@ -423,23 +446,78 @@ function createStillToggle(root: HTMLElement) {
 }
 
 /**
- * Notes where every floating element is, and returns how to ease them from
- * there back into their resting place once their animations have stopped.
+ * Notes where every moving element is, and returns how to ease them from
+ * there to wherever they belong once the motion has stopped or started.
  */
 function captureMotion() {
-  if (prefersReducedMotion()) return () => {};
-  const poses = [
+  if (prefersReducedMotion()) return async () => {};
+  const elements = [
     ...document.querySelectorAll<HTMLElement>(PAUSABLE_SELECTOR),
-  ].flatMap((element) => {
-    const { transform } = getComputedStyle(element);
-    return transform === "none" ? [] : [{ element, transform }];
-  });
+  ];
+  const before = elements.map(readPose);
 
-  return () => {
-    for (const { element, transform } of poses) {
-      element.animate([{ transform }, { transform: "none" }], SETTLE);
+  return async () => {
+    // Cancelled first, so reading the new poses restyles the page only once.
+    for (const element of elements) settling.get(element)?.cancel();
+    // A restarted scroll-driven animation only takes effect once it is
+    // ready, a frame or so later. Until then every element is held where it
+    // was, so that frame does not show it jumping ahead.
+    const isReady = Promise.all(
+      elements.flatMap((element) =>
+        element.getAnimations().map((animation) => animation.ready)
+      )
+    );
+    const holds = elements.map((element, index) =>
+      element.animate([before[index] ?? {}], {
+        duration: SETTLE_WAIT_MS * 2,
+        fill: "forwards",
+      })
+    );
+    await Promise.race([
+      isReady,
+      new Promise((resolve) => setTimeout(resolve, SETTLE_WAIT_MS)),
+    ]);
+    for (const hold of holds) hold.cancel();
+
+    for (const [index, element] of elements.entries()) {
+      const from = before[index];
+      const to = readPose(element);
+      if (
+        !from ||
+        (from.transform === to.transform && from.translate === to.translate)
+      ) {
+        continue;
+      }
+      // Added on top of whatever moves the element now, so the parallax
+      // keeps following the scroll while the gap closes.
+      const offset = new DOMMatrix(to.transform)
+        .inverse()
+        .multiply(new DOMMatrix(from.transform));
+      const shift = parseTranslate(from.translate).map(
+        (value, axis) =>
+          `${value - (parseTranslate(to.translate)[axis] ?? 0)}px`
+      );
+      const animation = element.animate(
+        [
+          { transform: offset.toString(), translate: shift.join(" ") },
+          { transform: "none", translate: "0px" },
+        ],
+        { ...SETTLE, composite: "add" }
+      );
+      settling.set(element, animation);
     }
   };
+}
+
+function readPose(element: Element) {
+  const { transform, translate } = getComputedStyle(element);
+  return { transform, translate };
+}
+
+function parseTranslate(value: string) {
+  const [x = 0, y = 0, z = 0] =
+    value === "none" ? [] : value.split(" ").map(Number.parseFloat);
+  return [x, y, z];
 }
 
 // Starts every loop again at the point where it passes its resting place, so
