@@ -1,0 +1,47 @@
+<script>
+  // Parallax and the footer reveal run as CSS scroll-driven animations. This
+  // fallback only drives them in browsers without scroll timelines, and writes
+  // to the moving elements alone: a variable on the root element would restyle
+  // the whole page on every scrolled frame.
+  const isSupported = CSS.supports("animation-timeline: scroll()");
+  const prefersReducedMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)"
+  ).matches;
+
+  if (!isSupported && !prefersReducedMotion) {
+    const layers = [...document.querySelectorAll<HTMLElement>(".parallax")].map(
+      (element) => ({
+        element,
+        speed:
+          1 - Number(getComputedStyle(element).getPropertyValue("--depth")),
+      })
+    );
+    const footer = document.querySelector<HTMLElement>(".footer-container");
+    let isTicking = false;
+
+    const update = () => {
+      const scrollY = window.scrollY;
+      const maxScroll =
+        document.documentElement.scrollHeight - window.innerHeight;
+      for (const { element, speed } of layers) {
+        element.style.transform = `translate3d(0, ${scrollY * speed}px, 0)`;
+      }
+      if (footer) {
+        footer.style.transform = `translate3d(0, ${(maxScroll - scrollY) * -0.35}px, 0)`;
+      }
+      isTicking = false;
+    };
+
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (isTicking) return;
+        isTicking = true;
+        window.requestAnimationFrame(update);
+      },
+      { passive: true }
+    );
+    window.addEventListener("resize", update, { passive: true });
+    update();
+  }
+</script>

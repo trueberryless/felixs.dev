@@ -244,12 +244,24 @@ const pathname = Astro.url.pathname;
     themeToggle?.setAttribute("aria-label", `Switch theme (current: ${label})`);
   };
 
+  let switchingFrame = 0;
+
   const setTheme = (theme: string) => {
+    // Without this, every themed element would run its own color transition,
+    // which keeps the main thread busy for the whole switch.
+    root.classList.add("theme-switching");
     root.classList.remove(...THEMES.slice(1), ...SPECIAL_THEMES);
     const baseTheme = BASE_THEMES[theme];
     if (baseTheme) root.classList.add(baseTheme);
     if (theme !== "light") root.classList.add(theme);
     syncThemeText();
+
+    cancelAnimationFrame(switchingFrame);
+    switchingFrame = requestAnimationFrame(() => {
+      switchingFrame = requestAnimationFrame(() =>
+        root.classList.remove("theme-switching")
+      );
+    });
   };
 
   // Reveals the new theme as a circle growing from where it was triggered.
@@ -288,8 +300,8 @@ const pathname = Astro.url.pathname;
             ],
           },
           {
-            duration: theme === "celestial" ? 900 : 550,
-            easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+            duration: SPECIAL_THEMES.includes(theme) ? 700 : 420,
+            easing: "cubic-bezier(0.22, 1, 0.36, 1)",
             pseudoElement: "::view-transition-new(root)",
           }
         );
@@ -312,8 +324,9 @@ const pathname = Astro.url.pathname;
 
     try {
       const cosmos = await loadCosmos();
-      const exit = await cosmos.launch(toast);
-      revealTheme(currentTheme, exit, () => cosmos.start({ warp: "arrival" }));
+      // The launch covers the page with the sky while it switches the theme,
+      // so the restyle happens out of sight and needs no view transition.
+      await cosmos.launch(toast, () => setTheme(currentTheme));
     } catch {
       setTheme(currentTheme);
     } finally {
@@ -357,7 +370,7 @@ const pathname = Astro.url.pathname;
       }
       if (clickCount >= UNLOCK_CLICKS - COUNTDOWN.length) {
         // Warm up the launch pad while the countdown is still running.
-        loadCosmos();
+        loadCosmos().then((cosmos) => cosmos.prepare());
         showToast(COUNTDOWN[clickCount - (UNLOCK_CLICKS - COUNTDOWN.length)]);
       }
     }
@@ -383,7 +396,23 @@ const pathname = Astro.url.pathname;
     });
   };
 
+  // Fetch the space scene before a click that will need it, so its reveal
+  // never waits for the network.
+  const prepareNextTheme = () => {
+    if (!specialThemesUnlocked) return;
+    const availableThemes = [...THEMES, ...SPECIAL_THEMES];
+    const nextTheme =
+      availableThemes[
+        (availableThemes.indexOf(currentTheme) + 1) % availableThemes.length
+      ];
+    if (SPECIAL_THEMES.includes(nextTheme)) {
+      loadCosmos().then((cosmos) => cosmos.prepare());
+    }
+  };
+
   themeToggle?.addEventListener("click", onThemeToggleClick);
+  themeToggle?.addEventListener("pointerenter", prepareNextTheme);
+  themeToggle?.addEventListener("focus", prepareNextTheme);
 
   syncThemeText();
 </script>
@@ -769,6 +798,12 @@ const pathname = Astro.url.pathname;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    transition: scale 0.12s ease;
+  }
+
+  /* Immediate feedback on press, before the new theme is painted. */
+  .theme-toggle:active .theme-icon-wrapper {
+    scale: 0.8;
   }
 
   .theme-icon {
@@ -838,8 +873,11 @@ const pathname = Astro.url.pathname;
     font-weight: 500;
     opacity: 0;
     pointer-events: none;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    z-index: 2000;
+    transition:
+      opacity 0.3s ease,
+      transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* Above the launch sky, since the toast is the launch pad. */
+    z-index: 3100;
     box-shadow: 0 4px 12px var(--header-shadow);
   }
 

@@ -3,7 +3,7 @@ import "../styles/global.css";
 import BaseHead from "@/layouts/BaseHead.astro";
 import Header from "@/layouts/Header.astro";
 import Footer from "@/layouts/Footer.astro";
-import ScrollTracker from "@/layouts/ScrollTracker.astro";
+import Parallax from "@/layouts/Parallax.astro";
 
 interface Props {
   title: string;
@@ -25,7 +25,7 @@ const { title, description } = Astro.props;
       </div>
     </main>
     <Footer />
-    <ScrollTracker />
+    <Parallax />
   </body>
 </html>
 

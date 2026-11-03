@@ -1,7 +1,14 @@
+import type { Bodies } from "./bodies";
+import { createProgram, watchContext } from "./gl";
+
 // A single full-screen fragment shader paints the nebula, the gas giant with
-// its glowing atmosphere and a little moon. It is far lighter than pulling in a
-// 3D engine, and the soft content lets it render below native resolution.
-const MAX_PIXELS = 700_000;
+// its atmosphere and the moon. That is all three.js would do here as well, so
+// raw WebGL keeps the scene a few kilobytes instead of a ~150 KB dependency.
+// Once the sky needs real geometry (rings as meshes, models, post-processing),
+// switching to three.js is the better trade.
+//
+// The soft content renders below native resolution and is scaled up.
+const MAX_PIXELS = 600_000;
 
 const VERTEX_SHADER = `
 attribute vec2 aPosition;
@@ -19,9 +26,15 @@ precision mediump float;
 
 uniform vec2 uResolution;
 uniform float uTime;
-uniform vec2 uParallax;
-uniform float uSink;
 uniform float uWarp;
+uniform float uDim;
+uniform vec2 uNebulaOffset;
+// Centre (xy) and radius (z), in units of the viewport height, y up.
+uniform vec3 uPlanet;
+uniform vec3 uMoon;
+
+// normalize(vec3(-0.45, 0.85, -0.35)): backlit from the upper left.
+const vec3 LIGHT = vec3(-0.4397, 0.8305, -0.342);
 
 float hash(vec2 p) {
   p = fract(p * vec2(123.34, 456.21));
@@ -52,11 +65,55 @@ float fbm(vec2 p) {
   return value;
 }
 
-// Distance-based glow that hugs a sphere's limb from both sides.
-float limbGlow(float signedDistance, float outer, float inner) {
-  return signedDistance > 0.0
-    ? exp(-signedDistance * outer) * 0.85 + exp(-signedDistance * 5.0) * 0.2
-    : exp(signedDistance * inner) * 1.05;
+// Glow hugging a sphere's limb from both sides.
+float limbGlow(float altitude, float outer, float inner) {
+  return altitude > 0.0
+    ? exp(-altitude * outer) * 0.85 + exp(-altitude * 5.0) * 0.2
+    : exp(altitude * inner) * 1.05;
+}
+
+vec3 paintNebula(vec2 p, float t) {
+  vec3 color = mix(
+    vec3(0.012, 0.008, 0.04),
+    vec3(0.07, 0.035, 0.15),
+    smoothstep(-0.8, 0.9, -p.y * 0.9 + p.x * 0.25)
+  );
+  vec2 q = p * 1.7 + vec2(t * 0.012, -t * 0.006);
+  vec2 warp = vec2(fbm(q), fbm(q + vec2(5.2, 1.3)));
+  float density = fbm(q + 2.4 * warp + vec2(t * 0.008, 0.0));
+  float band = exp(-pow((p.y + p.x * 0.55 - 0.16) * 2.3, 2.0));
+  float nebula = smoothstep(0.32, 0.95, density) * (0.22 + 0.78 * band);
+  vec3 tint = mix(vec3(0.3, 0.1, 0.58), vec3(0.78, 0.24, 0.7), smoothstep(0.3, 0.8, warp.x));
+  tint = mix(tint, vec3(0.18, 0.42, 0.92), smoothstep(0.55, 0.85, warp.y));
+  color += tint * nebula * 0.5;
+  color += vec3(0.95, 0.7, 1.0) * pow(nebula, 3.0) * band * 0.3;
+  float lanes = smoothstep(0.5, 0.78, fbm(q * 2.6 - warp * 1.5));
+  return color * (1.0 - lanes * 0.45 * band);
+}
+
+// The gas giant spins about a tilted axis; its bands and a storm drift past.
+vec3 paintPlanetSurface(vec3 normal, float t) {
+  float tilt = -0.35;
+  vec3 n = vec3(
+    normal.x * cos(tilt) - normal.y * sin(tilt),
+    normal.x * sin(tilt) + normal.y * cos(tilt),
+    normal.z
+  );
+  float longitude = atan(n.x, n.z) + t * 0.05;
+  vec2 uv = vec2(longitude, n.y);
+  float turbulence = fbm(uv * vec2(2.0, 6.0)) * 0.35;
+  float bands = fbm(vec2(n.y * 9.0 + turbulence * 3.0, longitude * 0.6));
+  vec3 surface = mix(vec3(0.07, 0.04, 0.18), vec3(0.32, 0.17, 0.58), bands);
+  float streaks = smoothstep(0.55, 0.8, fbm(vec2(n.y * 22.0 + turbulence * 4.0, longitude * 1.4)));
+  surface = mix(surface, vec3(0.12, 0.3, 0.62), streaks);
+
+  // Wrapping the longitude keeps the storm continuous across the seam, which
+  // sits on the far side of the planet.
+  float dLongitude = mod(longitude - 1.2 + 3.14159, 6.28318) - 3.14159;
+  vec2 storm = vec2(dLongitude * 0.9, n.y - 0.62) / vec2(0.22, 0.07);
+  float stormMask = smoothstep(1.0, 0.2, length(storm));
+  float swirl = fbm(storm * 1.5 + vec2(atan(storm.y, storm.x) * 0.8 - t * 0.4, 0.0));
+  return mix(surface, vec3(0.62, 0.42, 0.92) * (0.6 + swirl), stormMask * 0.85);
 }
 
 void main() {
@@ -65,85 +122,56 @@ void main() {
   vec2 p = (frag - 0.5) * vec2(aspect, 1.0);
   float t = uTime;
 
-  // Dropping out of hyperspace: the scene starts zoomed out and settles in.
-  vec2 sp = p * (1.0 + uWarp * 0.9);
+  // The nebula starts zoomed out while dropping out of warp speed.
+  vec3 color = paintNebula(p * (1.0 + uWarp * 0.9) + uNebulaOffset, t);
 
-  vec3 color = mix(
-    vec3(0.012, 0.008, 0.04),
-    vec3(0.07, 0.035, 0.15),
-    smoothstep(-0.8, 0.9, -sp.y * 0.9 + sp.x * 0.25)
-  );
-
-  // Nebula: domain-warped noise concentrated along a diagonal band.
-  vec2 np = sp + uParallax * 0.035;
-  vec2 q = np * 1.7 + vec2(t * 0.012, -t * 0.006);
-  vec2 warp = vec2(fbm(q), fbm(q + vec2(5.2, 1.3)));
-  float density = fbm(q + 2.4 * warp + vec2(t * 0.008, 0.0));
-  float band = exp(-pow((np.y + np.x * 0.55 - 0.16) * 2.3, 2.0));
-  float nebula = smoothstep(0.32, 0.95, density) * (0.22 + 0.78 * band);
-  vec3 nebulaColor = mix(
-    vec3(0.3, 0.1, 0.58),
-    vec3(0.78, 0.24, 0.7),
-    smoothstep(0.3, 0.8, warp.x)
-  );
-  nebulaColor = mix(nebulaColor, vec3(0.18, 0.42, 0.92), smoothstep(0.55, 0.85, warp.y));
-  color += nebulaColor * nebula * 0.5;
-  color += vec3(0.95, 0.7, 1.0) * pow(nebula, 3.0) * band * 0.3;
-  float lanes = smoothstep(0.5, 0.78, fbm(q * 2.6 - warp * 1.5));
-  color *= 1.0 - lanes * 0.45 * band;
-
-  // Backlit gas giant rising from the bottom edge.
-  vec3 light = normalize(vec3(-0.45, 0.85, -0.35));
-  vec2 planetCenter = vec2(aspect * 0.18, -1.33 - uSink * 0.2) + uParallax * 0.012;
-  float radius = 1.0;
-  vec2 d = sp - planetCenter;
+  vec2 d = p - uPlanet.xy;
+  float radius = uPlanet.z;
   float r = length(d);
   float pixel = 2.0 / uResolution.y;
   float inside = smoothstep(radius, radius - pixel, r);
   if (inside > 0.0) {
     vec3 normal = vec3(d, sqrt(max(radius * radius - r * r, 0.0))) / radius;
-    float diffuse = max(dot(normal, light), 0.0);
-    float latitude = normal.y * 0.9 + normal.x * 0.25;
-    float bands = fbm(vec2(latitude * 9.0, normal.x * 1.2 + t * 0.01));
-    vec3 surface = mix(vec3(0.07, 0.04, 0.18), vec3(0.3, 0.16, 0.55), bands);
-    surface = mix(
-      surface,
-      vec3(0.12, 0.3, 0.62),
-      smoothstep(0.55, 0.8, fbm(vec2(latitude * 22.0, normal.x * 3.0 - t * 0.015)))
-    );
-    vec3 planet = surface * (0.06 + 0.08 * normal.z + 1.6 * diffuse);
+    float diffuse = max(dot(normal, LIGHT), 0.0);
+    vec3 planet = paintPlanetSurface(normal, t) * (0.07 + 0.1 * normal.z + 1.6 * diffuse);
     float fresnel = pow(1.0 - normal.z, 2.5);
     planet += mix(vec3(0.5, 0.3, 1.0), vec3(0.4, 0.8, 1.0), diffuse) * fresnel * (0.2 + 1.1 * diffuse);
     color = mix(color, planet, inside);
   }
 
-  // Atmosphere and the faint cosmic rays fanning out of it.
   vec2 direction = d / max(r, 1e-4);
-  float lit = clamp(dot(direction, normalize(light.xy)) * 0.5 + 0.5, 0.0, 1.0);
+  float altitude = (r - radius) / radius;
+  float lit = clamp(dot(direction, normalize(LIGHT.xy)) * 0.5 + 0.5, 0.0, 1.0);
   vec3 atmosphere = mix(vec3(0.45, 0.2, 0.85), vec3(0.3, 0.7, 1.0), smoothstep(0.35, 0.9, lit));
   atmosphere = mix(atmosphere, vec3(1.0, 0.5, 0.8), smoothstep(0.78, 1.0, lit) * 0.35);
-  float altitude = r - radius;
-  color += atmosphere * limbGlow(altitude, 22.0, 70.0) * (0.15 + 0.85 * lit);
-  float rays = noise(direction * 34.0 + t * 0.03) * noise(direction * 11.0 - t * 0.02);
-  color += atmosphere * pow(rays, 1.6) * exp(-max(altitude, 0.0) * 3.0) * 0.4 * lit * step(0.0, altitude);
+  // The planet centre sits below the screen, so the angle's seam (straight
+  // down) is never visible.
+  float angle = atan(direction.x, direction.y);
+  float shimmer = 0.88 + 0.12 * noise(vec2(angle * 6.0, t * 0.25));
+  color += atmosphere * limbGlow(altitude, 22.0, 70.0) * (0.15 + 0.85 * lit) * shimmer;
+  if (altitude > 0.0 && altitude < 0.6) {
+    // Cosmic rays and dust streaming away from the atmosphere.
+    float flow = altitude * 7.0 - t * 0.12;
+    float rays = noise(vec2(angle * 26.0, flow)) * noise(vec2(angle * 9.0 + 4.0, flow * 0.5));
+    float dust = smoothstep(0.62, 0.9, fbm(vec2(angle * 40.0, altitude * 18.0 - t * 0.25)));
+    float fade = exp(-altitude * 3.0) * lit;
+    color += atmosphere * (pow(rays, 1.6) * 0.42 + dust * 0.22) * fade;
+  }
 
-  // A small moon catching the same light.
-  vec2 moonCenter = vec2(-aspect * 0.3, 0.28) + uParallax * 0.02;
-  float moonRadius = 0.032;
-  vec2 md = sp - moonCenter;
+  vec2 md = p - uMoon.xy;
   float mr = length(md);
-  float moonInside = smoothstep(moonRadius, moonRadius - pixel, mr);
+  float moonInside = smoothstep(uMoon.z, uMoon.z - pixel, mr);
   if (moonInside > 0.0) {
-    vec3 normal = vec3(md, sqrt(max(moonRadius * moonRadius - mr * mr, 0.0))) / moonRadius;
+    vec3 normal = vec3(md, sqrt(max(uMoon.z * uMoon.z - mr * mr, 0.0))) / uMoon.z;
     float diffuse = max(dot(normal, normalize(vec3(-0.6, 0.5, 0.25))), 0.0);
-    float craters = fbm(md * 90.0);
+    float craters = fbm(md / uMoon.z * 3.0);
     vec3 moon = mix(vec3(0.55, 0.5, 0.75), vec3(0.85, 0.82, 0.95), craters) * (0.04 + 1.1 * diffuse);
     color = mix(color, moon, moonInside);
   }
-  color += vec3(0.6, 0.55, 1.0) * limbGlow(mr - moonRadius, 60.0, 400.0) * 0.12;
+  color += vec3(0.6, 0.55, 1.0) * limbGlow((mr - uMoon.z) / uMoon.z, 2.0, 13.0) * 0.12;
 
   color += vec3(0.55, 0.45, 1.0) * uWarp * 0.3 * exp(-length(p) * 2.5);
-  color *= 1.0 - uSink * 0.3;
+  color *= 1.0 - uDim;
   color *= 1.0 - dot(frag - 0.5, frag - 0.5) * 0.7;
   // Dithering keeps the dark gradients from banding.
   color += (hash(gl_FragCoord.xy + fract(t)) - 0.5) / 255.0;
@@ -163,11 +191,79 @@ export function createNebula(canvas: HTMLCanvasElement): Nebula | undefined {
   });
   if (!gl) return undefined;
 
-  const program = createProgram(gl);
+  let state = createState(gl);
+  if (!state) return undefined;
+  let cssHeight = 1;
+  let cssWidth = 1;
+
+  watchContext(canvas, {
+    onLost: () => (state = undefined),
+    onRestored: () => {
+      state = createState(gl);
+      applySize();
+    },
+  });
+
+  function applySize() {
+    if (!state) return;
+    gl!.viewport(0, 0, canvas.width, canvas.height);
+    gl!.uniform2f(state.uniforms.resolution, canvas.width, canvas.height);
+  }
+
+  function resize(width: number, height: number, pixelRatio: number) {
+    const scale = Math.min(
+      pixelRatio,
+      Math.sqrt(MAX_PIXELS / Math.max(width * height, 1))
+    );
+    cssWidth = width;
+    cssHeight = height;
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    applySize();
+  }
+
+  function draw({ bodies, dim, nebulaOffset, time, warp }: NebulaFrame) {
+    if (!state) return;
+    const { uniforms } = state;
+    gl!.uniform1f(uniforms.time, time);
+    gl!.uniform1f(uniforms.warp, warp);
+    gl!.uniform1f(uniforms.dim, dim);
+    gl!.uniform2f(
+      uniforms.nebulaOffset,
+      nebulaOffset.x / cssHeight,
+      -nebulaOffset.y / cssHeight
+    );
+    setBody(uniforms.planet, bodies.planet);
+    setBody(uniforms.moon, bodies.moon);
+    gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+  }
+
+  // Converts CSS pixels into the shader's units: viewport heights from the
+  // centre of the screen, with y pointing up.
+  function setBody(
+    location: WebGLUniformLocation | null,
+    body: Bodies["planet"]
+  ) {
+    gl!.uniform3f(
+      location,
+      (body.x - cssWidth / 2) / cssHeight,
+      (cssHeight / 2 - body.y) / cssHeight,
+      body.radius / cssHeight
+    );
+  }
+
+  function destroy() {
+    gl!.getExtension("WEBGL_lose_context")?.loseContext();
+  }
+
+  return { destroy, draw, resize };
+}
+
+function createState(gl: WebGLRenderingContext) {
+  const program = createProgram(gl, VERTEX_SHADER, FRAGMENT_SHADER);
   if (!program) return undefined;
 
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   // One oversized triangle covers the viewport without a diagonal seam.
   gl.bufferData(
     gl.ARRAY_BUFFER,
@@ -179,72 +275,17 @@ export function createNebula(canvas: HTMLCanvasElement): Nebula | undefined {
   gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
   gl.useProgram(program);
 
-  const uniforms = {
-    parallax: gl.getUniformLocation(program, "uParallax"),
-    resolution: gl.getUniformLocation(program, "uResolution"),
-    sink: gl.getUniformLocation(program, "uSink"),
-    time: gl.getUniformLocation(program, "uTime"),
-    warp: gl.getUniformLocation(program, "uWarp"),
+  return {
+    uniforms: {
+      dim: gl.getUniformLocation(program, "uDim"),
+      moon: gl.getUniformLocation(program, "uMoon"),
+      nebulaOffset: gl.getUniformLocation(program, "uNebulaOffset"),
+      planet: gl.getUniformLocation(program, "uPlanet"),
+      resolution: gl.getUniformLocation(program, "uResolution"),
+      time: gl.getUniformLocation(program, "uTime"),
+      warp: gl.getUniformLocation(program, "uWarp"),
+    },
   };
-
-  function resize(width: number, height: number, pixelRatio: number) {
-    const scale = Math.min(
-      pixelRatio,
-      Math.sqrt(MAX_PIXELS / Math.max(width * height, 1))
-    );
-    canvas.width = Math.max(1, Math.round(width * scale));
-    canvas.height = Math.max(1, Math.round(height * scale));
-    gl!.viewport(0, 0, canvas.width, canvas.height);
-    gl!.uniform2f(uniforms.resolution, canvas.width, canvas.height);
-  }
-
-  function draw({ parallax, sink, time, warp }: NebulaFrame) {
-    gl!.uniform1f(uniforms.time, time);
-    gl!.uniform2f(uniforms.parallax, parallax.x, -parallax.y);
-    gl!.uniform1f(uniforms.sink, sink);
-    gl!.uniform1f(uniforms.warp, warp);
-    gl!.drawArrays(gl!.TRIANGLES, 0, 3);
-  }
-
-  function destroy() {
-    gl!.getExtension("WEBGL_lose_context")?.loseContext();
-  }
-
-  return { destroy, draw, resize };
-}
-
-function createProgram(gl: WebGLRenderingContext) {
-  const program = gl.createProgram();
-  const vertex = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
-  const fragment = compileShader(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
-  if (!program || !vertex || !fragment) return undefined;
-
-  gl.attachShader(program, vertex);
-  gl.attachShader(program, fragment);
-  gl.linkProgram(program);
-  if (gl.getProgramParameter(program, gl.LINK_STATUS)) return program;
-
-  console.warn("[cosmos] Failed to link the nebula shader.");
-  return undefined;
-}
-
-function compileShader(
-  gl: WebGLRenderingContext,
-  type: number,
-  source: string
-) {
-  const shader = gl.createShader(type);
-  if (!shader) return undefined;
-
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (gl.getShaderParameter(shader, gl.COMPILE_STATUS)) return shader;
-
-  console.warn(
-    "[cosmos] Failed to compile a nebula shader.",
-    gl.getShaderInfoLog(shader)
-  );
-  return undefined;
 }
 
 export interface Nebula {
@@ -254,8 +295,11 @@ export interface Nebula {
 }
 
 interface NebulaFrame {
-  parallax: { x: number; y: number };
-  sink: number;
+  bodies: Bodies;
+  /** How much to darken the sky while reading, from 0 to 1. */
+  dim: number;
+  /** The nebula's parallax offset in CSS pixels. */
+  nebulaOffset: { x: number; y: number };
   time: number;
   warp: number;
 }

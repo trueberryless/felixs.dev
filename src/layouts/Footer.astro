@@ -74,20 +74,6 @@ const socialLinks = [
   </div>
 </footer>
 
-<script>
-  const updateMaxScroll = () => {
-    const maxScroll =
-      document.documentElement.scrollHeight - window.innerHeight;
-    document.documentElement.style.setProperty(
-      "--max-scroll",
-      `${maxScroll}px`
-    );
-  };
-  window.addEventListener("resize", updateMaxScroll);
-  new ResizeObserver(updateMaxScroll).observe(document.body);
-  updateMaxScroll();
-</script>
-
 <style>
   footer {
     width: 100%;
@@ -111,12 +97,41 @@ const socialLinks = [
     text-align: center;
     max-width: 1440px;
     margin: 0 auto;
-    will-change: transform;
-    transform: translate3d(
-      0,
-      calc((var(--max-scroll, 0px) - var(--scroll-y, 0px)) * -0.35),
-      0
-    );
+  }
+
+  /* The content trails the page by 35% while the footer scrolls into view,
+     driven by the compositor. The offsets include the footer's padding. */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      footer {
+        view-timeline: --footer block;
+      }
+
+      .footer-container {
+        will-change: transform;
+        animation: footer-reveal linear both;
+        animation-timeline: --footer;
+        animation-range: entry 0% entry 100%;
+      }
+
+      @media (max-width: 768px) {
+        .footer-container {
+          animation-name: footer-reveal-compact;
+        }
+      }
+    }
+  }
+
+  @keyframes footer-reveal {
+    from {
+      transform: translate3d(0, calc(-35% - 45px), 0);
+    }
+  }
+
+  @keyframes footer-reveal-compact {
+    from {
+      transform: translate3d(0, calc(-35% - 22px), 0);
+    }
   }
 
   .nav-groups {

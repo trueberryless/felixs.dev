@@ -1,16 +1,23 @@
 // Imported as a URL: a plain CSS import would be hoisted by Astro into a
 // render-blocking stylesheet on every page.
+import { DEPTH, POINTER_REACH, getBodies } from "./bodies";
 import stylesUrl from "./cosmos.css?url";
+import { launchRocket } from "./launch";
 import { createNebula } from "./nebula";
-import { launchRocket } from "./rocket";
-import { createStarfield } from "./stars";
+import { createStarfield } from "./starfield";
+import { createSkyEffects, createStars } from "./stars";
 
 const FONTS_ID = "celestial-fonts";
 const FONTS_URL =
   "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Space+Mono:wght@400;700&display=swap";
 const STILL_CLASS = "cosmos-still";
 const STILL_KEY = "celestialStill";
-const NEBULA_FRAME_MS = 1000 / 30;
+// Slow motion (twinkling, the spinning planet) renders at 30 fps; scrolling,
+// the pointer, shooting stars and the warp get every frame. Idle frames are
+// skipped with a timer rather than an early return, because every animation
+// frame the page asks for also makes the browser tick all CSS animations.
+const IDLE_FRAME_MS = 1000 / 30;
+const ACTIVE_FOR_MS = 250;
 const POINTER_LINGER_S = 2.5;
 const WARP_MS = { arrival: 2400, cruise: 1300 } as const;
 // Keep in sync with the drifting elements in `cosmos.css`.
@@ -31,13 +38,18 @@ const DRIFT_SELECTOR = [
 const styles = loadStylesheet(stylesUrl);
 let scene: Scene | undefined;
 
+/** Fetches the fonts and styles ahead of time, so switching never waits. */
+export function prepare() {
+  ensureFonts();
+  return styles;
+}
+
 /**
  * Mounts the space scene once its styles are in. Calling it again while
  * mounted only adds the warp.
  */
 export async function start(options?: StartOptions) {
-  ensureFonts();
-  await styles;
+  await prepare();
   // The theme may have been switched away while the styles were loading.
   if (!document.documentElement.classList.contains("celestial")) return;
 
@@ -52,14 +64,19 @@ export function stop() {
 }
 
 /**
- * Lifts a rocket off from the given element and resolves where it leaves the
- * screen. Resolves right away for people who prefer reduced motion.
+ * Lifts a rocket off from the given element into space. `onSwitch` applies the
+ * theme once the sky covers the page; without motion it applies right away.
  */
-export function launch(from: Element | null) {
+export async function launch(from: Element | null, onSwitch: () => void) {
+  await prepare();
   if (prefersReducedMotion()) {
-    return Promise.resolve({ x: window.innerWidth / 2, y: 0 });
+    onSwitch();
+    return;
   }
-  return launchRocket(from);
+  await launchRocket(from, () => {
+    onSwitch();
+    void start({ warp: "arrival" });
+  });
 }
 
 function createScene(): Scene {
@@ -70,22 +87,26 @@ function createScene(): Scene {
   layer.setAttribute("aria-hidden", "true");
   const nebulaCanvas = document.createElement("canvas");
   const starCanvas = document.createElement("canvas");
-  layer.append(nebulaCanvas, starCanvas);
+  const effectsCanvas = document.createElement("canvas");
+  layer.append(nebulaCanvas, starCanvas, effectsCanvas);
   document.body.prepend(layer);
 
   const nebula = createNebula(nebulaCanvas);
   if (!nebula) nebulaCanvas.remove();
-  const stars = createStarfield(starCanvas);
+  const starfield = createStarfield(starCanvas);
+  if (!starfield) starCanvas.remove();
+  const effects = createSkyEffects(effectsCanvas);
   const stillToggle = createStillToggle(root);
   const driftObserver = new MutationObserver(scheduleDriftPhases);
   driftObserver.observe(document.body, { childList: true, subtree: true });
 
   const pointer = { strength: 0, x: 0, y: 0 };
   const pointerTarget = { x: 0, y: 0 };
-  const parallax = { x: 0, y: 0 };
+  const view = { x: 0, y: 0 };
   let lastPointerMove = -Infinity;
+  let lastScroll = -Infinity;
   let frame = 0;
-  let lastNebulaFrame = -Infinity;
+  let idleTimer = 0;
   let warpStart = 0;
   let warpDuration = 0;
   let isDestroyed = false;
@@ -95,6 +116,7 @@ function createScene(): Scene {
     return reducedMotion.matches || root.classList.contains(STILL_CLASS);
   }
 
+  /** Draws one frame and tells whether anything is moving fast. */
   function render(now: number) {
     const time = now / 1000;
     const still = isStill();
@@ -103,49 +125,90 @@ function createScene(): Scene {
       still || warpProgress >= 1 ? 0 : (1 - warpProgress) ** 2.2;
     if (warpProgress >= 1) warpDuration = 0;
 
-    const smoothing = still ? 1 : 0.06;
-    parallax.x += ((still ? 0 : pointerTarget.x) - parallax.x) * smoothing;
-    parallax.y += ((still ? 0 : pointerTarget.y) - parallax.y) * smoothing;
-    const pointerAge = time - lastPointerMove;
+    const isActive =
+      warpStrength > 0 ||
+      now - lastScroll < ACTIVE_FOR_MS ||
+      now - lastPointerMove * 1000 < ACTIVE_FOR_MS ||
+      Math.abs(view.x - pointerTarget.x) + Math.abs(view.y - pointerTarget.y) >
+        0.002 ||
+      Boolean(effects?.hasShootingStar());
+
+    const smoothing = still ? 1 : 0.08;
+    view.x += ((still ? 0 : pointerTarget.x) - view.x) * smoothing;
+    view.y += ((still ? 0 : pointerTarget.y) - view.y) * smoothing;
     pointer.strength = still
       ? 0
-      : Math.max(0, Math.min(1, POINTER_LINGER_S - pointerAge));
+      : Math.max(0, Math.min(1, POINTER_LINGER_S - (time - lastPointerMove)));
     const scroll = still ? 0 : window.scrollY;
-    const sink = Math.min(1, scroll / window.innerHeight);
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const motionTime = still ? 0 : time;
+    const bodies = getBodies({
+      arrival: warpStrength,
+      height,
+      pointer: view,
+      scroll,
+      time: motionTime,
+      width,
+    });
 
-    stars?.draw({
+    nebula?.draw({
+      bodies,
+      dim: Math.min(1, scroll / height) * 0.2,
+      nebulaOffset: {
+        x: view.x * DEPTH.nebula * POINTER_REACH,
+        y: view.y * DEPTH.nebula * POINTER_REACH + scroll * DEPTH.nebula,
+      },
+      time: motionTime,
+      warp: warpStrength,
+    });
+    starfield?.draw({
       animate: !still,
-      parallax,
+      bodies,
+      scroll,
+      time,
+      view,
+      warp: warpStrength,
+    });
+    effects?.draw({
+      animate: !still,
+      bodies,
       pointer,
       scroll,
       time,
+      view,
       warp: warpStrength,
     });
-    if (
-      nebula &&
-      (now - lastNebulaFrame >= NEBULA_FRAME_MS || warpStrength > 0)
-    ) {
-      nebula.draw({
-        parallax,
-        sink,
-        time: still ? 0 : time,
-        warp: warpStrength,
-      });
-      lastNebulaFrame = now;
-    }
+
+    return !still && isActive;
   }
 
   function loop(now: number) {
-    render(now);
+    if (render(now)) {
+      frame = requestAnimationFrame(loop);
+      return;
+    }
+    idleTimer = window.setTimeout(() => {
+      idleTimer = 0;
+      frame = requestAnimationFrame(loop);
+    }, IDLE_FRAME_MS - 4);
+  }
+
+  // Scrolling, the pointer and the warp need every frame right away.
+  function wake() {
+    if (!idleTimer) return;
+    clearTimeout(idleTimer);
+    idleTimer = 0;
     frame = requestAnimationFrame(loop);
   }
 
   // Motion-free visitors get one carefully painted frame instead of a loop.
   function play() {
     cancelAnimationFrame(frame);
+    clearTimeout(idleTimer);
+    idleTimer = 0;
     if (isDestroyed) return;
     if (isStill()) {
-      lastNebulaFrame = -Infinity;
       frame = requestAnimationFrame(render);
       return;
     }
@@ -156,9 +219,10 @@ function createScene(): Scene {
     const width = window.innerWidth;
     const height = window.innerHeight;
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    const stars = createStars(width, height);
     nebula?.resize(width, height, pixelRatio);
-    stars?.resize(width, height, pixelRatio);
-    lastNebulaFrame = -Infinity;
+    starfield?.resize(width, height, pixelRatio, stars);
+    effects?.resize(width, height, pixelRatio, stars);
     if (isStill()) play();
   }
 
@@ -169,6 +233,12 @@ function createScene(): Scene {
     pointerTarget.x = event.clientX / window.innerWidth - 0.5;
     pointerTarget.y = event.clientY / window.innerHeight - 0.5;
     lastPointerMove = performance.now() / 1000;
+    wake();
+  }
+
+  function onScroll() {
+    lastScroll = performance.now();
+    wake();
   }
 
   function scheduleDriftPhases() {
@@ -180,6 +250,7 @@ function createScene(): Scene {
     if (isStill()) return;
     warpStart = performance.now();
     warpDuration = duration;
+    wake();
   }
 
   function destroy() {
@@ -188,6 +259,7 @@ function createScene(): Scene {
     driftObserver.disconnect();
     window.removeEventListener("resize", resize);
     window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("scroll", onScroll);
     reducedMotion.removeEventListener("change", play);
     stillToggle.removeEventListener("toggle", play);
     stillToggle.remove();
@@ -196,13 +268,16 @@ function createScene(): Scene {
     // Let the fade-out finish before tearing down the canvases.
     setTimeout(() => {
       cancelAnimationFrame(frame);
+      clearTimeout(idleTimer);
       nebula?.destroy();
+      starfield?.destroy();
       layer.remove();
     }, 900);
   }
 
   window.addEventListener("resize", resize, { passive: true });
   window.addEventListener("pointermove", onPointerMove, { passive: true });
+  window.addEventListener("scroll", onScroll, { passive: true });
   reducedMotion.addEventListener("change", play);
   stillToggle.addEventListener("toggle", play);
 

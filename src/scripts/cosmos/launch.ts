@@ -1,5 +1,8 @@
-const IGNITION_MS = 650;
-const ASCENT_MS = 1400;
+const IGNITION_MS = 700;
+const ASCENT_MS = 1500;
+// When the sky has turned into space and covers the whole page.
+const COVERED_MS = IGNITION_MS + 1250;
+const REVEAL_MS = 900;
 const ROCKET_WIDTH = 34;
 const ROCKET_HEIGHT = 60;
 const ROCKET_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 72">
@@ -18,22 +21,28 @@ const ROCKET_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 72">
 </svg>`;
 
 /**
- * Launches a little rocket from the given element. The returned promise
- * resolves once the rocket is about to leave the viewport, which is the cue to
- * reveal the celestial theme behind it.
+ * Lifts a rocket off from the given element while the sky darkens into space
+ * behind it. `onSwitch` runs once the sky covers the page, so the theme can
+ * change out of sight, then the sky fades to reveal it.
  */
-export function launchRocket(from: Element | null): Promise<LaunchExit> {
-  const canvas = document.createElement("canvas");
-  canvas.className = "cosmos-launch";
-  canvas.setAttribute("aria-hidden", "true");
-  const context = canvas.getContext("2d");
+export function launchRocket(
+  from: Element | null,
+  onSwitch: () => void
+): Promise<void> {
   const width = window.innerWidth;
   const height = window.innerHeight;
   const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  const canvas = document.createElement("canvas");
+  canvas.className = "cosmos-launch";
+  canvas.setAttribute("aria-hidden", "true");
   canvas.width = Math.round(width * pixelRatio);
   canvas.height = Math.round(height * pixelRatio);
+  const context = canvas.getContext("2d");
   context?.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-  document.body.append(canvas);
+  const sky = document.createElement("div");
+  sky.className = "cosmos-sky";
+  sky.setAttribute("aria-hidden", "true");
+  document.body.append(sky, canvas);
 
   const rect = from?.getBoundingClientRect();
   const padX = rect ? rect.left + rect.width / 2 : width / 2;
@@ -42,15 +51,54 @@ export function launchRocket(from: Element | null): Promise<LaunchExit> {
   rocket.src = `data:image/svg+xml,${encodeURIComponent(ROCKET_SVG)}`;
 
   return new Promise((resolve) => {
-    if (!context) {
-      canvas.remove();
-      resolve({ x: padX, y: 0 });
-      return;
-    }
-
     let particles: Particle[] = [];
     let startedAt = 0;
-    let hasExited = false;
+    let isRocketDone = false;
+    let isSkyDone = false;
+
+    function finish() {
+      if (!isRocketDone || !isSkyDone) return;
+      canvas.remove();
+      sky.remove();
+      resolve();
+    }
+
+    // The sky is a gradient twice the viewport tall that slides down: light
+    // atmosphere first, then deeper blues, then space. Only transform and
+    // opacity animate, and it rasterizes at half height before scaling.
+    const descent = sky.animate(
+      [
+        { transform: "translate3d(0, -200vh, 0) scaleY(2)" },
+        { transform: "translate3d(0, 0, 0) scaleY(2)" },
+      ],
+      {
+        delay: IGNITION_MS,
+        duration: COVERED_MS - IGNITION_MS,
+        easing: "cubic-bezier(0.45, 0, 0.85, 0.4)",
+        fill: "forwards",
+      }
+    );
+    descent.finished
+      .then(() => {
+        onSwitch();
+        // Two frames let the new theme and the first sky frame paint.
+        return new Promise((next) =>
+          requestAnimationFrame(() => requestAnimationFrame(next))
+        );
+      })
+      .then(
+        () =>
+          sky.animate([{ opacity: 1 }, { opacity: 0 }], {
+            duration: REVEAL_MS,
+            easing: "ease-out",
+            fill: "forwards",
+          }).finished
+      )
+      .catch(() => onSwitch())
+      .finally(() => {
+        isSkyDone = true;
+        finish();
+      });
 
     function tick(now: number) {
       startedAt ||= now;
@@ -66,15 +114,11 @@ export function launchRocket(from: Element | null): Promise<LaunchExit> {
       const y = padY - (padY + ROCKET_HEIGHT * 2) * lift;
       const isFlying = ascent < 1;
 
-      if (isFlying) {
-        particles.push(...createExhaust(x, y, ignition, ascent));
-      }
+      if (isFlying) particles.push(...createExhaust(x, y, ignition, ascent));
       particles = particles.filter((particle) => particle.age < particle.life);
 
       context!.clearRect(0, 0, width, height);
-      for (const particle of particles) {
-        drawParticle(context!, particle);
-      }
+      for (const particle of particles) drawParticle(context!, particle);
       if (isFlying) {
         drawFlame(context!, x, y, ignition, ascent);
         context!.globalAlpha = 1;
@@ -87,19 +131,18 @@ export function launchRocket(from: Element | null): Promise<LaunchExit> {
         );
       }
 
-      if (!hasExited && ascent > 0 && y < height * 0.18) {
-        hasExited = true;
-        resolve({ x, y: Math.max(y, 0) });
-      }
-
       if (isFlying || particles.length > 0) {
         requestAnimationFrame(tick);
         return;
       }
-      canvas.remove();
-      if (!hasExited) resolve({ x, y: 0 });
+      isRocketDone = true;
+      finish();
     }
 
+    if (!context) {
+      isRocketDone = true;
+      return;
+    }
     rocket
       .decode()
       .catch(() => undefined)
@@ -124,9 +167,9 @@ function createExhaust(
       age: 0,
       hue: isHot ? 30 + Math.random() * 30 : 270 + Math.random() * 40,
       isHot,
-      life: isHot ? 0.35 + Math.random() * 0.3 : 0.8 + Math.random() * 0.7,
-      radius: isHot ? 2 + Math.random() * 3 : 4 + Math.random() * 5,
-      vx: (Math.random() - 0.5) * spread,
+      life: isHot ? 0.35 + Math.random() * 0.3 : 0.9 + Math.random() * 0.8,
+      radius: isHot ? 2 + Math.random() * 3 : 3 + Math.random() * 4,
+      vx: (Math.random() - 0.5) * spread * (isHot ? 1 : 1.8),
       vy: isOnPad ? 10 + Math.random() * 40 : 120 + Math.random() * 160,
       x: x + (Math.random() - 0.5) * 8,
       y,
@@ -142,11 +185,10 @@ function drawParticle(context: CanvasRenderingContext2D, particle: Particle) {
   particle.vx *= 0.97;
   particle.vy *= 0.95;
   const progress = particle.age / particle.life;
-  const radius =
-    particle.radius * (1 + progress * (particle.isHot ? 0.5 : 2.6));
+  const radius = particle.radius * (1 + progress * (particle.isHot ? 0.5 : 4));
 
   context.globalCompositeOperation = particle.isHot ? "lighter" : "source-over";
-  context.globalAlpha = (1 - progress) * (particle.isHot ? 0.9 : 0.35);
+  context.globalAlpha = (1 - progress) ** 1.5 * (particle.isHot ? 0.9 : 0.22);
   context.fillStyle = particle.isHot
     ? `hsl(${particle.hue} 100% ${70 - progress * 20}%)`
     : `hsl(${particle.hue} 45% 82%)`;
@@ -180,11 +222,6 @@ function drawFlame(
   context.closePath();
   context.fill();
   context.globalCompositeOperation = "source-over";
-}
-
-export interface LaunchExit {
-  x: number;
-  y: number;
 }
 
 interface Particle {
