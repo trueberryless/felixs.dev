@@ -166,9 +166,12 @@
   padding: 0;
 }
 
+/* `clip` rather than `hidden`: a hidden overflow would make the body a scroll
+   container that never scrolls, and every view timeline on the page would
+   follow it instead of the page. */
 html,
 body {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 html {
