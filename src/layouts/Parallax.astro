@@ -9,14 +9,8 @@
   ).matches;
 
   if (!isSupported && !prefersReducedMotion) {
-    const layers = [...document.querySelectorAll<HTMLElement>(".parallax")].map(
-      (element) => ({
-        element,
-        speed:
-          1 - Number(getComputedStyle(element).getPropertyValue("--depth")),
-      })
-    );
-    const footer = document.querySelector<HTMLElement>(".footer-container");
+    let layers: { element: HTMLElement; speed: number }[] = [];
+    let footer: HTMLElement | null = null;
     let isTicking = false;
 
     const update = () => {
@@ -42,6 +36,18 @@
       { passive: true }
     );
     window.addEventListener("resize", update, { passive: true });
-    update();
+
+    // The client router renders every page anew, so collect its layers again.
+    document.addEventListener("astro:page-load", () => {
+      layers = [...document.querySelectorAll<HTMLElement>(".parallax")].map(
+        (element) => ({
+          element,
+          speed:
+            1 - Number(getComputedStyle(element).getPropertyValue("--depth")),
+        })
+      );
+      footer = document.querySelector<HTMLElement>(".footer-container");
+      update();
+    });
   }
 </script>

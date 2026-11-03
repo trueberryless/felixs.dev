@@ -130,12 +130,14 @@ const pathname = Astro.url.pathname;
   ];
 
   const root = document.documentElement;
-  const button = document.querySelector(".menu-toggle");
-  const headerInner = document.querySelector(".header-inner");
-  const header = document.querySelector(".glass-header");
-  const themeToggle = document.getElementById("theme-toggle");
-  const themeText = themeToggle?.querySelector(".theme-text");
-  const toast = document.getElementById("easter-egg-toast");
+  // With the client router this script runs once, while the header is
+  // rendered anew on every page, so its elements are looked up per page.
+  let button: Element | null = null;
+  let headerInner: Element | null = null;
+  let header: Element | null = null;
+  let themeToggle: HTMLElement | null = null;
+  let themeText: Element | null | undefined = null;
+  let toast: HTMLElement | null = null;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   const SCROLL_THRESHOLD_DIVISOR = 1.8;
@@ -161,33 +163,33 @@ const pathname = Astro.url.pathname;
       isToastVisible = true;
       clearTimeout(toastTimeout);
       toastTimeout = setTimeout(() => {
-        toast.classList.remove("show");
+        toast?.classList.remove("show");
         isToastVisible = false;
       }, duration);
     }
   };
 
-  button?.addEventListener("click", (event) => {
+  const onMenuToggleClick = (event: Event) => {
     event.stopPropagation();
 
     if (headerInner?.classList.contains("is-open")) {
       headerInner.classList.remove("is-open");
       headerInner.classList.add("is-closing");
       setTimeout(() => {
-        headerInner.classList.remove("is-closing");
+        headerInner?.classList.remove("is-closing");
       }, 500);
     } else {
       headerInner?.classList.remove("is-closing");
       headerInner?.classList.add("is-open");
     }
-  });
+  };
 
   const closeMenu = () => {
     if (!headerInner?.classList.contains("is-open")) return;
     headerInner.classList.remove("is-open");
     headerInner.classList.add("is-closing");
     setTimeout(() => {
-      headerInner.classList.remove("is-closing");
+      headerInner?.classList.remove("is-closing");
     }, 500);
   };
 
@@ -232,13 +234,6 @@ const pathname = Astro.url.pathname;
     },
     { passive: true }
   );
-
-  window.requestAnimationFrame(() => {
-    window.requestAnimationFrame(() => {
-      header?.classList.add("is-ready");
-      checkScroll();
-    });
-  });
 
   const formatTheme = (theme: string) =>
     theme.charAt(0).toUpperCase() + theme.slice(1);
@@ -354,11 +349,31 @@ const pathname = Astro.url.pathname;
     }
   };
 
-  themeToggle?.addEventListener("click", onThemeToggleClick);
-  themeToggle?.addEventListener("pointerenter", prepareNextTheme);
-  themeToggle?.addEventListener("focus", prepareNextTheme);
+  const bindPage = () => {
+    button = document.querySelector(".menu-toggle");
+    headerInner = document.querySelector(".header-inner");
+    header = document.querySelector(".glass-header");
+    themeToggle = document.getElementById("theme-toggle");
+    themeText = themeToggle?.querySelector(".theme-text");
+    toast = document.getElementById("easter-egg-toast");
+    isToastVisible = false;
 
-  syncThemeText();
+    button?.addEventListener("click", onMenuToggleClick);
+    themeToggle?.addEventListener("click", onThemeToggleClick);
+    themeToggle?.addEventListener("pointerenter", prepareNextTheme);
+    themeToggle?.addEventListener("focus", prepareNextTheme);
+    syncThemeText();
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        header?.classList.add("is-ready");
+        checkScroll();
+      });
+    });
+  };
+
+  // Fires on the first load and after every client-side navigation.
+  document.addEventListener("astro:page-load", bindPage);
 </script>
 
 <style>

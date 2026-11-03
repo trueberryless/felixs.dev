@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 import BaseHead from "@/layouts/BaseHead.astro";
+import Cosmos from "@/layouts/Cosmos.astro";
 import Header from "@/layouts/Header.astro";
 import Footer from "@/layouts/Footer.astro";
 import Parallax from "@/layouts/Parallax.astro";
@@ -13,11 +14,12 @@ interface Props {
 const { title, description } = Astro.props;
 ---
 
-<html lang="en">
+<html lang="en" transition:animate="none">
   <head>
     <BaseHead title={title} description={description} />
   </head>
   <body>
+    <Cosmos />
     <Header />
     <main>
       <slot />

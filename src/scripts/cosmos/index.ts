@@ -104,7 +104,7 @@ function createScene(): Scene {
   const starCanvas = document.createElement("canvas");
   const effectsCanvas = document.createElement("canvas");
   layer.append(nebulaCanvas, starCanvas, effectsCanvas);
-  document.body.prepend(layer);
+  getMount().prepend(layer);
 
   const nebula = createNebula(nebulaCanvas);
   if (!nebula) nebulaCanvas.remove();
@@ -114,7 +114,8 @@ function createScene(): Scene {
   const stillToggle = createStillToggle(root);
   const music = createSpaceMusic();
   const driftObserver = new MutationObserver(scheduleDriftPhases);
-  driftObserver.observe(document.body, { childList: true, subtree: true });
+  // The body is replaced on every client-side navigation, so watch the root.
+  driftObserver.observe(root, { childList: true, subtree: true });
 
   const pointer = { strength: 0, x: 0, y: 0 };
   const pointerTarget = { x: 0, y: 0 };
@@ -372,9 +373,15 @@ function createStillToggle(root: HTMLElement) {
     writeStorage(STILL_KEY, String(isPaused));
     button.dispatchEvent(new Event("toggle"));
   });
-  document.body.append(button);
+  getMount().append(button);
 
   return button;
+}
+
+// The `#cosmos` element persists across client-side navigations, so whatever
+// lives in it keeps running from page to page.
+function getMount() {
+  return document.getElementById("cosmos") ?? document.body;
 }
 
 function loadStylesheet(href: string) {

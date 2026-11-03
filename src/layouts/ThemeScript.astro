@@ -24,5 +24,12 @@
   };
 
   setDarkMode();
+  // The client router replaces the root's classes with the next page's. Carry
+  // them over before the swap, so the theme (and its running scene) never
+  // drops out for a moment.
+  document.addEventListener("astro:before-swap", (event) => {
+    event.newDocument.documentElement.className =
+      document.documentElement.className;
+  });
   document.addEventListener("astro:after-swap", setDarkMode);
 </script>
