@@ -1,3 +1,4 @@
+import { getBookThickness } from "./books";
 import {
   actorDid,
   bskyPublicApi,
@@ -382,8 +383,13 @@ export interface Book {
   stars?: number;
 }
 
-function processBook(raw: any): Book {
-  let pages = raw.data.bookProgress?.totalPages;
+// The page count lives on Bookhive's shared catalog record, not on the
+// reader's own copy, which only has it while progress is being tracked.
+async function processBook(raw: any): Promise<Book> {
+  const catalogBook = raw.data.hiveBookUri
+    ? await fetchRecord(raw.data.hiveBookUri)
+    : null;
+  let pages = catalogBook?.numPages || raw.data.bookProgress?.totalPages;
   if (!pages) {
     let hash = 0;
     const text = raw.data.title || raw.id;
@@ -403,7 +409,7 @@ function processBook(raw: any): Book {
     authors: raw.data.authors,
     coverUrl,
     rotation: (Math.random() * 8 - 4).toFixed(2),
-    thickness: Math.round(Math.max(10, Math.min(60, 8 + pages * 0.04))),
+    thickness: getBookThickness(pages),
     finishedAt: raw.data.finishedAt,
     startedAt: raw.data.startedAt,
     stars: raw.data.stars,
@@ -413,14 +419,14 @@ function processBook(raw: any): Book {
 export async function fetchBooks(): Promise<Book[] | null> {
   const raw = await fetchATproto("buzz.bookhive.book").catch(() => []);
   if (raw.length === 0) return null;
-  return raw
+  const finished = raw
     .filter((b: any) => isFinished(b.data.status))
     .sort((a: any, b: any) => {
       const dateA = a.data.finishedAt || a.data.startedAt || a.data.createdAt;
       const dateB = b.data.finishedAt || b.data.startedAt || b.data.createdAt;
       return new Date(dateB).getTime() - new Date(dateA).getTime();
-    })
-    .map(processBook);
+    });
+  return batchAll(finished, 10, processBook);
 }
 
 async function fetchRecord(uri: string): Promise<any | null> {
