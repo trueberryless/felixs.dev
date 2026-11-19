@@ -42,13 +42,39 @@ const compact = new Intl.NumberFormat("en-US", {
   notation: "compact",
 });
 
+// Labels get the biggest size that fits their bubble, on one line or split
+// over two, and are left out when even the smallest size won't fit. Glyphs
+// are about 0.56em wide on average.
+const MIN_FONT = 9;
+const MAX_FONT = 15;
+const fitLabel = (text: string, r: number) => {
+  const room = r * 1.6;
+  const fit = (lines: string[]) => {
+    const longest = Math.max(...lines.map((line) => line.length));
+    const size = Math.min(
+      MAX_FONT,
+      r / (lines.length + 1.6),
+      room / (longest * 0.56)
+    );
+    return size >= MIN_FONT ? { lines, size } : undefined;
+  };
+  const single = fit([text]);
+  const space = text.lastIndexOf(" ", Math.ceil(text.length / 2) + 2);
+  const split =
+    space > 0 ? fit([text.slice(0, space), text.slice(space + 1)]) : undefined;
+  if (single && (!split || single.size >= split.size * 0.85)) return single;
+  return split ?? single;
+};
+
 const circles = root.leaves().map((leaf, index) => {
   const { href, label: name, title, value } = leaf.data as Bubble;
+  const fitted = fitLabel(name, leaf.r);
   return {
     href,
     index,
-    label: name,
+    label: fitted,
     r: leaf.r,
+    showValue: Boolean(fitted) && leaf.r > 34,
     title,
     value,
     x: leaf.x,
@@ -59,54 +85,120 @@ const circles = root.leaves().map((leaf, index) => {
 const hasLinks = bubbles.some((bubble) => bubble.href);
 ---
 
-<svg
-  class="bubble-chart"
-  viewBox={`0 0 ${width} ${height}`}
-  role={hasLinks ? "group" : "img"}
-  aria-label={label}
->
-  {circles.map((circle) => {
-    const content = (
-      <>
-        <circle
-          class="bubble"
-          cx={circle.x}
-          cy={circle.y}
-          r={circle.r}
-          style={`--strength: ${Math.max(18, 72 - circle.index * 7)}%; --i: ${circle.index}`}
-        />
-        {circle.r > 20 && (
-          <>
+<div class="bubble-wrap" data-bubbles>
+  <svg
+    class="bubble-chart"
+    viewBox={`0 0 ${width} ${height}`}
+    role={hasLinks ? "group" : "img"}
+    aria-label={label}
+  >
+    {circles.map((circle) => {
+      const lines = circle.label?.lines ?? [];
+      const size = circle.label?.size ?? 0;
+      const lineHeight = size * 1.15;
+      const blockHeight =
+        lines.length * lineHeight + (circle.showValue ? 13 : 0);
+      const firstY = circle.y - blockHeight / 2 + lineHeight / 2;
+      const content = (
+        <>
+          <circle
+            class="bubble"
+            cx={circle.x}
+            cy={circle.y}
+            r={circle.r}
+            style={`--strength: ${Math.max(18, 72 - circle.index * 7)}%; --i: ${circle.index}`}
+          />
+          {lines.map((line, index) => (
             <text
               class="bubble-label"
               x={circle.x}
-              y={circle.y - (circle.r > 30 ? 5 : 0)}
-              style={`font-size: ${Math.min(15, Math.max(9, circle.r / 3.2))}px`}
+              y={firstY + index * lineHeight}
+              style={`font-size: ${size.toFixed(1)}px`}
             >
-              {circle.label}
+              {line}
             </text>
-            {circle.r > 30 && (
-              <text class="bubble-value" x={circle.x} y={circle.y + 11}>
-                {compact.format(circle.value)}
-              </text>
-            )}
-          </>
-        )}
-        <title>{circle.title}</title>
-      </>
-    );
+          ))}
+          {circle.showValue && (
+            <text
+              class="bubble-value"
+              x={circle.x}
+              y={firstY + lines.length * lineHeight + 2}
+            >
+              {compact.format(circle.value)}
+            </text>
+          )}
+        </>
+      );
 
-    return circle.href ? (
-      <a class="bubble-group" href={circle.href} aria-label={circle.title}>
-        {content}
-      </a>
-    ) : (
-      <g class="bubble-group">{content}</g>
-    );
-  })}
-</svg>
+      return circle.href ? (
+        <a
+          class="bubble-group"
+          href={circle.href}
+          aria-label={circle.title}
+          data-tip={circle.title}
+          style={`--i: ${circle.index}`}
+        >
+          {content}
+        </a>
+      ) : (
+        <g
+          class="bubble-group"
+          data-tip={circle.title}
+          style={`--i: ${circle.index}`}
+        >
+          {content}
+        </g>
+      );
+    })}
+  </svg>
+  <span class="bubble-tip" aria-hidden="true"></span>
+</div>
+
+<script>
+  // One tooltip per chart follows the bubble you point at or focus, instead
+  // of the browser's plain title tooltip.
+  function enableTips() {
+    for (const wrap of document.querySelectorAll<HTMLElement>(
+      "[data-bubbles]:not([data-tips])"
+    )) {
+      wrap.dataset.tips = "";
+      const tip = wrap.querySelector<HTMLElement>(".bubble-tip");
+      if (!tip) continue;
+
+      const show = (event: Event) => {
+        const group = (event.target as Element).closest<SVGGElement>(
+          ".bubble-group"
+        );
+        const circle = group?.querySelector("circle");
+        if (!group || !circle) return;
+        const box = circle.getBoundingClientRect();
+        const frame = wrap.getBoundingClientRect();
+        tip.textContent = group.dataset.tip ?? "";
+        tip.style.left = `${box.left + box.width / 2 - frame.left}px`;
+        tip.style.top = `${box.top - frame.top}px`;
+        tip.classList.add("is-visible");
+      };
+      const hide = () => tip.classList.remove("is-visible");
+
+      wrap.addEventListener("pointerover", show);
+      wrap.addEventListener("focusin", show);
+      wrap.addEventListener("pointerleave", hide);
+      wrap.addEventListener("focusout", hide);
+    }
+  }
+  enableTips();
+  document.addEventListener("astro:page-load", enableTips);
+  new MutationObserver(enableTips).observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+</script>
 
 <style>
+  .bubble-wrap {
+    position: relative;
+  }
+
   .bubble-chart {
     display: block;
     width: 100%;
@@ -116,6 +208,8 @@ const hasLinks = bubbles.some((bubble) => bubble.href);
 
   .bubble-group {
     cursor: default;
+    outline: none;
+    transition: opacity 0.35s ease;
   }
 
   a.bubble-group {
@@ -129,20 +223,30 @@ const hasLinks = bubbles.some((bubble) => bubble.href);
     transform-box: fill-box;
     transform-origin: center;
     transition:
-      scale 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-      fill 0.25s ease;
+      scale 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+      fill 0.35s ease,
+      stroke 0.35s ease,
+      stroke-width 0.35s ease;
   }
 
-  .bubble-group:hover .bubble,
-  .bubble-group:focus-visible .bubble {
-    scale: 1.06;
-    fill: color-mix(in oklch, var(--accent) 85%, transparent);
+  /* The bubble you point at brightens and gets a ring, the others step
+     back. Nothing grows into its neighbours. */
+  .bubble-chart:has(.bubble-group:is(:hover, :focus-visible))
+    .bubble-group:not(:hover, :focus-visible) {
+    opacity: 0.4;
+  }
+
+  .bubble-group:is(:hover, :focus-visible) .bubble {
+    scale: 1.02;
+    fill: color-mix(in oklch, var(--accent) 88%, transparent);
+    stroke: var(--text);
+    stroke-width: 2;
   }
 
   .bubble-label,
   .bubble-value {
     text-anchor: middle;
-    dominant-baseline: middle;
+    dominant-baseline: central;
     pointer-events: none;
   }
 
@@ -152,25 +256,66 @@ const hasLinks = bubbles.some((bubble) => bubble.href);
   }
 
   .bubble-value {
-    font-size: 9px;
+    font-size: 10px;
     fill: var(--text);
     opacity: 0.8;
+    font-variant-numeric: tabular-nums;
   }
 
-  /* Bubbles grow out of their centres as the chart comes into view. */
+  .bubble-tip {
+    position: absolute;
+    z-index: 3;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--header-bg-solid);
+    box-shadow: var(--lift-shadow);
+    color: var(--text);
+    font-size: 0.85rem;
+    white-space: nowrap;
+    pointer-events: none;
+    translate: -50% calc(-100% - 4px);
+    opacity: 0;
+    transition:
+      opacity 0.2s ease,
+      translate 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .bubble-tip.is-visible {
+    opacity: 1;
+    translate: -50% calc(-100% - 10px);
+  }
+
+  /* Bubbles grow out of their centres once the section is on stage. */
   @media (prefers-reduced-motion: no-preference) {
-    @supports (animation-timeline: view()) {
-      .bubble {
-        animation: bubble-grow linear both;
-        animation-timeline: view();
-        animation-range: entry 5% cover 40%;
-      }
+    .bubble-group {
+      transition:
+        opacity 0.35s ease,
+        translate 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     }
-  }
 
-  @keyframes bubble-grow {
-    from {
+    .bubble {
+      transition:
+        scale 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+        fill 0.35s ease,
+        stroke 0.35s ease,
+        stroke-width 0.35s ease;
+      transition-delay: calc(0.3s + var(--i) * 45ms), 0s, 0s, 0s;
+    }
+
+    :global(.story-frame[data-active="false"]) .bubble {
       scale: 0.2;
+      transition-delay: 0s;
+    }
+
+    :global(.story-frame[data-active="false"])
+      :is(.bubble-label, .bubble-value) {
+      opacity: 0;
+    }
+
+    .bubble-label,
+    .bubble-value {
+      transition: opacity 0.4s ease calc(0.6s + var(--i) * 45ms);
     }
   }
 </style>

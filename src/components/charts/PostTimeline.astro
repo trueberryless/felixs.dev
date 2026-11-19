@@ -75,13 +75,17 @@ const dateFormat = new Intl.DateTimeFormat("en-US", {
           r={isYearStart ? 3 : 1.5}
         />
         {(perQuarter.get(quarter) ?? []).map((item, index) => (
-          <a class="posts-link" href={item.href} aria-label={item.title}>
+          <a
+            class="posts-link"
+            href={item.href}
+            aria-label={item.title}
+            style={`--row: ${rowIndex}; --i: ${index}`}
+          >
             <circle
               class="posts-dot"
               cx={LABEL_WIDTH + DOT + index * (DOT * 2 + GAP)}
               cy={y}
               r={DOT}
-              style={`--i: ${index}`}
             />
             <title>{`${item.title} · ${dateFormat.format(item.ms)}`}</title>
           </a>
@@ -133,20 +137,19 @@ const dateFormat = new Intl.DateTimeFormat("en-US", {
     fill: var(--accent);
   }
 
+  /* Dots slide in row by row once the section is on stage. */
   @media (prefers-reduced-motion: no-preference) {
-    @supports (animation-timeline: view()) {
-      .posts-dot {
-        animation: posts-slide linear both;
-        animation-timeline: view();
-        animation-range: entry 10% cover 40%;
-      }
+    .posts-link {
+      transition:
+        opacity 0.5s ease,
+        translate 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      transition-delay: calc(0.3s + var(--row) * 22ms + var(--i) * 30ms);
     }
-  }
 
-  @keyframes posts-slide {
-    from {
-      translate: -24px 0;
-      scale: 0.3;
+    :global(.story-frame[data-active="false"]) .posts-link {
+      opacity: 0;
+      translate: -16px 0;
+      transition-delay: 0s;
     }
   }
 </style>

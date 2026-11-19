@@ -93,11 +93,12 @@ const ACTIVITIES = [
 ] as const;
 
 /**
- * Counts what I do on the open social web: likes, posts, replies, quotes and
- * reposts on Bluesky, follows, and stars on Tangled.
+ * Counts what I do online: likes, posts, replies, quotes and reposts on
+ * Bluesky, and follows and stars on Bluesky, Tangled and GitHub.
  */
 export function getSocialActivity(
-  records: Map<string, { value: unknown }[]>
+  records: Map<string, { value: unknown }[]>,
+  github: { following: number; starred: number } | null = null
 ): Activity[] {
   const count = (...collections: string[]) =>
     collections.reduce(
@@ -117,13 +118,17 @@ export function getSocialActivity(
   }
 
   const values: Record<(typeof ACTIVITIES)[number]["label"], number> = {
-    Follows: count("app.bsky.graph.follow"),
+    Follows:
+      count("app.bsky.graph.follow", "sh.tangled.graph.follow") +
+      (github?.following ?? 0),
     Likes: count("app.bsky.feed.like"),
     Posts: posts,
     Quotes: quotes,
     Replies: replies,
     Reposts: count("app.bsky.feed.repost"),
-    Stars: count("sh.tangled.feed.star", "org.tangled.feed.star"),
+    Stars:
+      count("sh.tangled.feed.star", "org.tangled.feed.star") +
+      (github?.starred ?? 0),
   };
 
   return ACTIVITIES.map(({ doing, label }) => ({

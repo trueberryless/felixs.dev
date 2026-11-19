@@ -20,30 +20,33 @@ export const prerender = true;
   <div class="content-wrapper layout-stream">
     <Intro />
 
-    <div class="stories">
-      <WritingStory server:defer>
-        <StorySkeleton slot="fallback" />
-      </WritingStory>
-      <BuildingStory />
-      <ReadingStory server:defer>
-        <StorySkeleton slot="fallback" />
-      </ReadingStory>
-      <ListeningStory server:defer>
-        <StorySkeleton slot="fallback" />
-      </ListeningStory>
-      <WorkingStory server:defer>
-        <StorySkeleton slot="fallback" />
-      </WorkingStory>
-      <MeetingStory server:defer />
-      <SocialStory server:defer>
-        <StorySkeleton slot="fallback" />
-      </SocialStory>
+    <div class="stories" data-stories>
+      <div class="stories-stage">
+        <WritingStory server:defer>
+          <StorySkeleton slot="fallback" />
+        </WritingStory>
+        <BuildingStory />
+        <ReadingStory server:defer>
+          <StorySkeleton slot="fallback" />
+        </ReadingStory>
+        <ListeningStory server:defer>
+          <StorySkeleton slot="fallback" />
+        </ListeningStory>
+        <WorkingStory server:defer>
+          <StorySkeleton slot="fallback" />
+        </WorkingStory>
+        <MeetingStory server:defer />
+        <SocialStory server:defer>
+          <StorySkeleton slot="fallback" />
+        </SocialStory>
+      </div>
     </div>
   </div>
 </Layout>
 
 <script>
   import "@/scripts/now-playing";
+  import "@/scripts/stories";
 </script>
 
 <style>
@@ -54,8 +57,42 @@ export const prerender = true;
     padding-bottom: 80px;
   }
 
-  .stories {
+  .stories-stage {
     display: flex;
     flex-direction: column;
+  }
+
+  /* On wide screens the sections share one stage pinned to the screen, like
+     slides: the page scrolls past it, and the section that matches the
+     scroll position plays in while the one before plays out. */
+  .stories[data-stage] {
+    height: calc(var(--count, 1) * 85svh + 100svh);
+  }
+
+  .stories[data-stage] .stories-stage {
+    position: sticky;
+    top: 0;
+    display: grid;
+    height: 100svh;
+  }
+
+  .stories[data-stage] .stories-stage > :global(*) {
+    grid-area: 1 / 1;
+    min-width: 0;
+  }
+
+  .stories[data-stage] :global(.story-frame) {
+    display: grid;
+    align-items: center;
+    padding-top: 72px;
+  }
+
+  .stories[data-stage] :global(.story-frame > *) {
+    padding-block: 0;
+    min-height: 0;
+  }
+
+  .stories[data-stage] :global(.story-frame[data-active="false"]) {
+    pointer-events: none;
   }
 </style>
