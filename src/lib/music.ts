@@ -1,8 +1,8 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const FALLBACK_DURATION_S = 200;
-const TOP_ARTISTS = 25;
-const TOP_TRACKS = 25;
+const TOP_ARTISTS = 10;
+const TOP_TRACKS = 10;
 const TOP_ALBUMS = 15;
 const MONTH_ARTISTS = 6;
 
@@ -39,9 +39,29 @@ interface RankedAlbum extends Ranked {
   artist: string;
 }
 
+interface RangeHighlights {
+  busiestDay: { date: string; plays: number } | undefined;
+  /** The track heard on the most different days, with its first and last. */
+  evergreen:
+    | {
+        artist: string;
+        days: number;
+        from: string;
+        to: string;
+        track: string;
+      }
+    | undefined;
+  firstPlay: { artist: string; at: string; track: string } | undefined;
+  lastPlay: { artist: string; at: string; track: string } | undefined;
+  longestStreak: { days: number; from: string; to: string } | undefined;
+  topRepeat:
+    { artist: string; date: string; plays: number; track: string } | undefined;
+}
+
 export interface RangeStats {
   artists: number;
   from: string;
+  highlights: RangeHighlights;
   hours: number[];
   id: string;
   label: string;
@@ -65,14 +85,6 @@ interface MonthStats {
 export interface MusicStats {
   daily: { counts: number[]; start: string };
   generatedAt: string;
-  highlights: {
-    busiestDay: { date: string; plays: number } | undefined;
-    weekObsession: { artist: string; plays: number; track: string } | undefined;
-    longestStreak: { days: number; from: string; to: string } | undefined;
-    topRepeat:
-      | { artist: string; date: string; plays: number; track: string }
-      | undefined;
-  };
   months: MonthStats[];
   ranges: RangeStats[];
 }
@@ -170,7 +182,6 @@ export function computeMusicStats(
   return {
     daily: computeDaily(plays, nowMs, toLocal),
     generatedAt: new Date(nowMs).toISOString(),
-    highlights: computeHighlights(plays, nowMs, toLocal),
     months: computeMonths(plays, fallbackDurationS, toLocal),
     ranges,
   };
@@ -193,11 +204,13 @@ function computeRange(
   const albums = new Map<string, RankedAlbum>();
   const hours: number[] = Array.from({ length: 24 }, () => 0);
   const weekdays: number[] = Array.from({ length: 7 }, () => 0);
+  const inRange: Play[] = [];
   let count = 0;
   let seconds = 0;
 
   for (const play of plays) {
     if (play.at < from || play.at >= to) continue;
+    inRange.push(play);
 
     const durationS = play.durationS ?? fallbackDurationS;
     const minutes = durationS / 60;
@@ -243,13 +256,14 @@ function computeRange(
 
   return {
     artists: artists.size,
-    from: new Date(from).toISOString(),
+    from: Number.isFinite(from) ? new Date(from).toISOString() : id,
+    highlights: computeHighlights(inRange, toLocal),
     hours,
     id,
     label,
     minutes: Math.round(seconds / 60),
     plays: count,
-    to: new Date(to).toISOString(),
+    to: Number.isFinite(to) ? new Date(to).toISOString() : id,
     topAlbums: getTop(albums, TOP_ALBUMS),
     topArtists: getTop(artists, TOP_ARTISTS),
     topTracks: getTop(tracks, TOP_TRACKS),
@@ -323,29 +337,37 @@ function computeMonths(
   }));
 }
 
-function computeHighlights(
-  plays: Play[],
-  nowMs: number,
-  toLocal: LocalTime
-): MusicStats["highlights"] {
-  const weekStart = nowMs - 7 * DAY_MS;
-  const perWeekTrack = new Map<
-    string,
-    { artist: string; plays: number; track: string }
-  >();
+/**
+ * The highlights of one range. Everything is counted within the range only,
+ * so picking a year shows that year's streak, busiest day and so on.
+ */
+function computeHighlights(plays: Play[], toLocal: LocalTime): RangeHighlights {
   const perDay = new Map<string, number>();
   const perDayTrack = new Map<
     string,
     { artist: string; date: string; plays: number; track: string }
   >();
+  const perTrack = new Map<
+    string,
+    {
+      artist: string;
+      days: Set<string>;
+      from: string;
+      to: string;
+      track: string;
+    }
+  >();
 
   for (const play of plays) {
     const { day } = toLocal(play.at);
+    const artist = play.artists[0] ?? "";
+    const trackKey =
+      play.url ?? `${normalize(play.track)}\u0000${normalize(artist)}`;
     perDay.set(day, (perDay.get(day) ?? 0) + 1);
 
-    const key = `${day}\u0000${play.url ?? play.track}`;
+    const key = `${day}\u0000${trackKey}`;
     const entry = perDayTrack.get(key) ?? {
-      artist: play.artists[0] ?? "",
+      artist,
       date: day,
       plays: 0,
       track: play.track,
@@ -353,37 +375,92 @@ function computeHighlights(
     entry.plays++;
     perDayTrack.set(key, entry);
 
-    if (play.at >= weekStart) {
-      const weekKey = play.url ?? play.track;
-      const week = perWeekTrack.get(weekKey) ?? {
-        artist: play.artists[0] ?? "",
-        plays: 0,
-        track: play.track,
-      };
-      week.plays++;
-      perWeekTrack.set(weekKey, week);
-    }
+    const track = perTrack.get(trackKey) ?? {
+      artist,
+      days: new Set<string>(),
+      from: day,
+      to: day,
+      track: play.track,
+    };
+    track.days.add(day);
+    track.to = day;
+    perTrack.set(trackKey, track);
   }
 
-  let busiestDay: { date: string; plays: number } | undefined;
+  let busiestDay: RangeHighlights["busiestDay"];
   for (const [date, count] of perDay) {
     if (!busiestDay || count > busiestDay.plays)
       busiestDay = { date, plays: count };
   }
 
-  let topRepeat: MusicStats["highlights"]["topRepeat"];
+  let topRepeat: RangeHighlights["topRepeat"];
   for (const entry of perDayTrack.values()) {
     if (!topRepeat || entry.plays > topRepeat.plays) topRepeat = entry;
   }
 
+  // Heard on the most different days, and on a tie over the longest span.
+  let evergreen: RangeHighlights["evergreen"];
+  for (const { days, ...track } of perTrack.values()) {
+    if (days.size < 2) continue;
+    const span = Date.parse(track.to) - Date.parse(track.from);
+    if (
+      !evergreen ||
+      days.size > evergreen.days ||
+      (days.size === evergreen.days &&
+        span > Date.parse(evergreen.to) - Date.parse(evergreen.from))
+    )
+      evergreen = { ...track, days: days.size };
+  }
+
+  const describe = (play: Play | undefined) =>
+    play
+      ? {
+          artist: play.artists[0] ?? "",
+          at: new Date(play.at).toISOString(),
+          track: play.track,
+        }
+      : undefined;
+  const isSingleDay = perDay.size < 2;
+
   return {
-    busiestDay,
-    longestStreak: getLongestStreak([...perDay.keys()].toSorted()),
-    topRepeat,
-    weekObsession: [...perWeekTrack.values()]
-      .filter((entry) => entry.plays > 1)
-      .toSorted((a, b) => b.plays - a.plays)[0],
+    busiestDay: isSingleDay ? undefined : busiestDay,
+    evergreen: isSingleDay ? undefined : evergreen,
+    firstPlay: describe(plays[0]),
+    lastPlay: describe(plays.at(-1)),
+    longestStreak: isSingleDay
+      ? undefined
+      : getLongestStreak([...perDay.keys()].toSorted()),
+    topRepeat: topRepeat && topRepeat.plays > 1 ? topRepeat : undefined,
   };
+}
+
+/**
+ * The statistics of a single day in Vienna, for when a day in the calendar
+ * is picked.
+ */
+export function computeDayStats(
+  _plays: Play[],
+  date: string,
+  options: { timeZone?: string } = {}
+): RangeStats {
+  const toLocal = createLocalTime(options.timeZone ?? MUSIC_TIME_ZONE);
+  const plays = _plays
+    .filter((play) => toLocal(play.at).day === date)
+    .toSorted((a, b) => a.at - b.at);
+
+  return computeRange(plays, {
+    fallbackDurationS: getMedianDuration(_plays),
+    from: Number.NEGATIVE_INFINITY,
+    id: date,
+    label: new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "short",
+      timeZone: "UTC",
+      year: "numeric",
+    }),
+    to: Number.POSITIVE_INFINITY,
+    toLocal,
+  });
 }
 
 function getLongestStreak(days: string[]) {

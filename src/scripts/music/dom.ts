@@ -29,15 +29,34 @@ export function formatNumber(value: number): string {
 }
 
 /**
- * Describes a number of minutes in the largest unit that reads naturally.
+ * Fades a freshly rendered element in, `order` steps after the first one,
+ * so a whole page of changes arrives as one wave.
  */
-export function describeMinutes(minutes: number): string {
-  const hours = minutes / 60;
-  if (hours < 2) return "";
-  if (hours < 48) return `about ${formatNumber(hours)} hours`;
+export function reveal(element: Element | null, order = 0) {
+  if (!(element instanceof HTMLElement) || prefersReducedMotion()) return;
+  element.classList.remove("ms-reveal");
+  // Reading the layout restarts the animation.
+  void element.offsetWidth;
+  element.style.setProperty("--reveal", String(order));
+  element.classList.add("ms-reveal");
+}
 
-  const days = hours / 24;
-  return `about ${formatNumber(days)} days of music`;
+/** An element's position inside one of its ancestors, ignoring transforms. */
+export function offsetWithin(element: HTMLElement, ancestor: HTMLElement) {
+  let left = 0;
+  let top = 0;
+  let current: HTMLElement | null = element;
+  while (current && current !== ancestor) {
+    left += current.offsetLeft;
+    top += current.offsetTop;
+    current = current.offsetParent as HTMLElement | null;
+  }
+  return {
+    bottom: top + element.offsetHeight,
+    left,
+    right: left + element.offsetWidth,
+    top,
+  };
 }
 
 export function formatDate(
