@@ -2,6 +2,7 @@
 import Layout from "@/layouts/Layout.astro";
 import Hero from "@/components/landing/Hero.astro";
 import Intro from "@/components/landing/Intro.astro";
+import NowPlaying from "@/components/landing/NowPlaying.astro";
 import RecentPosts from "@/components/landing/RecentPosts.astro";
 import RecentPostsSkeleton from "@/components/landing/RecentPostsSkeleton.astro";
 import RecentBlueskyPosts from "@/components/landing/RecentBlueskyPosts.astro";
@@ -19,6 +20,7 @@ export const prerender = true;
 
   <div class="content-wrapper layout-stream">
     <Intro />
+    <NowPlaying />
     <RecentPosts server:defer>
       <RecentPostsSkeleton slot="fallback" />
     </RecentPosts>
