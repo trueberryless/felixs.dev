@@ -2,10 +2,15 @@
 // share a stage pinned to the screen and the scroll position picks the one
 // on stage; elsewhere each section plays in once as it scrolls into view.
 // With reduced motion nothing moves and every section simply shows.
+//
+// Sections start hidden in CSS, so nothing flashes before this script runs.
 
 const STAGE_QUERY =
   "(min-width: 860px) and (min-height: 620px) and (prefers-reduced-motion: no-preference)";
 const REDUCED_QUERY = "(prefers-reduced-motion: reduce)";
+// Share of the screen over which the stage eases into and out of its pinned
+// place, so it slows down like a page settling instead of stopping dead.
+const EASE_SHARE = 0.4;
 
 function setup() {
   const root = document.querySelector<HTMLElement>("[data-stories]");
@@ -42,38 +47,56 @@ function setup() {
     return top + ((index + 0.5) / frames.length) * travel;
   };
 
+  // Snap points in the middle of every section's stretch of scrolling, so a
+  // quick flick stops at the next section instead of rushing past it.
+  const placeSnaps = () => {
+    for (const snap of root.querySelectorAll(".stories-snap")) snap.remove();
+    if (!staged.matches) return;
+    frames.forEach((_, index) => {
+      const snap = document.createElement("span");
+      snap.className = "stories-snap";
+      snap.setAttribute("aria-hidden", "true");
+      snap.style.setProperty("--i", String(index));
+      root.append(snap);
+    });
+  };
+
   const update = () => {
     pending = 0;
     if (reduced.matches) {
-      delete root.dataset.stage;
-      for (const frame of frames) delete frame.dataset.active;
+      for (const frame of frames) frame.dataset.active = "true";
       active = -2;
       return;
     }
+
+    const rect = root.getBoundingClientRect();
+    const view = window.innerHeight;
     if (!staged.matches) {
       // Without a stage, sections play in once as they scroll into view.
-      delete root.dataset.stage;
+      root.style.removeProperty("--stage-shift");
       for (const frame of frames) {
-        if (
-          frame.dataset.active === "false" &&
-          frame.getBoundingClientRect().top < window.innerHeight * 0.85
-        ) {
+        if (frame.getBoundingClientRect().top < view * 0.85)
           frame.dataset.active = "true";
-        }
       }
       return;
     }
 
-    root.dataset.stage = "";
-    const rect = root.getBoundingClientRect();
-    const travel = Math.max(1, rect.height - window.innerHeight);
-    const progress = Math.min(Math.max(-rect.top / travel, 0), 0.9999);
-    // The first section plays in as the stage arrives.
-    setActive(
-      rect.top > window.innerHeight * 0.55
-        ? -1
-        : Math.floor(progress * frames.length)
-    );
+    const travel = Math.max(1, rect.height - view);
+    const passed = -rect.top;
+    const progress = Math.min(Math.max(passed / travel, 0), 0.9999);
+    // The first section is already on stage as it scrolls into view.
+    setActive(rect.top > view ? -1 : Math.floor(progress * frames.length));
+
+    // Easing in: the stage keeps moving with the page when it pins and only
+    // slows to a stop over a little more scrolling. Easing out mirrors it.
+    const ease = view * EASE_SHARE;
+    let shift = 0;
+    if (passed < 0) shift = ease / 2;
+    else if (passed < ease) shift = (ease / 2) * (1 - passed / ease) ** 2;
+    else if (passed > travel) shift = -ease / 2;
+    else if (passed > travel - ease)
+      shift = -(ease / 2) * ((passed - (travel - ease)) / ease) ** 2;
+    root.style.setProperty("--stage-shift", `${shift.toFixed(1)}px`);
   };
   const schedule = () => {
     pending ||= requestAnimationFrame(update);
@@ -83,18 +106,14 @@ function setup() {
     frames = [...stage.querySelectorAll<HTMLElement>(":scope > .story-frame")];
     root.style.setProperty("--count", String(frames.length));
     active = -2;
-    if (!staged.matches && !reduced.matches) {
-      for (const frame of frames) {
-        if (frame.dataset.active !== "true") frame.dataset.active = "false";
-      }
-    }
+    placeSnaps();
     update();
   };
 
   // Keyboard users tab through every section: focusing a link in a section
   // that isn't on stage scrolls it onto the stage.
   root.addEventListener("focusin", (event) => {
-    if (root.dataset.stage === undefined) return;
+    if (!staged.matches) return;
     const frame = (event.target as Element).closest<HTMLElement>(
       ".story-frame"
     );

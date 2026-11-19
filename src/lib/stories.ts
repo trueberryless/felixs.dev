@@ -16,7 +16,7 @@ export interface Bubble {
 export interface GanttRow {
   end: number;
   isCurrent: boolean;
-  kind: "education" | "work";
+  kind: "education" | "open-source" | "work";
   label: string;
   start: number;
   title: string;
@@ -146,4 +146,27 @@ export function parseResumeDate(label: string | null | undefined): number {
   if (!label) return Number.NaN;
   if (/^\d{4}$/.test(label)) return Date.UTC(Number(label), 0, 1);
   return Date.parse(`1 ${label} UTC`);
+}
+
+// My first merged pull request, to Starlight.
+const OPEN_SOURCE_SINCE = Date.UTC(2023, 9, 26);
+const SHORT_MS = 92 * 24 * 60 * 60 * 1000;
+
+/**
+ * The career timeline as I tell it: short stints like internships are left
+ * out, and open source runs alongside everything else since my first merged
+ * pull request.
+ */
+export function tellCareer(rows: GanttRow[], nowMs: number): GanttRow[] {
+  return [
+    ...rows.filter((row) => row.end - row.start >= SHORT_MS),
+    {
+      end: nowMs,
+      isCurrent: true,
+      kind: "open-source" as const,
+      label: "Open source",
+      start: OPEN_SOURCE_SINCE,
+      title: "Open source, since my first merged pull request to Starlight",
+    },
+  ].toSorted((a, b) => b.start - a.start);
 }

@@ -7,6 +7,7 @@ import {
   type RangeStats,
   computeDayStats,
   computeMusicStats,
+  getMedianDuration,
   recordToPlay,
 } from "./music";
 import { isOnNetlify } from "./netlify";
@@ -45,6 +46,47 @@ export async function getMusicStats(nowMs = Date.now()): Promise<MusicStats> {
   return stats;
 }
 
-export async function getDayStats(date: string): Promise<RangeStats> {
-  return computeDayStats(await getPlays(), date);
+const DAY_MS = 86_400_000;
+
+interface MonthPlays {
+  fallbackDurationS: number;
+  plays: Play[];
+}
+
+/**
+ * The statistics of one day. A day only needs the plays of its month, so
+ * those are kept in Netlify Blobs: after the first visit to a month, every
+ * day in it reads one small file instead of downloading the whole
+ * repository. Months that can still change are saved for a day only.
+ */
+export async function getDayStats(
+  date: string,
+  nowMs = Date.now()
+): Promise<RangeStats> {
+  const month = date.slice(0, 7);
+  const monthStart = Date.parse(`${month}-01T00:00:00Z`);
+  const nextMonth = new Date(monthStart);
+  nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
+  // A day ends up to two hours off from UTC in Vienna, so a day of margin on
+  // both sides keeps the first and last day of the month whole.
+  const from = monthStart - DAY_MS;
+  const to = nextMonth.getTime() + DAY_MS;
+  const isSettled = to < nowMs - DAY_MS;
+  const key = `plays-v${STATS_VERSION}/${month}${isSettled ? "" : `/${new Date(nowMs).toISOString().slice(0, 10)}`}`;
+  const store = isOnNetlify() ? getStore({ name: STORE_NAME }) : undefined;
+
+  let saved = (await store?.get(key, { type: "json" }).catch(() => null)) as
+    MonthPlays | null | undefined;
+  if (!saved) {
+    const plays = await getPlays();
+    saved = {
+      fallbackDurationS: getMedianDuration(plays),
+      plays: plays.filter((play) => play.at >= from && play.at < to),
+    };
+    await store?.setJSON(key, saved).catch(() => undefined);
+  }
+
+  return computeDayStats(saved.plays, date, {
+    fallbackDurationS: saved.fallbackDurationS,
+  });
 }

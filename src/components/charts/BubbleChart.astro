@@ -303,12 +303,12 @@ const hasLinks = bubbles.some((bubble) => bubble.href);
       transition-delay: calc(0.3s + var(--i) * 45ms), 0s, 0s, 0s;
     }
 
-    :global(.story-frame[data-active="false"]) .bubble {
+    :global(.story-frame:not([data-active="true"])) .bubble {
       scale: 0.2;
       transition-delay: 0s;
     }
 
-    :global(.story-frame[data-active="false"])
+    :global(.story-frame:not([data-active="true"]))
       :is(.bubble-label, .bubble-value) {
       opacity: 0;
     }
