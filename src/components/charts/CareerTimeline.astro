@@ -1,0 +1,212 @@
+---
+import type { GanttRow } from "@/lib/stories";
+
+interface Props {
+  label: string;
+  nowMs: number;
+  rows: GanttRow[];
+}
+
+const { label, nowMs, rows } = Astro.props;
+
+const WIDTH = 420;
+const ROW = 38;
+const AXIS = 28;
+const height = rows.length * ROW + AXIS;
+
+const firstYear = new Date(
+  Math.min(...rows.map((row) => row.start), nowMs)
+).getUTCFullYear();
+const lastYear = new Date(nowMs).getUTCFullYear() + 1;
+const from = Date.UTC(firstYear, 0, 1);
+const to = Date.UTC(lastYear, 0, 1);
+const x = (ms: number) => ((ms - from) / (to - from)) * WIDTH;
+
+const years = Array.from(
+  { length: lastYear - firstYear + 1 },
+  (_, index) => firstYear + index
+);
+const yearEvery = Math.max(1, Math.ceil(years.length / 7));
+---
+
+<svg
+  class="career"
+  viewBox={`0 -4 ${WIDTH} ${height + 4}`}
+  role="img"
+  aria-label={label}
+>
+  {years.map((year, index) => (
+    <g>
+      <line
+        class="career-grid"
+        x1={x(Date.UTC(year, 0, 1))}
+        x2={x(Date.UTC(year, 0, 1))}
+        y1="0"
+        y2={rows.length * ROW}
+      />
+      {index % yearEvery === 0 && year < lastYear && (
+        <text
+          class="career-year"
+          x={x(Date.UTC(year, 0, 1)) + 4}
+          y={height - 8}
+        >
+          {year}
+        </text>
+      )}
+    </g>
+  ))}
+  {rows.map((row, index) => {
+    const start = x(row.start);
+    const end = Math.max(x(row.end), start + 6);
+    const width = end - start;
+    const y = index * ROW + 6;
+    const labelInside = width > row.label.length * 7 + 20;
+
+    return (
+      <g
+        class:list={[
+          "career-row",
+          `is-${row.kind}`,
+          { "is-current": row.isCurrent },
+        ]}
+        style={`--i: ${index}`}
+      >
+        <rect
+          class="career-bar"
+          x={start}
+          y={y}
+          width={width}
+          height={ROW - 12}
+          rx="8"
+        />
+        {row.isCurrent && (
+          <circle
+            class="career-now"
+            cx={end - 9}
+            cy={y + (ROW - 12) / 2}
+            r="3.5"
+          />
+        )}
+        <text
+          class:list={["career-label", { "is-outside": !labelInside }]}
+          x={labelInside ? start + 12 : start > WIDTH / 2 ? start - 8 : end + 8}
+          y={y + (ROW - 12) / 2}
+          text-anchor={!labelInside && start > WIDTH / 2 ? "end" : "start"}
+        >
+          {row.label}
+        </text>
+        <title>{row.title}</title>
+      </g>
+    );
+  })}
+</svg>
+
+<div class="career-legend" aria-hidden="true">
+  <span class="career-key is-work">Work</span>
+  <span class="career-key is-education">Education</span>
+</div>
+
+<style>
+  .career {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .career-grid {
+    stroke: var(--border);
+    stroke-dasharray: 2 4;
+  }
+
+  .career-year {
+    font-size: 11px;
+    fill: var(--text-muted);
+  }
+
+  .career-bar {
+    transform-box: fill-box;
+    transform-origin: left;
+    transition: filter 0.2s ease;
+  }
+
+  .is-work .career-bar,
+  .career-key.is-work::before {
+    fill: color-mix(in oklch, var(--accent) 55%, transparent);
+    background: color-mix(in oklch, var(--accent) 55%, transparent);
+  }
+
+  .is-education .career-bar,
+  .career-key.is-education::before {
+    fill: color-mix(in oklch, var(--text) 16%, transparent);
+    background: color-mix(in oklch, var(--text) 16%, transparent);
+  }
+
+  .career-row:hover .career-bar {
+    filter: brightness(1.15) saturate(1.2);
+  }
+
+  .career-label {
+    font-size: 12px;
+    font-weight: 600;
+    fill: var(--text);
+    dominant-baseline: middle;
+  }
+
+  .career-now {
+    fill: var(--card-bg);
+  }
+
+  .is-current .career-now {
+    animation: career-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes career-pulse {
+    50% {
+      r: 5;
+    }
+  }
+
+  .career-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .career-key {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .career-key::before {
+    content: "";
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .career-bar {
+        animation: career-grow linear both;
+        animation-timeline: view();
+        animation-range: entry 10% cover 40%;
+      }
+    }
+  }
+
+  @keyframes career-grow {
+    from {
+      scale: 0 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .is-current .career-now {
+      animation: none;
+    }
+  }
+</style>

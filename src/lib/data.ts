@@ -278,7 +278,18 @@ async function fetchOrg(
   };
 }
 
-export async function fetchProjects(): Promise<ProjectsData | null> {
+let projectsPromise: Promise<ProjectsData | null> | undefined;
+
+/**
+ * Fetches the projects once per build, so the landing page and the projects
+ * page share one set of GitHub requests and stay within its rate limits.
+ */
+export function fetchProjects(): Promise<ProjectsData | null> {
+  projectsPromise ??= fetchProjectsUncached();
+  return projectsPromise;
+}
+
+async function fetchProjectsUncached(): Promise<ProjectsData | null> {
   if (!getGithubToken()) {
     console.warn("[data] GITHUB_TOKEN not set, projects will be empty");
     return null;

@@ -36,6 +36,7 @@
     "@lucide/astro": "^1.48.0",
     "@netlify/blobs": "^11.1.9",
     "astro": "^7.3.5",
+    "d3-hierarchy": "^3.1.3",
     "sharp": "^0.35.5",
     "simple-icons-astro": "^16.1.0"
   },
@@ -44,6 +45,7 @@
     "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.63.0",
     "@trivago/prettier-plugin-sort-imports": "6.0.2",
+    "@types/d3-hierarchy": "^3.1.7",
     "@types/node": "^26.6.3",
     "@vitest/coverage-v8": "^5.0.3",
     "fontless": "^1.2.1",

@@ -1,0 +1,146 @@
+---
+interface Props {
+  items: { date: string; href: string; title: string }[];
+  label: string;
+  nowMs: number;
+}
+
+const { items, label, nowMs } = Astro.props;
+
+const WIDTH = 420;
+const DOT = 6;
+const GAP = 4;
+const AXIS = 26;
+
+const dated = items
+  .map(({ date, href, title }) => ({ date, href, ms: Date.parse(date), title }))
+  .filter((item) => !Number.isNaN(item.ms))
+  .toSorted((a, b) => a.ms - b.ms);
+
+const firstYear = new Date(dated[0]?.ms ?? nowMs).getUTCFullYear();
+const lastYear = new Date(nowMs).getUTCFullYear() + 1;
+const from = Date.UTC(firstYear, 0, 1);
+const to = Date.UTC(lastYear, 0, 1);
+const monthWidth = WIDTH / ((lastYear - firstYear) * 12);
+const x = (ms: number) => ((ms - from) / (to - from)) * WIDTH;
+
+// Posts from the same month stack upwards like a little bar.
+const perMonth = new Map<string, number>();
+const dots = dated.map((item) => {
+  const key = new Date(item.ms).toISOString().slice(0, 7);
+  const stack = perMonth.get(key) ?? 0;
+  perMonth.set(key, stack + 1);
+  const date = new Date(item.ms);
+  const monthStart = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1);
+  return {
+    href: item.href,
+    ms: item.ms,
+    stack,
+    title: item.title,
+    x: x(monthStart) + monthWidth / 2,
+  };
+});
+
+const tallest = Math.max(1, ...perMonth.values());
+const height = tallest * (DOT * 2 + GAP) + AXIS + 8;
+const baseline = height - AXIS;
+const years = Array.from(
+  { length: lastYear - firstYear },
+  (_, index) => firstYear + index
+);
+const dateFormat = new Intl.DateTimeFormat("en-US", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+  year: "numeric",
+});
+---
+
+<svg
+  class="dots"
+  viewBox={`0 0 ${WIDTH} ${height}`}
+  role="group"
+  aria-label={label}
+>
+  <line class="dots-axis" x1="0" x2={WIDTH} y1={baseline} y2={baseline}></line>
+  {years.map((year) => (
+    <g>
+      <line
+        class="dots-tick"
+        x1={x(Date.UTC(year, 0, 1))}
+        x2={x(Date.UTC(year, 0, 1))}
+        y1={baseline}
+        y2={baseline + 6}
+      />
+      <text class="dots-year" x={x(Date.UTC(year, 6, 1))} y={height - 6}>
+        {year}
+      </text>
+    </g>
+  ))}
+  {dots.map((dot, index) => (
+    <a class="dots-link" href={dot.href} aria-label={dot.title}>
+      <circle
+        class="dots-dot"
+        cx={dot.x}
+        cy={baseline - DOT - 2 - dot.stack * (DOT * 2 + GAP)}
+        r={DOT}
+        style={`--i: ${index}`}
+      />
+      <title>{`${dot.title} · ${dateFormat.format(dot.ms)}`}</title>
+    </a>
+  ))}
+</svg>
+
+<style>
+  .dots {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .dots-axis,
+  .dots-tick {
+    stroke: var(--border);
+  }
+
+  .dots-year {
+    font-size: 11px;
+    fill: var(--text-muted);
+    text-anchor: middle;
+  }
+
+  .dots-dot {
+    fill: color-mix(in oklch, var(--accent) 55%, transparent);
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition:
+      scale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+      fill 0.2s ease;
+  }
+
+  .dots-link:hover .dots-dot,
+  .dots-link:focus-visible .dots-dot {
+    scale: 1.5;
+    fill: var(--accent);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .dots-dot {
+        animation: dots-drop linear both;
+        animation-timeline: view();
+        animation-range: entry 10% cover 40%;
+      }
+    }
+  }
+
+  @keyframes dots-drop {
+    from {
+      translate: 0 -24px;
+      scale: 0.3;
+    }
+  }
+</style>

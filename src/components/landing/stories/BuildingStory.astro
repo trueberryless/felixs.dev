@@ -1,0 +1,43 @@
+---
+import BubbleChart from "@/components/charts/BubbleChart.astro";
+import Story from "@/components/story/Story.astro";
+import { fetchProjects } from "@/lib/data";
+
+// Fetched at build time, like the projects page, which shares the result.
+const projects = await fetchProjects().catch(() => null);
+const orgs = (projects?.contributedProjects ?? []).filter(
+  (org) => org.contributions > 0
+);
+const total = orgs.reduce((sum, org) => sum + org.contributions, 0);
+const bubbles = orgs.map((org) => ({
+  href: org.url,
+  label: org.name,
+  title: `${org.name}: ${org.contributions} merged pull requests`,
+  value: org.contributions,
+}));
+---
+
+<Story kicker="Building" href="/projects" linkText="See the projects" reverse>
+  <Fragment slot="title">
+    {total > 0 ? (
+      <>
+        <em>{total.toLocaleString("en-US")}</em> merged pull requests
+      </>
+    ) : (
+      "Open source, mostly"
+    )}
+  </Fragment>
+  <p slot="text">
+    {orgs.length > 0
+      ? `Spread across ${orgs.length} organisations I care about. The bigger the bubble, the more of my code lives there.`
+      : "I help maintain npmx and the all-contributors ecosystem, and spend a lot of time in the Astro and Starlight repositories."}
+  </p>
+  <div slot="visual">
+    {bubbles.length > 0 && (
+      <BubbleChart
+        bubbles={bubbles}
+        label={`Merged pull requests per organisation, ${total} in total`}
+      />
+    )}
+  </div>
+</Story>

@@ -1,0 +1,102 @@
+---
+import Story from "@/components/story/Story.astro";
+import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { buildReadingSummary, fetchBooks } from "@/lib/data";
+
+const books = await fetchBooks().catch(() => null);
+applyCache(Astro.response, books ? longLivedCache : degradedCache);
+
+const summary = books ? buildReadingSummary(books) : null;
+const shelf = (books ?? []).filter((book) => book.coverUrl).slice(0, 7);
+const rated = (books ?? []).filter((book) => typeof book.stars === "number");
+const averageStars = rated.length
+  ? rated.reduce((sum, book) => sum + (book.stars ?? 0), 0) / rated.length / 2
+  : undefined;
+---
+
+<Story kicker="Reading" href="/books" linkText="Browse the bookshelf">
+  <Fragment slot="title">
+    {books && books.length > 0 ? (
+      <>
+        <em>{books.length}</em> books finished
+      </>
+    ) : (
+      "Fantasy and fiction"
+    )}
+  </Fragment>
+  <p slot="text">
+    {summary
+      ? `Right now I'm reading ${summary.latest.title}.`
+      : "My reading log lives on Bookhive."}
+    {averageStars !== undefined &&
+      ` On average I give a book ${averageStars.toFixed(1)} out of 5 stars.`}
+  </p>
+  <div
+    slot="visual"
+    class="reading-shelf"
+    role="list"
+    aria-label="Recently finished books"
+  >
+    {shelf.map((book, index) => (
+      <a
+        class="reading-book"
+        role="listitem"
+        href={`https://bookhive.buzz/books/${book.hiveId}`}
+        style={`--i: ${index}; --tilt: ${((index * 37) % 7) - 3}deg`}
+      >
+        <img
+          src={book.coverUrl!}
+          alt={book.title}
+          loading="lazy"
+          width="120"
+          height="180"
+        />
+      </a>
+    ))}
+  </div>
+</Story>
+
+<style>
+  .reading-shelf {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 0;
+    padding: 24px 12px 18px;
+    border-bottom: 6px solid color-mix(in oklch, var(--text) 18%, transparent);
+    border-radius: 2px;
+  }
+
+  .reading-book {
+    position: relative;
+    flex: 0 1 120px;
+    min-width: 0;
+    margin-inline: -10px;
+    rotate: var(--tilt);
+    transform-origin: bottom center;
+    z-index: calc(10 - var(--i));
+    transition:
+      translate 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+      rotate 0.35s ease,
+      z-index 0s;
+  }
+
+  .reading-book img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: 3px 6px 6px 3px;
+    box-shadow:
+      inset 3px 0 6px rgb(0 0 0 / 0.25),
+      0 12px 24px -10px var(--header-shadow);
+  }
+
+  .reading-book:hover,
+  .reading-book:focus-visible {
+    translate: 0 -18px;
+    rotate: 0deg;
+    z-index: 20;
+  }
+</style>

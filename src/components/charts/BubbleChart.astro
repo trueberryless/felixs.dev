@@ -1,0 +1,176 @@
+---
+import { hierarchy, pack } from "d3-hierarchy";
+
+import type { Bubble } from "@/lib/stories";
+
+interface Props {
+  bubbles: Bubble[];
+  height?: number;
+  label: string;
+  /**
+   * Sizes bubbles by the square root of their value, so a few huge values
+   * don't shrink everything else to dots. Tooltips keep the exact numbers.
+   */
+  scale?: "linear" | "sqrt";
+  width?: number;
+}
+
+const {
+  bubbles,
+  height = 300,
+  label,
+  scale = "linear",
+  width = 420,
+} = Astro.props;
+
+const root = pack<{ children?: Bubble[] } | Bubble>()
+  .size([width, height])
+  .padding(8)(
+  hierarchy<{ children?: Bubble[] } | Bubble>({ children: bubbles })
+    .sum((node) =>
+      "value" in node
+        ? scale === "sqrt"
+          ? Math.sqrt(node.value)
+          : node.value
+        : 0
+    )
+    .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
+);
+
+const compact = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 1,
+  notation: "compact",
+});
+
+const circles = root.leaves().map((leaf, index) => {
+  const { href, label: name, title, value } = leaf.data as Bubble;
+  return {
+    href,
+    index,
+    label: name,
+    r: leaf.r,
+    title,
+    value,
+    x: leaf.x,
+    y: leaf.y,
+  };
+});
+// Charts with links are a group of links, not a single image.
+const hasLinks = bubbles.some((bubble) => bubble.href);
+---
+
+<svg
+  class="bubble-chart"
+  viewBox={`0 0 ${width} ${height}`}
+  role={hasLinks ? "group" : "img"}
+  aria-label={label}
+>
+  {circles.map((circle) => {
+    const content = (
+      <>
+        <circle
+          class="bubble"
+          cx={circle.x}
+          cy={circle.y}
+          r={circle.r}
+          style={`--strength: ${Math.max(18, 72 - circle.index * 7)}%; --i: ${circle.index}`}
+        />
+        {circle.r > 20 && (
+          <>
+            <text
+              class="bubble-label"
+              x={circle.x}
+              y={circle.y - (circle.r > 30 ? 5 : 0)}
+              style={`font-size: ${Math.min(15, Math.max(9, circle.r / 3.2))}px`}
+            >
+              {circle.label}
+            </text>
+            {circle.r > 30 && (
+              <text class="bubble-value" x={circle.x} y={circle.y + 11}>
+                {compact.format(circle.value)}
+              </text>
+            )}
+          </>
+        )}
+        <title>{circle.title}</title>
+      </>
+    );
+
+    return circle.href ? (
+      <a class="bubble-group" href={circle.href} aria-label={circle.title}>
+        {content}
+      </a>
+    ) : (
+      <g class="bubble-group">{content}</g>
+    );
+  })}
+</svg>
+
+<style>
+  .bubble-chart {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .bubble-group {
+    cursor: default;
+  }
+
+  a.bubble-group {
+    cursor: pointer;
+  }
+
+  .bubble {
+    fill: color-mix(in oklch, var(--accent) var(--strength), transparent);
+    stroke: color-mix(in oklch, var(--accent) 60%, transparent);
+    stroke-width: 1;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition:
+      scale 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+      fill 0.25s ease;
+  }
+
+  .bubble-group:hover .bubble,
+  .bubble-group:focus-visible .bubble {
+    scale: 1.06;
+    fill: color-mix(in oklch, var(--accent) 85%, transparent);
+  }
+
+  .bubble-label,
+  .bubble-value {
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+  }
+
+  .bubble-label {
+    font-weight: 600;
+    fill: var(--text);
+  }
+
+  .bubble-value {
+    font-size: 9px;
+    fill: var(--text);
+    opacity: 0.8;
+  }
+
+  /* Bubbles grow out of their centres as the chart comes into view. */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .bubble {
+        animation: bubble-grow linear both;
+        animation-timeline: view();
+        animation-range: entry 5% cover 40%;
+      }
+    }
+  }
+
+  @keyframes bubble-grow {
+    from {
+      scale: 0.2;
+    }
+  }
+</style>

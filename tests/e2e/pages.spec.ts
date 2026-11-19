@@ -11,12 +11,14 @@ const pages = [
 ]
 
 test.describe('home page', () => {
-  test('introduces Felix and lists the sections', async ({ page }) => {
+  test('introduces Felix and leads into every section', async ({ page }) => {
     await page.goto('/')
 
     await expect(page).toHaveTitle('Felix Schneider')
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Recent Blog Posts' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Read the blog' })).toBeVisible()
+    // Streams in once the repository export is downloaded.
+    await expect(page.getByRole('link', { name: 'Explore my music' })).toBeVisible({ timeout: 30_000 })
   })
 
   test('has the canonical url and the Open Graph image', async ({ page }) => {

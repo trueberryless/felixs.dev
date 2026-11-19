@@ -1,0 +1,113 @@
+---
+import Story from "@/components/story/Story.astro";
+import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { fetchEvents } from "@/lib/data";
+
+const events = await fetchEvents().catch(() => null);
+applyCache(Astro.response, events ? longLivedCache : degradedCache);
+
+const nowMs = Date.now();
+const upcoming = (events ?? [])
+  .filter((event) => Date.parse(event.endDate || event.startDate) >= nowMs)
+  .toSorted((a, b) => Date.parse(a.startDate) - Date.parse(b.startDate));
+const past = (events ?? []).length - upcoming.length;
+const next = upcoming[0];
+const dateFormat = new Intl.DateTimeFormat("en-US", {
+  day: "numeric",
+  month: "long",
+  weekday: "long",
+});
+---
+
+<Story kicker="Meeting" href="/events" linkText="See all events">
+  <Fragment slot="title">
+    {events && events.length > 0 ? (
+      <>
+        <em>{events.length}</em> events, {upcoming.length} coming up
+      </>
+    ) : (
+      "Sometimes I go outside"
+    )}
+  </Fragment>
+  <p slot="text">
+    Meetups and conferences I RSVP to on atmo.rsvp.
+    {past > 0 && ` I've been to ${past} so far.`}
+  </p>
+  <div slot="visual">
+    {next && (
+      <a class="meeting-card" href={next.atmoUrl}>
+        {next.imageUrl && (
+          <img
+            class="meeting-image"
+            src={next.imageUrl}
+            alt=""
+            loading="lazy"
+          />
+        )}
+        <div class="meeting-body">
+          <span class="meeting-when">
+            Next up · {dateFormat.format(new Date(next.startDate))}
+          </span>
+          <span class="meeting-name">{next.data?.name ?? "Event"}</span>
+          {next.locationText && (
+            <span class="meeting-where">{next.locationText}</span>
+          )}
+          {next.totalAttendees > 0 && (
+            <span class="meeting-where">
+              {next.totalAttendees} people going
+            </span>
+          )}
+        </div>
+      </a>
+    )}
+  </div>
+</Story>
+
+<style>
+  .meeting-card {
+    display: grid;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius-card) + 4px);
+    background: var(--card-bg);
+    color: var(--text);
+    transition:
+      translate 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  .meeting-card:hover {
+    translate: 0 -4px;
+    box-shadow: var(--lift-shadow);
+  }
+
+  .meeting-image {
+    width: 100%;
+    aspect-ratio: 16 / 7;
+    object-fit: cover;
+    transition: scale 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .meeting-card:hover .meeting-image {
+    scale: 1.04;
+  }
+
+  .meeting-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: clamp(14px, 4vw, 24px);
+  }
+
+  .meeting-when,
+  .meeting-where {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .meeting-name {
+    font-family: var(--font-family-heading);
+    font-size: clamp(1.3rem, 3vw, 1.8rem);
+    overflow-wrap: anywhere;
+  }
+</style>

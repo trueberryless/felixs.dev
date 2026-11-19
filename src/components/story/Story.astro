@@ -1,0 +1,182 @@
+---
+interface Props {
+  href?: string;
+  kicker: string;
+  linkText?: string;
+  /** Puts the visual on the left instead of the right. */
+  reverse?: boolean;
+}
+
+const { href, kicker, linkText, reverse = false } = Astro.props;
+const isExternal = href ? /^https?:\/\//.test(href) : false;
+---
+
+<section class:list={["story", { "is-reverse": reverse }]}>
+  <div class="story-copy">
+    <span class="story-kicker">{kicker}</span>
+    <h2 class="story-title">
+      <slot name="title" />
+    </h2>
+    <div class="story-text">
+      <slot name="text" />
+    </div>
+    {href && linkText && (
+      <a class="story-link" href={href}>
+        <span>{linkText}</span>
+        <span class="story-arrow" aria-hidden="true">
+          {isExternal ? "\u2197\uFE0E" : "\u2192"}
+        </span>
+      </a>
+    )}
+  </div>
+  <div class="story-visual">
+    <slot name="visual" />
+  </div>
+</section>
+
+<style>
+  .story {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(28px, 5vw, 64px);
+    min-height: min(78svh, 760px);
+    padding-block: clamp(48px, 10vh, 120px);
+  }
+
+  @media (min-width: 860px) {
+    .story {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    }
+
+    .story.is-reverse {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    }
+
+    .story.is-reverse .story-copy {
+      order: 2;
+    }
+  }
+
+  .story-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .story-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .story-kicker::before {
+    content: "";
+    width: 28px;
+    height: 1px;
+    background: currentColor;
+  }
+
+  .story-title {
+    font-size: clamp(1.9rem, 4.4vw, 3.1rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+
+  .story-title :global(em) {
+    font-style: normal;
+    background-image: var(--text-gradient);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .story-text {
+    color: var(--text-muted);
+    font-size: 1.02rem;
+    max-width: 46ch;
+  }
+
+  .story-link {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    padding: 8px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--badge-bg);
+    color: var(--text);
+    font-size: 0.9rem;
+    transition:
+      translate 0.25s ease,
+      box-shadow 0.25s ease,
+      border-color 0.25s ease;
+  }
+
+  .story-link:hover {
+    translate: 0 -2px;
+    box-shadow: var(--lift-shadow);
+    border-color: var(--text-muted);
+  }
+
+  .story-arrow {
+    transition: translate 0.25s ease;
+  }
+
+  .story-link:hover .story-arrow {
+    translate: 3px 0;
+  }
+
+  .story-visual {
+    min-width: 0;
+  }
+
+  /* Each section drifts and sharpens into place as it scrolls in, and drifts
+     on and blurs as it scrolls out. The copy and the visual move at different
+     speeds, which gives the page depth. No opacity, so text never loses
+     contrast mid-way. */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .story-copy,
+      .story-visual {
+        animation:
+          story-in linear both,
+          story-out linear both;
+        animation-timeline: view(), view();
+        animation-range:
+          entry 0% cover 35%,
+          exit 25% exit 100%;
+      }
+
+      .story-visual {
+        --story-shift: 72px;
+      }
+    }
+  }
+
+  @keyframes story-in {
+    from {
+      translate: 0 var(--story-shift, 40px);
+      scale: 0.96;
+      filter: blur(10px);
+    }
+  }
+
+  @keyframes story-out {
+    to {
+      translate: 0 calc(var(--story-shift, 40px) * -0.6);
+      scale: 0.98;
+      filter: blur(8px);
+    }
+  }
+</style>

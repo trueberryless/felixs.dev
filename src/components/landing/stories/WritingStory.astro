@@ -1,0 +1,84 @@
+---
+import DotTimeline from "@/components/charts/DotTimeline.astro";
+import Story from "@/components/story/Story.astro";
+import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { fetchPosts } from "@/lib/data";
+import { processPost } from "@/lib/posts";
+
+const posts = await fetchPosts().catch(() => null);
+applyCache(Astro.response, posts ? longLivedCache : degradedCache);
+
+const items = (posts ?? []).map((post) => ({
+  date: post.data.publishedAt,
+  href: processPost(post).postUrl,
+  title: post.data.title || "Untitled post",
+}));
+const latest = items
+  .toSorted((a, b) => Date.parse(b.date) - Date.parse(a.date))
+  .slice(0, 3);
+const tags = new Set((posts ?? []).flatMap((post) => post.data.tags ?? []));
+---
+
+<Story kicker="Writing" href="/blog" linkText="Read the blog" reverse>
+  <Fragment slot="title">
+    {items.length > 0 ? (
+      <>
+        <em>{items.length}</em> posts about {tags.size} topics
+      </>
+    ) : (
+      "Notes and longer thoughts"
+    )}
+  </Fragment>
+  <div slot="text" class="writing-text">
+    <p>
+      Recipes, notes and longer thoughts, published on Leaflet and stored as
+      records in my repository.
+    </p>
+    {latest.length > 0 && (
+      <ol class="writing-latest">
+        {latest.map((post) => (
+          <li>
+            <a href={post.href}>{post.title}</a>
+          </li>
+        ))}
+      </ol>
+    )}
+  </div>
+  <div slot="visual">
+    {items.length > 0 && (
+      <DotTimeline
+        items={items}
+        nowMs={Date.now()}
+        label={`${items.length} blog posts over time`}
+      />
+    )}
+  </div>
+</Story>
+
+<style>
+  .writing-text {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .writing-latest {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .writing-latest a {
+    color: var(--text);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: var(--border);
+    text-underline-offset: 4px;
+    transition: text-decoration-color 0.2s ease;
+  }
+
+  .writing-latest a:hover {
+    text-decoration-color: var(--text);
+  }
+</style>

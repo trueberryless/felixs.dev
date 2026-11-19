@@ -1,0 +1,73 @@
+---
+import AreaChart from "@/components/charts/AreaChart.astro";
+import NowPlaying from "@/components/landing/NowPlaying.astro";
+import Story from "@/components/story/Story.astro";
+import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { PLAY_COLLECTION, recordToPlay } from "@/lib/music";
+import { getRepoRecords } from "@/lib/repo";
+import { countByMonth, getMonthlySeries } from "@/lib/stories";
+
+const nowMs = Date.now();
+const records = await getRepoRecords().catch(() => null);
+const plays = (records?.get(PLAY_COLLECTION) ?? [])
+  .map((record) => recordToPlay(record.value))
+  .filter((play) => play !== undefined);
+applyCache(Astro.response, plays.length > 0 ? longLivedCache : degradedCache);
+
+const series = getMonthlySeries(
+  countByMonth(plays, (play) => new Date(play.at).toISOString()),
+  nowMs,
+  24
+);
+const firstYear = plays.length
+  ? new Date(Math.min(...plays.map((play) => play.at))).getUTCFullYear()
+  : undefined;
+
+const yearStart = Date.UTC(new Date(nowMs).getUTCFullYear(), 0, 1);
+const artistCounts = new Map<string, number>();
+for (const play of plays) {
+  if (play.at < yearStart) continue;
+  for (const artist of play.artists) {
+    artistCounts.set(artist, (artistCounts.get(artist) ?? 0) + 1);
+  }
+}
+const topArtists = [...artistCounts]
+  .toSorted((a, b) => b[1] - a[1])
+  .slice(0, 3)
+  .map(([name]) => name);
+const listFormat = new Intl.ListFormat("en", { type: "conjunction" });
+---
+
+<Story kicker="Listening" href="/music" linkText="Explore my music">
+  <Fragment slot="title">
+    {plays.length > 0 ? (
+      <>
+        <em>{plays.length.toLocaleString("en-US")}</em> plays since {firstYear}
+      </>
+    ) : (
+      "Always listening"
+    )}
+  </Fragment>
+  <p slot="text">
+    Every song I play on Spotify becomes a record on my AT Protocol repository.
+    {topArtists.length > 0 &&
+      ` This year it's mostly ${listFormat.format(topArtists)}.`}
+  </p>
+  <div slot="visual" class="listening-visual">
+    <NowPlaying bare />
+    {plays.length > 0 && (
+      <AreaChart
+        points={series}
+        label="Plays per month over the last two years"
+      />
+    )}
+  </div>
+</Story>
+
+<style>
+  .listening-visual {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+</style>

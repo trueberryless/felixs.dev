@@ -1,16 +1,16 @@
 ---
-import Layout from "@/layouts/Layout.astro";
 import Hero from "@/components/landing/Hero.astro";
 import Intro from "@/components/landing/Intro.astro";
-import NowPlaying from "@/components/landing/NowPlaying.astro";
-import RecentPosts from "@/components/landing/RecentPosts.astro";
-import RecentPostsSkeleton from "@/components/landing/RecentPostsSkeleton.astro";
-import RecentBlueskyPosts from "@/components/landing/RecentBlueskyPosts.astro";
-import RecentBlueskyPostsSkeleton from "@/components/landing/RecentBlueskyPostsSkeleton.astro";
-import ReadingSummary from "@/components/landing/ReadingSummary.astro";
-import ReadingSummarySkeleton from "@/components/landing/ReadingSummarySkeleton.astro";
-import UpcomingEvents from "@/components/landing/UpcomingEvents.astro";
-import UpcomingEventsSkeleton from "@/components/landing/UpcomingEventsSkeleton.astro";
+import BuildingStory from "@/components/landing/stories/BuildingStory.astro";
+import FootprintStory from "@/components/landing/stories/FootprintStory.astro";
+import ListeningStory from "@/components/landing/stories/ListeningStory.astro";
+import MeetingStory from "@/components/landing/stories/MeetingStory.astro";
+import ReadingStory from "@/components/landing/stories/ReadingStory.astro";
+import TalkingStory from "@/components/landing/stories/TalkingStory.astro";
+import WorkingStory from "@/components/landing/stories/WorkingStory.astro";
+import WritingStory from "@/components/landing/stories/WritingStory.astro";
+import StorySkeleton from "@/components/story/StorySkeleton.astro";
+import Layout from "@/layouts/Layout.astro";
 
 export const prerender = true;
 ---
@@ -20,21 +20,37 @@ export const prerender = true;
 
   <div class="content-wrapper layout-stream">
     <Intro />
-    <NowPlaying />
-    <RecentPosts server:defer>
-      <RecentPostsSkeleton slot="fallback" />
-    </RecentPosts>
-    <ReadingSummary server:defer>
-      <ReadingSummarySkeleton slot="fallback" />
-    </ReadingSummary>
-    <UpcomingEvents server:defer>
-      <UpcomingEventsSkeleton slot="fallback" />
-    </UpcomingEvents>
-    <RecentBlueskyPosts server:defer>
-      <RecentBlueskyPostsSkeleton slot="fallback" />
-    </RecentBlueskyPosts>
+
+    <div class="stories">
+      <ListeningStory server:defer>
+        <StorySkeleton slot="fallback" />
+      </ListeningStory>
+      <WritingStory server:defer>
+        <StorySkeleton slot="fallback" />
+      </WritingStory>
+      <ReadingStory server:defer>
+        <StorySkeleton slot="fallback" />
+      </ReadingStory>
+      <BuildingStory />
+      <TalkingStory server:defer>
+        <StorySkeleton slot="fallback" />
+      </TalkingStory>
+      <WorkingStory server:defer>
+        <StorySkeleton slot="fallback" />
+      </WorkingStory>
+      <MeetingStory server:defer>
+        <StorySkeleton slot="fallback" />
+      </MeetingStory>
+      <FootprintStory server:defer>
+        <StorySkeleton slot="fallback" />
+      </FootprintStory>
+    </div>
   </div>
 </Layout>
+
+<script>
+  import "@/scripts/now-playing";
+</script>
 
 <style>
   .layout-stream {
@@ -42,5 +58,10 @@ export const prerender = true;
     z-index: 10;
     padding-top: 80px;
     padding-bottom: 80px;
+  }
+
+  .stories {
+    display: flex;
+    flex-direction: column;
   }
 </style>
