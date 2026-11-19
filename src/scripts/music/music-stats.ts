@@ -159,8 +159,14 @@ class MusicStatsElement extends HTMLElement {
       renderHighlights(element, range)
     );
 
-    if (isFirst) return;
-    // Everything that changed fades in together, section by section.
+    // On the first load the whole page arrives as one wave, block by block.
+    if (isFirst) {
+      [...this.children]
+        .filter((element) => !element.matches("script, [data-status]"))
+        .forEach((element, index) => reveal(element, Math.min(index, 6)));
+      return;
+    }
+    // Later, everything that changed fades in together, section by section.
     [
       ".ms-artists",
       ".ms-tracks",
