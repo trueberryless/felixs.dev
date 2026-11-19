@@ -1,6 +1,15 @@
 import type { Footnote, Segment } from "./leaflet";
 
 const SAFE_URL_RE = /^(https?:|mailto:)/i;
+const GITHUB_PROFILE_RE = /^https:\/\/github\.com\/([\w-]+)\/?$/;
+const BSKY_PROFILE_RE = /^https:\/\/bsky\.app\/profile\/([^/?#]+)\/?$/;
+
+export interface RenderOptions {
+  /** Turns bare URLs into links, for footnotes without link facets. */
+  autolink?: boolean;
+  /** Avatars of mentioned Bluesky accounts, by DID or handle. */
+  avatars?: Map<string, string>;
+}
 const FOOTNOTE_MARKER_RE = /^\s*\*\s*$/;
 
 /**
@@ -10,7 +19,7 @@ const FOOTNOTE_MARKER_RE = /^\s*\*\s*$/;
 export function segmentsToHtml(
   segments: Segment[],
   footnotes: Footnote[] = [],
-  options: { autolink?: boolean } = {}
+  options: RenderOptions = {}
 ): string {
   return segments
     .map((segment) => {
@@ -30,15 +39,66 @@ export function segmentsToHtml(
       if (segment.italic) html = `<em>${html}</em>`;
       if (segment.strikethrough) html = `<s>${html}</s>`;
       if (segment.mention) {
-        html = `<a class="post-mention" href="https://bsky.app/profile/${escapeHtml(segment.mention)}">${html}</a>`;
+        html = renderBadge(
+          `https://bsky.app/profile/${segment.mention}`,
+          html,
+          options.avatars?.get(segment.mention)
+        );
       } else if (segment.link && SAFE_URL_RE.test(segment.link)) {
-        html = `<a href="${escapeHtml(segment.link)}">${html}</a>`;
+        html = renderLink(segment.link, html, segment.code, options);
       }
       if (footnote) html += renderFootnoteRef(footnote);
 
       return html;
     })
     .join("");
+}
+
+// People get a badge with their avatar, like the GitHub badges on my blog:
+// GitHub profiles, Bluesky profiles and mentions.
+function renderLink(
+  url: string,
+  html: string,
+  isCode: boolean | undefined,
+  options: RenderOptions
+) {
+  if (!isCode) {
+    const github = GITHUB_PROFILE_RE.exec(url)?.[1];
+    if (github) {
+      return renderBadge(
+        url,
+        html,
+        `https://github.com/${github}.png?size=64`,
+        "github"
+      );
+    }
+    const bluesky = BSKY_PROFILE_RE.exec(url)?.[1];
+    if (bluesky) return renderBadge(url, html, options.avatars?.get(bluesky));
+  }
+  return `<a href="${escapeHtml(url)}">${html}</a>`;
+}
+
+function renderBadge(
+  url: string,
+  html: string,
+  avatar: string | undefined,
+  kind = "bluesky"
+) {
+  const image = avatar
+    ? `<img src="${escapeHtml(avatar)}" alt="" width="20" height="20" loading="lazy" decoding="async">`
+    : "";
+  return `<a class="post-badge is-${kind}" href="${escapeHtml(url)}">${image}<span>${html}</span></a>`;
+}
+
+/** The DIDs and handles of every Bluesky account a set of segments names. */
+export function collectProfiles(segments: Segment[]): string[] {
+  const profiles = new Set<string>();
+  for (const segment of segments) {
+    if (segment.mention) profiles.add(segment.mention);
+    const handle = segment.link && BSKY_PROFILE_RE.exec(segment.link)?.[1];
+    if (handle) profiles.add(handle);
+  }
+  return [...profiles];
 }
 
 export function escapeHtml(value: string): string {

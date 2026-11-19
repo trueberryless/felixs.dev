@@ -65,13 +65,29 @@
   color: var(--text-muted);
 }
 
+/* Date and reading time belong together, and so do the tags: the gap
+   inside each group is smaller than the gap between them. */
 .post-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 14px;
+  gap: 10px 28px;
   color: var(--text-muted);
   font-size: 0.9rem;
+}
+
+.post-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  list-style: none;
 }
 
 .post-tag {
@@ -175,8 +191,28 @@ h4.post-heading {
 }
 
 /* Images grow a little and lean their own way on hover. */
+/* Images get room to breathe, and each leans its own way on hover. */
 .post-image {
+  margin: 1.4em 0;
+}
+
+.post-gallery .post-image {
   margin: 0;
+}
+
+.post-zoom {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  background: none;
+  cursor: zoom-in;
+}
+
+.post-zoom:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 4px;
 }
 
 .post-image img {
@@ -191,23 +227,233 @@ h4.post-heading {
     box-shadow 0.45s ease;
 }
 
-.post-image:hover img {
+.post-zoom:is(:hover, :focus-visible) img {
   scale: 1.03;
   rotate: var(--tilt, 1deg);
   box-shadow: var(--lift-shadow);
 }
 
 .post-cover {
-  margin-bottom: 40px;
+  margin: 0 0 48px;
 }
 
 .post-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 16px;
+  margin-block: 1.4em;
 }
 
-/* Code */
+/* A big GIF waits behind a button until it's asked for. */
+.post-gif {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 220px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-card);
+  background:
+    radial-gradient(
+      circle at 30% 20%,
+      color-mix(in oklch, var(--accent) 18%, transparent),
+      transparent 60%
+    ),
+    var(--card-bg);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.post-gif-play {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  padding-left: 4px;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--card-bg);
+  font-size: 1.2rem;
+  transition: scale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.post-gif:hover .post-gif-play {
+  scale: 1.08;
+}
+
+.post-gif-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-weight: 600;
+}
+
+.post-gif-size {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.post-gif[data-loading] .post-gif-play {
+  animation: post-pulse 1s ease-in-out infinite alternate;
+}
+
+.post-gif:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 4px;
+}
+
+@keyframes post-pulse {
+  to {
+    opacity: 0.4;
+  }
+}
+
+.post-gif-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-card);
+}
+
+/* Lightbox */
+.post-lightbox {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: clamp(16px, 4vw, 48px);
+  border: 0;
+  background: transparent;
+  cursor: zoom-out;
+  overflow: hidden;
+}
+
+.post-lightbox[open] {
+  display: grid;
+  place-items: center;
+}
+
+.post-lightbox::backdrop {
+  background: color-mix(
+    in oklch,
+    var(--bg-subtle, var(--card-bg)) 92%,
+    transparent
+  );
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  animation: post-fade 0.3s ease both;
+}
+
+.post-lightbox[data-closing]::backdrop {
+  animation: post-fade 0.3s ease reverse both;
+}
+
+.post-lightbox-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+}
+
+.post-lightbox-image {
+  display: block;
+  width: auto;
+  max-width: min(100%, 1400px);
+  height: auto;
+  max-height: calc(100dvh - 140px);
+  border-radius: var(--radius-card);
+  box-shadow: var(--lift-shadow);
+  transform-origin: top left;
+}
+
+.post-lightbox-caption {
+  max-width: 70ch;
+  color: var(--text);
+  font-size: 0.95rem;
+  text-align: center;
+  animation: post-fade 0.4s ease 0.2s both;
+}
+
+.post-lightbox[data-closing] .post-lightbox-caption {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.post-lightbox-close {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--header-bg-solid);
+  color: var(--text);
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.post-lightbox-close:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+@keyframes post-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Badges for people: GitHub profiles, Bluesky profiles and mentions, with
+   their avatar. */
+.post-body .post-badge,
+.post-footnotes .post-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.05em 0.55em 0.05em 0.2em;
+  border: 1px solid color-mix(in oklch, var(--accent) 55%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklch, var(--accent) 14%, transparent);
+  color: inherit;
+  font-size: 0.92em;
+  font-weight: 500;
+  line-height: 1.4;
+  text-decoration: none;
+  vertical-align: baseline;
+  white-space: nowrap;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.post-badge:not(:has(img)) {
+  padding-left: 0.55em;
+}
+
+.post-badge img {
+  width: 1.35em;
+  height: 1.35em;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.post-badge:hover,
+.post-badge:focus-visible {
+  border-color: var(--accent);
+  background: color-mix(in oklch, var(--accent) 30%, transparent);
+}
+
+/* Code */ /* Code */
 .post-code {
   margin: 0;
   border: 1px solid var(--border);
@@ -227,14 +473,67 @@ h4.post-heading {
   font-size: 0.75rem;
 }
 
+/* The copy button speaks in the heading font, and says "Copied" in place
+   without changing its width. */
 .post-copy {
-  padding: 4px 12px;
+  display: grid;
+  padding: 4px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   background: var(--badge-bg);
   color: var(--text);
-  font: inherit;
+  font-family: var(--font-family-heading);
+  font-size: 0.95rem;
+  line-height: 1.2;
   cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.post-copy > span {
+  grid-area: 1 / 1;
+  transition:
+    opacity 0.2s ease,
+    translate 0.25s ease;
+}
+
+.post-copy-done {
+  opacity: 0;
+  translate: 0 6px;
+}
+
+.post-copy[data-copied] .post-copy-label {
+  opacity: 0;
+  translate: 0 -6px;
+}
+
+.post-copy[data-copied] .post-copy-done {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.post-copy[data-copied] {
+  border-color: var(--accent);
+}
+
+.post-copy:hover {
+  background: var(--hover-bg);
+}
+
+.post-copy:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* Scrollable code can be reached and scrolled with the keyboard. */
+.post-code .astro-code:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: -4px;
+}
+
+.post-code ::selection {
+  background: color-mix(in oklch, var(--accent) 35%, transparent);
 }
 
 .post-code .astro-code {
@@ -340,11 +639,12 @@ h4.post-heading {
     display: none;
   }
 
-  .post-image img {
+  .post-image img,
+  .post-copy > span {
     transition: none;
   }
 
-  .post-image:hover img {
+  .post-zoom:is(:hover, :focus-visible) img {
     scale: 1;
     rotate: 0deg;
   }

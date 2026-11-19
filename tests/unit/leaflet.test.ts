@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
 import { collectFootnotes, getBlobCid, getDocumentBlocks, getReadingMinutes, toSegments } from '../../src/lib/leaflet'
+import { collectProfiles, segmentsToHtml } from '../../src/lib/leaflet-html'
 
 const link = (uri: string) => ({ $type: 'pub.leaflet.richtext.facet#link', uri })
 const bold = { $type: 'pub.leaflet.richtext.facet#bold' }
@@ -84,7 +85,7 @@ describe('getBlobCid', () => {
 
 describe('segmentsToHtml', () => {
   test('escapes text and drops unsafe links', async () => {
-    const { segmentsToHtml } = await import('../../src/lib/leaflet-html')
+
 
     expect(segmentsToHtml([{ link: 'javascript:alert(1)', text: '<b>' }, { bold: true, link: 'https://x.dev', text: 'ok' }])).toBe(
       '&lt;b&gt;<a href="https://x.dev"><strong>ok</strong></a>'
@@ -92,11 +93,39 @@ describe('segmentsToHtml', () => {
   })
 
   test('replaces footnote markers with their number', async () => {
-    const { segmentsToHtml } = await import('../../src/lib/leaflet-html')
+
     const footnotes = [{ id: 'a', number: 1, segments: [] }]
 
     expect(segmentsToHtml([{ text: 'cute' }, { footnote: 'a', text: '*' }], footnotes)).toBe(
       'cute<sup class="post-footnote-ref"><a id="fnref-1" href="#fn-1" aria-label="Footnote 1">1</a></sup>'
     )
+  })
+})
+
+describe('badges', () => {
+  test('turns GitHub profiles and mentions into badges with avatars', () => {
+    const html = segmentsToHtml(
+      [
+        { link: 'https://github.com/HiDeoo', text: 'HiDeoo' },
+        { text: ' and ' },
+        { mention: 'did:plc:abc', text: '@someone.dev' },
+        { link: 'https://github.com/withastro/starlight', text: 'Starlight' },
+      ],
+      [],
+      { avatars: new Map([['did:plc:abc', 'https://cdn.example/a.jpg']]) }
+    )
+    expect(html).toContain('<a class="post-badge is-github" href="https://github.com/HiDeoo"><img src="https://github.com/HiDeoo.png?size=64"')
+    expect(html).toContain('<a class="post-badge is-bluesky" href="https://bsky.app/profile/did:plc:abc"><img src="https://cdn.example/a.jpg"')
+    expect(html).toContain('<a href="https://github.com/withastro/starlight">Starlight</a>')
+  })
+
+  test('collects the profiles a post names', () => {
+    expect(
+      collectProfiles([
+        { mention: 'did:plc:abc', text: '@a' },
+        { link: 'https://bsky.app/profile/felixs.dev', text: 'me' },
+        { link: 'https://example.com', text: 'x' },
+      ])
+    ).toEqual(['did:plc:abc', 'felixs.dev'])
   })
 })

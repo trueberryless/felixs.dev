@@ -1,23 +1,19 @@
 ---
 import { Code } from "astro:components";
 
-import {
-  getBlobCid,
-  toSegments,
-  type Footnote,
-  type LeafletBlock,
-} from "@/lib/leaflet";
+import { toSegments, type Footnote, type LeafletBlock } from "@/lib/leaflet";
 import { escapeHtml, isSafeUrl, segmentsToHtml } from "@/lib/leaflet-html";
 import BskyEmbed, { type EmbeddedPost } from "./BskyEmbed.astro";
+import PostImage from "./PostImage.astro";
 
 interface Props {
-  blobUrl: (cid: string) => string;
+  avatars: Map<string, string>;
   blocks: LeafletBlock[];
   embeds: Map<string, EmbeddedPost>;
   footnotes: Footnote[];
 }
 
-const { blobUrl, blocks, embeds, footnotes } = Astro.props;
+const { avatars, blocks, embeds, footnotes } = Astro.props;
 
 // Languages Shiki ships with that my posts use, by the names Leaflet stores.
 const LANGUAGES: Record<string, string> = {
@@ -48,13 +44,12 @@ const LANGUAGES: Record<string, string> = {
   terraform: "terraform",
   xml: "xml",
 };
-// Small, fixed tilts, so every image leans its own way on hover.
-const TILTS = [-1.6, 1.2, -0.8, 1.8, -1.2, 0.9];
 
 const html = (block: LeafletBlock) =>
   segmentsToHtml(
     toSegments(String(block.plaintext ?? ""), (block.facets as never[]) ?? []),
-    footnotes
+    footnotes,
+    { avatars }
   );
 const slug = (text: unknown) =>
   String(text ?? "")
@@ -62,12 +57,6 @@ const slug = (text: unknown) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
-const image = (blob: unknown) => {
-  const cid = getBlobCid(blob);
-  return cid ? blobUrl(cid) : undefined;
-};
-let imageIndex = 0;
-const tilt = () => TILTS[imageIndex++ % TILTS.length];
 ---
 
 {blocks.map((block) => {
@@ -120,7 +109,7 @@ const tilt = () => TILTS[imageIndex++ % TILTS.length];
               {item.content && <span set:html={html(item.content)} />}
               {item.children?.length ? (
                 <Astro.self
-                  blobUrl={blobUrl}
+                  avatars={avatars}
                   blocks={[{ $type: block.$type, children: item.children }]}
                   embeds={embeds}
                   footnotes={footnotes}
@@ -134,14 +123,22 @@ const tilt = () => TILTS[imageIndex++ % TILTS.length];
 
     case "pub.leaflet.blocks.code": {
       const language = LANGUAGES[String(block.language ?? "").toLowerCase()];
+      const name =
+        language === "shellscript" ? "shell" : (language ?? "plain text");
       return (
         <figure class="post-code">
           <figcaption class="post-code-bar">
-            <span>
-              {language === "shellscript" ? "shell" : (language ?? "text")}
-            </span>
-            <button class="post-copy" type="button" data-copy>
-              Copy
+            <span class="post-code-language">{name}</span>
+            <button
+              class="post-copy"
+              type="button"
+              data-copy
+              aria-label={`Copy the ${name} code`}
+            >
+              <span class="post-copy-label">Copy</span>
+              <span class="post-copy-done" aria-hidden="true">
+                Copied
+              </span>
             </button>
           </figcaption>
           <Code
@@ -158,21 +155,16 @@ const tilt = () => TILTS[imageIndex++ % TILTS.length];
     }
 
     case "pub.leaflet.blocks.image": {
-      const src = image(block.image);
       const ratio = block.aspectRatio as
         { height?: number; width?: number } | undefined;
-      return src ? (
-        <figure class="post-image" style={`--tilt: ${tilt()}deg`}>
-          <img
-            src={src}
-            alt={String(block.alt ?? "")}
-            width={ratio?.width}
-            height={ratio?.height}
-            loading="lazy"
-            decoding="async"
-          />
-        </figure>
-      ) : null;
+      return (
+        <PostImage
+          alt={String(block.alt ?? "")}
+          blob={block.image}
+          height={ratio?.height}
+          width={ratio?.width}
+        />
+      );
     }
 
     case "pub.leaflet.blocks.imageGallery": {
@@ -184,21 +176,14 @@ const tilt = () => TILTS[imageIndex++ % TILTS.length];
         }[]) ?? [];
       return (
         <div class="post-gallery">
-          {images.map((entry) => {
-            const src = image(entry.image);
-            return src ? (
-              <figure class="post-image" style={`--tilt: ${tilt()}deg`}>
-                <img
-                  src={src}
-                  alt={entry.alt ?? ""}
-                  width={entry.aspectRatio?.width}
-                  height={entry.aspectRatio?.height}
-                  loading="lazy"
-                  decoding="async"
-                />
-              </figure>
-            ) : null;
-          })}
+          {images.map((entry) => (
+            <PostImage
+              alt={entry.alt ?? ""}
+              blob={entry.image}
+              height={entry.aspectRatio?.height}
+              width={entry.aspectRatio?.width}
+            />
+          ))}
         </div>
       );
     }

@@ -1,0 +1,61 @@
+---
+import { getPostImage } from "@/lib/post-images";
+
+interface Props {
+  alt: string;
+  blob: unknown;
+  height?: number | undefined;
+  isCover?: boolean;
+  width?: number | undefined;
+}
+
+const { alt, blob, height, isCover = false, width } = Astro.props;
+const image = getPostImage(blob);
+const megabytes = image?.size ? Math.round(image.size / 1_000_000) : 0;
+---
+
+{image && (
+  <figure
+    class:list={["post-image", { "post-cover": isCover }]}
+    style={`--tilt: ${image.tilt}deg`}
+  >
+    {image.isAnimated && megabytes >= 2 ? (
+      // Big GIFs only load when asked to: they can weigh tens of
+      // megabytes and make phones stutter, and they never play on their
+      // own for people who prefer less motion.
+      <button
+        class="post-gif"
+        type="button"
+        data-gif={image.src}
+        data-alt={alt}
+        style={width && height ? `aspect-ratio: ${width} / ${height}` : ""}
+      >
+        <span class="post-gif-play" aria-hidden="true">
+          ▶&#xFE0E;
+        </span>
+        <span class="post-gif-text">
+          Play animation
+          <span class="post-gif-size">{megabytes} MB</span>
+        </span>
+        {alt && <span class="sr-only">: {alt}</span>}
+      </button>
+    ) : (
+      <button
+        class="post-zoom"
+        type="button"
+        aria-haspopup="dialog"
+        aria-label={alt ? `Zoom image: ${alt}` : "Zoom image"}
+      >
+        <img
+          src={image.src}
+          alt={alt}
+          width={width}
+          height={height}
+          loading={isCover ? "eager" : "lazy"}
+          fetchpriority={isCover ? "high" : undefined}
+          decoding="async"
+        />
+      </button>
+    )}
+  </figure>
+)}

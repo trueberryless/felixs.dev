@@ -31,7 +31,7 @@ const titleEnd = lastSpaceIdx !== -1 ? title.slice(lastSpaceIdx + 1) : title;
 
       {firstTag && (
         <>
-          <span class="post-separator">&bull;</span>
+          <span class="post-separator" aria-hidden="true"></span>
           <span class="post-meta-item">{firstTag}</span>
         </>
       )}
@@ -39,7 +39,7 @@ const titleEnd = lastSpaceIdx !== -1 ? title.slice(lastSpaceIdx + 1) : title;
       {Array.isArray(otherTags) ? (
         otherTags.map((tag) => (
           <>
-            <span class="post-separator">&bull;</span>
+            <span class="post-separator" aria-hidden="true"></span>
             <span class="post-meta-item">{tag}</span>
           </>
         ))
@@ -47,14 +47,14 @@ const titleEnd = lastSpaceIdx !== -1 ? title.slice(lastSpaceIdx + 1) : title;
         otherTags.split(",").map((tag) =>
           tag.trim() ? (
             <>
-              <span class="post-separator">&bull;</span>
+              <span class="post-separator" aria-hidden="true"></span>
               <span class="post-meta-item">{tag.trim()}</span>
             </>
           ) : null
         )
       ) : otherTags ? (
         <>
-          <span class="post-separator">&bull;</span>
+          <span class="post-separator" aria-hidden="true"></span>
           <span class="post-meta-item">{otherTags}</span>
         </>
       ) : null}
@@ -117,16 +117,21 @@ const titleEnd = lastSpaceIdx !== -1 ? title.slice(lastSpaceIdx + 1) : title;
   .post-meta {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
+    align-items: center;
     gap: 8px;
     flex-shrink: 0;
   }
 
+  /* Lowercase text sits low in its line, so the dot between items is drawn
+     at the middle of the lowercase letters instead of the line. */
   .post-separator {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
     color: var(--text-muted);
-    opacity: 0.8;
-    user-select: none;
-    font-size: 1.2em;
+    opacity: 0.7;
+    translate: 0 0.12em;
   }
 
   .post-meta-item {

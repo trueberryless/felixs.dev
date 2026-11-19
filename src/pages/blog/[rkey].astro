@@ -1,5 +1,6 @@
 ---
 import Blocks from "@/components/blog/post/Blocks.astro";
+import PostImage from "@/components/blog/post/PostImage.astro";
 import type { EmbeddedPost } from "@/components/blog/post/BskyEmbed.astro";
 import LayoutPage from "@/layouts/LayoutPage.astro";
 import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
@@ -9,8 +10,9 @@ import {
   getBlobCid,
   getDocumentBlocks,
   getReadingMinutes,
+  toSegments,
 } from "@/lib/leaflet";
-import { isSafeUrl, segmentsToHtml } from "@/lib/leaflet-html";
+import { collectProfiles, isSafeUrl, segmentsToHtml } from "@/lib/leaflet-html";
 import "@/styles/post.css";
 
 export const prerender = false;
@@ -28,12 +30,21 @@ if (!record) {
   applyCache(Astro.response, degradedCache);
 }
 
-const blocks = record ? getDocumentBlocks(record.content) : [];
-const footnotes = collectFootnotes(blocks);
-const minutes = getReadingMinutes(blocks);
-const blobUrl = (cid: string) =>
-  `${pdsEndpoint}/xrpc/com.atproto.sync.getBlob?did=${actorDid}&cid=${cid}`;
+const allBlocks = record ? getDocumentBlocks(record.content) : [];
+const footnotes = collectFootnotes(allBlocks);
+const minutes = getReadingMinutes(allBlocks);
 const coverCid = record ? getBlobCid(record.coverImage) : undefined;
+// Most posts use their first image as the cover too, so it isn't shown twice.
+const coverIndex = coverCid
+  ? allBlocks.findIndex(
+      (block) =>
+        block.$type === "pub.leaflet.blocks.image" &&
+        getBlobCid(block.image) === coverCid
+    )
+  : -1;
+const blocks = allBlocks.filter((_, index) => index !== coverIndex);
+const coverAlt =
+  coverIndex === -1 ? "" : String(allBlocks[coverIndex]?.alt ?? "");
 
 const publication = record
   ? await getPublication(String(record.site ?? ""))
@@ -43,7 +54,10 @@ const originalUrl =
     ? `${publication.url.replace(/\/$/, "")}${record.path}`
     : undefined;
 
-const embeds = await getEmbeds(blocks);
+const [embeds, avatars] = await Promise.all([
+  getEmbeds(blocks),
+  getAvatars(collectProfiles(getAllSegments(allBlocks))),
+]);
 if (record) applyCache(Astro.response, longLivedCache);
 
 const title = record
@@ -92,6 +106,47 @@ async function getPublication(uri: string) {
         url: isSafeUrl(value.url) ? value.url : undefined,
       }
     : undefined;
+}
+
+// Every piece of rich text in the post, including list items and footnotes.
+function getAllSegments(
+  value: unknown,
+  found: ReturnType<typeof toSegments> = []
+) {
+  if (Array.isArray(value)) {
+    for (const item of value) getAllSegments(item, found);
+  } else if (value && typeof value === "object") {
+    const node = value as { facets?: unknown; plaintext?: unknown };
+    if (typeof node.plaintext === "string") {
+      found.push(...toSegments(node.plaintext, (node.facets as never[]) ?? []));
+    }
+    for (const child of Object.values(value)) getAllSegments(child, found);
+  }
+  return found;
+}
+
+/** The avatars of the Bluesky accounts a post mentions, by DID and handle. */
+async function getAvatars(actors: string[]) {
+  const found = new Map<string, string>();
+  if (actors.length === 0) return found;
+
+  const url = new URL("/xrpc/app.bsky.actor.getProfiles", bskyPublicApi);
+  for (const actor of actors.slice(0, 25))
+    url.searchParams.append("actors", actor);
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  }).catch(() => undefined);
+  if (!response?.ok) return found;
+
+  const { profiles } = (await response.json()) as {
+    profiles: { avatar?: string; did: string; handle: string }[];
+  };
+  for (const profile of profiles) {
+    if (!profile.avatar) continue;
+    found.set(profile.did, profile.avatar);
+    found.set(profile.handle, profile.avatar);
+  }
+  return found;
 }
 
 async function getEmbeds(documentBlocks: unknown[]) {
@@ -146,24 +201,28 @@ async function getEmbeds(documentBlocks: unknown[]) {
           page.
         </p>
       )}
-      <p class="post-meta" hidden={!record}>
-        {date && <time datetime={publishedAt}>{date}</time>}
-        <span>{minutes} min read</span>
-        {tags.map((tag) => (
-          <span class="post-tag">{tag}</span>
-        ))}
-      </p>
+      <div class="post-meta" hidden={!record}>
+        <p class="post-facts">
+          {date && <time datetime={publishedAt}>{date}</time>}
+          <span>{minutes} min read</span>
+        </p>
+        {tags.length > 0 && (
+          <ul class="post-tags" aria-label="Tags">
+            {tags.map((tag) => (
+              <li class="post-tag">{tag}</li>
+            ))}
+          </ul>
+        )}
+      </div>
     </header>
 
-    {coverCid && (
-      <figure class="post-image post-cover" style="--tilt: -0.6deg">
-        <img src={blobUrl(coverCid)} alt="" fetchpriority="high" />
-      </figure>
+    {record?.coverImage && (
+      <PostImage alt={coverAlt} blob={record.coverImage} isCover />
     )}
 
     <div class="post-body">
       <Blocks
-        blobUrl={blobUrl}
+        avatars={avatars}
         blocks={blocks}
         embeds={embeds}
         footnotes={footnotes}
@@ -179,6 +238,7 @@ async function getEmbeds(documentBlocks: unknown[]) {
               <span
                 set:html={segmentsToHtml(footnote.segments, [], {
                   autolink: true,
+                  avatars,
                 })}
               />{" "}
               <a
@@ -199,32 +259,26 @@ async function getEmbeds(documentBlocks: unknown[]) {
       </a>
       {originalUrl && (
         <a class="post-original" href={originalUrl}>
-          Also on {publication?.name ?? "Leaflet"} ↗&#xFE0E;
+          Read on Leaflet ↗&#xFE0E;
         </a>
       )}
     </footer>
   </article>
+
+  <dialog class="post-lightbox" aria-label="Zoomed image">
+    <figure class="post-lightbox-figure">
+      <img class="post-lightbox-image" alt="" />
+      <figcaption class="post-lightbox-caption"></figcaption>
+    </figure>
+    <button class="post-lightbox-close" type="button" aria-label="Close">
+      <span aria-hidden="true">×</span>
+    </button>
+  </dialog>
 </LayoutPage>
 
 <script>
-  function setUpCopyButtons() {
-    for (const button of document.querySelectorAll<HTMLButtonElement>(
-      ".post-copy[data-copy]"
-    )) {
-      if (button.dataset.ready) continue;
-      button.dataset.ready = "true";
-      button.addEventListener("click", async () => {
-        const code = button
-          .closest(".post-code")
-          ?.querySelector("pre")?.textContent;
-        if (!code) return;
-        await navigator.clipboard.writeText(code);
-        button.textContent = "Copied";
-        setTimeout(() => (button.textContent = "Copy"), 1600);
-      });
-    }
-  }
+  import { setUpPost } from "@/scripts/post";
 
-  setUpCopyButtons();
-  document.addEventListener("astro:page-load", setUpCopyButtons);
+  setUpPost();
+  document.addEventListener("astro:page-load", setUpPost);
 </script>
