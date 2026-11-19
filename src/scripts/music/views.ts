@@ -1,6 +1,6 @@
 import type { MusicStats, RangeStats } from "@/lib/music";
 
-import { formatDate, formatNumber, html, slug, svg } from "./dom";
+import { formatDate, formatNumber, html, offsetWithin, slug, svg } from "./dom";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const CURRENT_ROWS = 5;
@@ -106,8 +106,8 @@ export function renderTracks(container: Element, range: RangeStats) {
       return html(
         "li",
         {
-          class: `ms-track ms-enter${index >= 10 ? " is-extra" : ""}`,
-          style: `--i: ${Math.min(index, 12)}; --value: ${track.plays / top.plays}`,
+          class: "ms-track ms-enter",
+          style: `--i: ${index}; --value: ${track.plays / top.plays}`,
         },
         [
           html("span", { class: "ms-track-rank", text: String(index + 1) }),
@@ -124,25 +124,7 @@ export function renderTracks(container: Element, range: RangeStats) {
     })
   );
 
-  const children: Node[] = [list];
-  if (range.topTracks.length > 10) {
-    const button = html("button", {
-      class: "ms-more",
-      text: `Show all ${range.topTracks.length}`,
-      type: "button",
-    });
-    button.setAttribute("aria-expanded", "false");
-    button.addEventListener("click", () => {
-      const isExpanded = list.classList.toggle("is-expanded");
-      button.setAttribute("aria-expanded", String(isExpanded));
-      button.textContent = isExpanded
-        ? "Show top 10"
-        : `Show all ${range.topTracks.length}`;
-    });
-    children.push(button);
-  }
-
-  container.replaceChildren(...children);
+  container.replaceChildren(list);
 }
 
 interface CurrentColumn {
@@ -161,7 +143,7 @@ export function getCurrentColumns(
 ): CurrentColumn[] {
   if (range.id === "all") {
     return stats.ranges
-      .filter((candidate) => /^\d+$/.test(candidate.id))
+      .filter((candidate) => /^\d+$/.test(candidate.id) && candidate.plays > 0)
       .toReversed()
       .map((year) => ({
         artists: year.topArtists.slice(0, CURRENT_ROWS),
@@ -176,10 +158,13 @@ export function getCurrentColumns(
     ? getMonthKeys(`${range.id}-12`, 12).filter((key) => key <= currentMonth)
     : getMonthKeys(currentMonth, range.id === "12m" ? 12 : 6);
 
-  return keys.map((key) => {
+  // Months without a single play get no column.
+  return keys.flatMap((key) => {
+    const artists = byMonth.get(key)?.artists.slice(0, CURRENT_ROWS) ?? [];
+    if (artists.length === 0) return [];
     const date = `${key}-01`;
     return {
-      artists: byMonth.get(key)?.artists.slice(0, CURRENT_ROWS) ?? [],
+      artists,
       label: formatDate(date, {
         day: undefined,
         month: "short",
@@ -257,11 +242,6 @@ export function renderCurrents(
     board.append(element);
   });
 
-  const hint = html("span", {
-    "aria-hidden": "true",
-    class: "ms-currents-hint",
-    text: "\u2190 Scroll for earlier",
-  });
   const scroller = html(
     "div",
     {
@@ -272,7 +252,10 @@ export function renderCurrents(
     },
     [board]
   );
-  container.replaceChildren(hint, scroller);
+  container.replaceChildren(scroller);
+  const nav = container
+    .closest("section")
+    ?.querySelector<HTMLElement>(".ms-currents-nav");
 
   const setActive = (artist: string | undefined) => {
     board.toggleAttribute("data-active", Boolean(artist));
@@ -296,11 +279,35 @@ export function renderCurrents(
 
   const draw = () => {
     drawCurrentLines(board, lines);
-    updateScrollHint(scroller);
+    updateScrollState(scroller, nav);
   };
-  scroller.addEventListener("scroll", () => updateScrollHint(scroller), {
+  scroller.addEventListener("scroll", () => updateScrollState(scroller, nav), {
     passive: true,
   });
+  if (nav) {
+    // Every render replaces the previous handler.
+    navHandlers.get(nav)?.abort();
+    const handler = new AbortController();
+    navHandlers.set(nav, handler);
+    nav.addEventListener(
+      "click",
+      (event) => {
+        const button = (event.target as Element).closest<HTMLElement>(
+          "[data-step]"
+        );
+        const column = board.querySelector<HTMLElement>(".ms-current-column");
+        if (!button || !column) return;
+        scroller.scrollBy({
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
+            .matches
+            ? "instant"
+            : "smooth",
+          left: Number(button.dataset.step) * column.offsetWidth,
+        });
+      },
+      { signal: handler.signal }
+    );
+  }
   requestAnimationFrame(() => {
     // Start at the most recent period on narrow screens.
     scroller.scrollLeft = scroller.scrollWidth;
@@ -314,12 +321,17 @@ export function renderCurrents(
 }
 
 const observers = new WeakMap<Element, ResizeObserver>();
+const navHandlers = new WeakMap<Element, AbortController>();
 
 function drawCurrentLines(board: HTMLElement, lines: SVGSVGElement) {
-  const bounds = board.getBoundingClientRect();
-  lines.setAttribute("viewBox", `0 0 ${bounds.width} ${bounds.height}`);
+  lines.setAttribute(
+    "viewBox",
+    `0 0 ${board.offsetWidth} ${board.offsetHeight}`
+  );
   lines.replaceChildren();
 
+  // Layout offsets instead of screen boxes, so the entrance animation of the
+  // columns can't shift the lines away from the names.
   const columns = [
     ...board.querySelectorAll<HTMLElement>(".ms-current-column"),
   ];
@@ -329,25 +341,27 @@ function drawCurrentLines(board: HTMLElement, lines: SVGSVGElement) {
 
     // Lines run straight out of the name, and only bend in the gutter
     // between two columns, so they never cross another artist's name.
-    const gutter = column.getBoundingClientRect().right - bounds.left - 30;
+    const gutter = offsetWithin(column, board).right - 30;
     for (const from of column.querySelectorAll<HTMLElement>(".ms-current")) {
       const to = next.querySelector<HTMLElement>(
         `.ms-current[data-artist="${from.dataset.artist}"]`
       );
       if (!to) continue;
 
-      const name = from
-        .querySelector(".ms-current-name")!
-        .getBoundingClientRect();
-      const count = to
-        .querySelector(".ms-current-count")!
-        .getBoundingClientRect();
-      const fromBox = from.getBoundingClientRect();
-      const toBox = to.getBoundingClientRect();
-      const x1 = name.right - bounds.left + 8;
-      const y1 = fromBox.top + fromBox.height / 2 - bounds.top;
-      const x2 = count.left - bounds.left - 6;
-      const y2 = toBox.top + toBox.height / 2 - bounds.top;
+      const name = offsetWithin(
+        from.querySelector<HTMLElement>(".ms-current-name")!,
+        board
+      );
+      const count = offsetWithin(
+        to.querySelector<HTMLElement>(".ms-current-count")!,
+        board
+      );
+      const fromBox = offsetWithin(from, board);
+      const toBox = offsetWithin(to, board);
+      const x1 = name.right + 8;
+      const y1 = (fromBox.top + fromBox.bottom) / 2;
+      const x2 = count.left - 6;
+      const y2 = (toBox.top + toBox.bottom) / 2;
       const bendStart = Math.max(x1, gutter);
       if (x2 <= bendStart) continue;
 
@@ -357,13 +371,18 @@ function drawCurrentLines(board: HTMLElement, lines: SVGSVGElement) {
           class: "ms-current-line",
           d: `M ${x1} ${y1} H ${bendStart} C ${bendStart + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}`,
           "data-artist": from.dataset.artist,
+          pathLength: 1,
+          style: `--i: ${index}`,
         })
       );
     }
   });
 }
 
-function updateScrollHint(scroller: HTMLElement) {
+function updateScrollState(
+  scroller: HTMLElement,
+  nav: HTMLElement | null | undefined
+) {
   const hasMoreBefore = scroller.scrollLeft > 4;
   const hasMoreAfter =
     scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 4;
@@ -372,6 +391,12 @@ function updateScrollHint(scroller: HTMLElement) {
     .join(" ");
   if (state) scroller.dataset.scroll = state;
   else delete scroller.dataset.scroll;
+
+  if (!nav) return;
+  nav.hidden = !hasMoreBefore && !hasMoreAfter;
+  const [earlier, later] = nav.querySelectorAll("button");
+  if (earlier) earlier.disabled = !hasMoreBefore;
+  if (later) later.disabled = !hasMoreAfter;
 }
 
 export function renderClock(container: Element, range: RangeStats) {
@@ -480,7 +505,8 @@ export function renderCalendar(
   container: Element,
   caption: Element | null,
   stats: MusicStats,
-  range: RangeStats
+  range: RangeStats,
+  { onPick }: { onPick: (date: string) => void }
 ) {
   const isYear = /^\d+$/.test(range.id);
   const end = isYear
@@ -526,25 +552,25 @@ export function renderCalendar(
     if (day.count < 0) return undefined;
     const week = Math.floor(index / 7);
     const weekday = index % 7;
+    const label = `${formatNumber(day.count)} ${day.count === 1 ? "play" : "plays"} on ${formatDate(day.date, { weekday: "long" })}`;
     return svg(
       "rect",
       {
+        "aria-disabled": day.count === 0 ? "true" : undefined,
+        "aria-label": label,
         class: "ms-day",
+        "data-date": day.date,
         "data-level": level(day.count),
         height: cell,
+        role: "button",
         rx: 3,
         style: `--i: ${week}`,
+        tabindex: -1,
         width: cell,
         x: week * (cell + gap),
         y: 18 + weekday * (cell + gap),
       },
-      [
-        svg("title", {}, [
-          document.createTextNode(
-            `${formatNumber(day.count)} plays on ${formatDate(day.date)}`
-          ),
-        ]),
-      ]
+      [svg("title", {}, [document.createTextNode(label)])]
     );
   });
 
@@ -583,8 +609,22 @@ export function renderCalendar(
   const active = days.filter((day) => day.count > 0).length;
   const total = days.reduce((sum, day) => sum + Math.max(day.count, 0), 0);
   if (caption) {
-    caption.textContent = `${formatNumber(total)} plays on ${formatNumber(active)} days ${isYear ? `in ${range.id}` : "over the last year"}.`;
+    caption.textContent = `${formatNumber(total)} plays on ${formatNumber(active)} days ${isYear ? `in ${range.id}` : "over the last year"}. Pick a day to see just that day.`;
   }
+
+  const cells = rects.filter((rect): rect is SVGRectElement => Boolean(rect));
+  const calendar = svg(
+    "svg",
+    {
+      "aria-label": `Daily plays ${isYear ? `in ${range.id}` : "over the last year"}. Use the arrow keys to move between days and Enter to pick one.`,
+      class: "ms-calendar-svg ms-enter",
+      role: "group",
+      viewBox: `0 0 ${width} ${height}`,
+      width,
+    },
+    [...monthLabels, ...cells]
+  );
+  enableDayPicking(calendar, cells, onPick);
 
   container.replaceChildren(
     html(
@@ -595,22 +635,7 @@ export function renderCalendar(
         role: "region",
         tabindex: 0,
       },
-      [
-        svg(
-          "svg",
-          {
-            "aria-label": `Daily plays ${isYear ? `in ${range.id}` : "over the last year"}`,
-            class: "ms-calendar-svg ms-enter",
-            role: "img",
-            viewBox: `0 0 ${width} ${height}`,
-            width,
-          },
-          [
-            ...monthLabels,
-            ...rects.filter((rect): rect is SVGRectElement => Boolean(rect)),
-          ]
-        ),
-      ]
+      [calendar]
     ),
     html("div", { "aria-hidden": "true", class: "ms-legend" }, [
       html("span", { text: "Less" }),
@@ -622,10 +647,91 @@ export function renderCalendar(
   );
 }
 
-export function renderHighlights(container: Element, stats: MusicStats) {
-  const { busiestDay, longestStreak, topRepeat, weekObsession } =
-    stats.highlights;
+/**
+ * Days are picked with a click, or with the arrow keys and Enter: only one
+ * day is in the tab order at a time, so the calendar is a single tab stop.
+ */
+function enableDayPicking(
+  calendar: SVGSVGElement,
+  cells: SVGRectElement[],
+  onPick: (date: string) => void
+) {
+  const start =
+    cells.findLast((cell) => cell.getAttribute("aria-disabled") !== "true") ??
+    cells.at(-1);
+  start?.setAttribute("tabindex", "0");
+
+  const focus = (cell: SVGRectElement | undefined) => {
+    if (!cell) return;
+    for (const other of cells) other.setAttribute("tabindex", "-1");
+    cell.setAttribute("tabindex", "0");
+    cell.focus();
+  };
+  const pick = (cell: Element | null) => {
+    const date = cell?.getAttribute("data-date");
+    if (!date || cell?.getAttribute("aria-disabled") === "true") return;
+    focus(cell as SVGRectElement);
+    onPick(date);
+  };
+
+  calendar.addEventListener("click", (event) => {
+    pick((event.target as Element).closest(".ms-day"));
+  });
+  calendar.addEventListener("keydown", (event) => {
+    const current = cells.indexOf(event.target as SVGRectElement);
+    if (current === -1) return;
+    const steps: Record<string, number> = {
+      ArrowDown: 1,
+      ArrowLeft: -7,
+      ArrowRight: 7,
+      ArrowUp: -1,
+    };
+    if (event.key in steps) {
+      event.preventDefault();
+      focus(cells[current + steps[event.key]!]);
+    } else if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      pick(cells[current] ?? null);
+    }
+  });
+}
+
+export function renderHighlights(container: Element, range: RangeStats) {
+  const {
+    busiestDay,
+    evergreen,
+    firstPlay,
+    lastPlay,
+    longestStreak,
+    topRepeat,
+  } = range.highlights;
+  const isDay = /^\d{4}-\d{2}-\d{2}$/.test(range.id);
   const cards: HTMLElement[] = [];
+  const time = (at: string) =>
+    new Date(at).toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Europe/Vienna",
+    });
+
+  if (isDay && firstPlay) {
+    cards.push(
+      renderHighlight(
+        "Started with",
+        firstPlay.track,
+        `${firstPlay.artist ? `By ${firstPlay.artist}, at` : "At"} ${time(firstPlay.at)}.`
+      )
+    );
+  }
+  if (isDay && lastPlay && lastPlay.at !== firstPlay?.at) {
+    cards.push(
+      renderHighlight(
+        "Ended with",
+        lastPlay.track,
+        `${lastPlay.artist ? `By ${lastPlay.artist}, at` : "At"} ${time(lastPlay.at)}.`
+      )
+    );
+  }
 
   if (longestStreak) {
     cards.push(
@@ -650,25 +756,27 @@ export function renderHighlights(container: Element, stats: MusicStats) {
       renderHighlight(
         "On repeat",
         `${formatNumber(topRepeat.plays)}×`,
-        `${topRepeat.track} by ${topRepeat.artist}, on ${formatDate(topRepeat.date)}.`
+        `${topRepeat.track}${topRepeat.artist ? ` by ${topRepeat.artist}` : ""}, on ${formatDate(topRepeat.date)}.`
       )
     );
   }
-  if (weekObsession) {
+  if (evergreen) {
     cards.push(
       renderHighlight(
-        "This week’s obsession",
-        weekObsession.track,
-        `By ${weekObsession.artist}, ${formatNumber(weekObsession.plays)} plays in the last seven days.`
+        "Evergreen",
+        evergreen.track,
+        `${evergreen.artist ? `By ${evergreen.artist}, on` : "On"} ${formatNumber(evergreen.days)} different days between ${formatDate(evergreen.from, { day: undefined })} and ${formatDate(evergreen.to, { day: undefined })}.`
       )
     );
   }
+  if (cards.length === 0) cards.push(renderEmpty());
+  cards.forEach((card, index) => card.style.setProperty("--i", String(index)));
 
   container.replaceChildren(...cards);
 }
 
 function renderHighlight(kicker: string, value: string, text: string) {
-  return html("article", { class: "ms-highlight" }, [
+  return html("article", { class: "ms-highlight ms-enter" }, [
     html("span", { class: "ms-highlight-kicker", text: kicker }),
     html("span", { class: "ms-highlight-value", text: value }),
     html("p", { class: "ms-highlight-text", text }),

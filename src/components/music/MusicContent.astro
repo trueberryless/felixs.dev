@@ -1,28 +1,12 @@
 ---
 import Fallback from "@/components/utils/Fallback.astro";
-import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
-import {
-  computeMusicStats,
-  PLAY_COLLECTION,
-  recordToPlay,
-  type MusicStats,
-  type Play,
-} from "@/lib/music";
+import { applyCache, dailyCache, degradedCache } from "@/lib/cache";
 import { actorDid, pdsEndpoint, scrobblerEndpoint } from "@/lib/const";
-import { getRepoRecords } from "@/lib/repo";
+import type { MusicStats } from "@/lib/music";
+import { getMusicStats } from "@/lib/music-data";
 
-let stats: MusicStats | null = null;
-try {
-  const records = await getRepoRecords();
-  const plays = (records.get(PLAY_COLLECTION) ?? [])
-    .map((record) => recordToPlay(record.value))
-    .filter((play): play is Play => Boolean(play));
-  if (plays.length > 0) stats = computeMusicStats(plays, { nowMs: Date.now() });
-} catch {
-  stats = null;
-}
-
-applyCache(Astro.response, stats ? longLivedCache : degradedCache);
+const stats: MusicStats | null = await getMusicStats().catch(() => null);
+applyCache(Astro.response, stats ? dailyCache : degradedCache);
 
 const defaultRange =
   stats?.ranges.find((range) => range.id === "12m" && range.plays > 0) ??
@@ -35,6 +19,15 @@ const yearRanges =
 // `<` is escaped so a track name can never close the script element.
 const json = stats ? JSON.stringify(stats).replaceAll("<", "\\u003c") : "";
 const numberFormat = new Intl.NumberFormat("en-US");
+const isYearDefault = /^\d+$/.test(defaultRange?.id ?? "");
+// "CET" or "CEST", whichever Vienna is on right now.
+const timeZoneName =
+  new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Vienna",
+    timeZoneName: "short",
+  })
+    .formatToParts(new Date())
+    .find((part) => part.type === "timeZoneName")?.value ?? "CET";
 ---
 
 {stats && defaultRange ? (
@@ -46,31 +39,78 @@ const numberFormat = new Intl.NumberFormat("en-US");
     data-now-playing={`${scrobblerEndpoint}/api/now-playing`}
   >
     <script type="application/json" class="ms-data" set:html={json} />
-    <div class="ms-ranges-band" aria-hidden="true" />
     <fieldset class="ms-ranges">
       <legend class="sr-only">Time range</legend>
-      <div class="ms-range-group">
-        {relativeRanges.map((range) => (
-          <label class="ms-range">
-            <input
-              type="radio"
-              name="music-range"
-              value={range.id}
-              checked={range.id === defaultRange.id}
-            />
-            <span>{range.label}</span>
-          </label>
-        ))}
+      <div
+        class:list={["ms-range-group", { "is-open": !isYearDefault }]}
+        data-group="relative"
+      >
+        <button
+          type="button"
+          class="ms-range-toggle"
+          aria-expanded={isYearDefault ? "false" : "true"}
+          aria-controls="ms-range-relative"
+          data-label="Recent"
+        >
+          Recent
+        </button>
+        <div class="ms-range-options" id="ms-range-relative">
+          <div class="ms-range-inner">
+            {relativeRanges.map((range) => (
+              <label class="ms-range">
+                <input
+                  type="radio"
+                  name="music-range"
+                  value={range.id}
+                  checked={range.id === defaultRange.id}
+                />
+                <span>{range.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
       </div>
-      <div class="ms-range-group ms-years">
-        {yearRanges.map((range) => (
-          <label class="ms-range">
-            <input type="radio" name="music-range" value={range.id} />
-            <span>{range.label}</span>
-          </label>
-        ))}
+      <div
+        class:list={["ms-range-group", { "is-open": isYearDefault }]}
+        data-group="year"
+      >
+        <button
+          type="button"
+          class="ms-range-toggle"
+          aria-expanded={isYearDefault ? "true" : "false"}
+          aria-controls="ms-range-year"
+          data-label="By year"
+        >
+          By year
+        </button>
+        <div class="ms-range-options" id="ms-range-year">
+          <div class="ms-range-inner">
+            {yearRanges.map((range) => (
+              <label class="ms-range">
+                <input
+                  type="radio"
+                  name="music-range"
+                  value={range.id}
+                  checked={range.id === defaultRange.id}
+                />
+                <span>{range.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div class="ms-range-day" hidden>
+        <span class="ms-range-day-label" />
+        <button
+          type="button"
+          class="ms-range-day-close"
+          aria-label="Back to the time range"
+        >
+          <span aria-hidden="true">×</span>
+        </button>
       </div>
     </fieldset>
+    <p class="sr-only" aria-live="polite" data-status />
 
     <div class="ms-numbers" aria-live="polite">
       <div class="ms-number">
@@ -78,7 +118,6 @@ const numberFormat = new Intl.NumberFormat("en-US");
           {numberFormat.format(defaultRange.minutes)}
         </span>
         <span class="ms-number-label">minutes listened</span>
-        <span class="ms-number-hint" data-stat="minutes-hint" />
       </div>
       <div class="ms-number">
         <span class="ms-number-value" data-stat="plays">
@@ -131,15 +170,30 @@ const numberFormat = new Intl.NumberFormat("en-US");
       </div>
     </section>
 
-    <section class="ms-section" aria-labelledby="ms-currents-title">
-      <div class="ms-section-head">
-        <h2 id="ms-currents-title" class="ms-title">
-          Currents
-        </h2>
-        <p class="ms-subtitle">
-          How my favourite artists rise and fall over time. Hover an artist to
-          follow it.
-        </p>
+    <section
+      class="ms-section ms-currents-section"
+      aria-labelledby="ms-currents-title"
+    >
+      <div class="ms-section-head is-row">
+        <div class="ms-section-text">
+          <h2 id="ms-currents-title" class="ms-title">
+            Currents
+          </h2>
+          <p class="ms-subtitle">
+            How my favourite artists rise and fall over time. Hover an artist to
+            follow it.
+          </p>
+        </div>
+        <div class="ms-currents-nav" hidden>
+          <button type="button" class="ms-nav" data-step="-1">
+            <span aria-hidden="true">←</span>
+            <span class="sr-only">Earlier months</span>
+          </button>
+          <button type="button" class="ms-nav" data-step="1">
+            <span aria-hidden="true">→</span>
+            <span class="sr-only">Later months</span>
+          </button>
+        </div>
       </div>
       <div class="ms-currents" />
     </section>
@@ -149,7 +203,19 @@ const numberFormat = new Intl.NumberFormat("en-US");
         <h2 id="ms-rhythm-title" class="ms-title">
           Rhythm
         </h2>
-        <p class="ms-subtitle">When I listen, in Vienna time.</p>
+        <p class="ms-subtitle">
+          When I listen, in{" "}
+          <abbr
+            title={
+              timeZoneName === "CEST"
+                ? "Central European Summer Time"
+                : "Central European Time"
+            }
+          >
+            {timeZoneName}
+          </abbr>
+          .
+        </p>
       </div>
       <div class="ms-rhythm-grid">
         <div class="ms-clock" />
