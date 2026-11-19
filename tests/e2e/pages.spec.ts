@@ -70,29 +70,42 @@ test('has no horizontal overflow', async ({ page }) => {
   expect(overflow).toBeLessThanOrEqual(0)
 })
 
-test.describe('on a narrow screen', () => {
-  test.use({ viewport: { height: 800, width: 320 } })
+// 320 is a small phone, 200 and 136 are the largest and smallest Apple Watch.
+for (const width of [320, 200, 136]) {
+  test.describe(`at ${width} pixels wide`, () => {
+    test.use({ viewport: { height: 800, width } })
 
-  for (const path of ['/', '/blog', '/books', '/events', '/projects', '/resume']) {
-    test(`${path} keeps its content inside the screen`, async ({ page }) => {
-      await page.goto(path)
-      await page.waitForLoadState('networkidle')
+    for (const path of ['/', '/blog', '/books', '/events', '/projects', '/resume', '/404']) {
+      test(`${path} keeps its content inside the screen`, async ({ page }) => {
+        await page.goto(path)
+        await page.waitForLoadState('networkidle')
 
-      const offscreen = await page.evaluate(() => {
-        const width = document.documentElement.clientWidth
-        return [...document.querySelectorAll('main *, footer *')]
-          .filter((element) => !element.closest('[aria-hidden="true"], .sr-only'))
-          .filter((element) => {
-            const { height, left, right } = element.getBoundingClientRect()
-            return height > 0 && (right > width + 1 || left < -1)
-          })
-          .map((element) => `${element.tagName.toLowerCase()}.${[...element.classList].join('.')}`)
+        const offscreen = await page.evaluate(() => {
+          const viewportWidth = document.documentElement.clientWidth
+          return [...document.querySelectorAll('header *, main *, footer *')]
+            .filter((element) => !element.closest('[aria-hidden="true"], .sr-only'))
+            .filter((element) => getComputedStyle(element).visibility !== 'hidden')
+            .filter((element) => {
+              const { height, left, right } = element.getBoundingClientRect()
+              return height > 0 && (right > viewportWidth + 1 || left < -1)
+            })
+            .map((element) => `${element.tagName.toLowerCase()}.${[...element.classList].join('.')}`)
+        })
+
+        expect(offscreen).toEqual([])
       })
+    }
 
-      expect(offscreen).toEqual([])
+    test('keeps the open menu inside the screen', async ({ page }) => {
+      await page.goto('/')
+      await page.getByRole('button', { name: 'Menu' }).click()
+
+      for (const link of await page.getByRole('navigation', { name: 'Main Navigation' }).getByRole('link').all()) {
+        await expect(link).toBeInViewport({ ratio: 1 })
+      }
     })
-  }
-})
+  })
+}
 
 test.describe('mobile menu', () => {
   test.use({ viewport: { height: 800, width: 375 } })

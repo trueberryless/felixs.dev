@@ -193,4 +193,11 @@ const { title, authors, coverUrl, rotation, hiveId, thickness } = Astro.props;
       box-shadow: -4px 8px 15px rgba(0, 0, 0, 0.5);
     }
   }
+
+  /* The 3D book has a fixed size, so it is scaled down as a whole. */
+  @media (max-width: 200px) {
+    .book-scene {
+      zoom: 0.7;
+    }
+  }
 </style>

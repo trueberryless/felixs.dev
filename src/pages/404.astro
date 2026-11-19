@@ -190,4 +190,25 @@ import LayoutMinimal from "@/layouts/LayoutMinimal.astro";
       background: var(--bg-subtle);
     }
   }
+
+  @media (max-width: 280px) {
+    .content-wrapper-404 {
+      max-width: 100%;
+      padding: 0 12px;
+      text-align: center;
+    }
+
+    .error-code {
+      font-size: 30vw;
+      padding: 0;
+    }
+
+    .error-text {
+      font-size: 1.15rem;
+    }
+
+    .back-link {
+      padding: 0.6rem 1rem;
+    }
+  }
 </style>

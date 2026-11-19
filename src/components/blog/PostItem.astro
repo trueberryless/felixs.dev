@@ -165,4 +165,21 @@ const titleEnd = lastSpaceIdx !== -1 ? title.slice(lastSpaceIdx + 1) : title;
       content: "↳";
     }
   }
+
+  @media (max-width: 280px) {
+    .post-title {
+      overflow-wrap: anywhere;
+    }
+
+    .post-meta-item {
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  @media (max-width: 180px) {
+    .nowrap {
+      white-space: normal;
+    }
+  }
 </style>

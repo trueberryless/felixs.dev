@@ -10,7 +10,7 @@ interface Props {
   name?: string;
 }
 
-const { href, text, icon, alt = "Badge icon", name } = Astro.props;
+const { href, text, icon, alt = "", name } = Astro.props;
 
 const badgeClass = ["badge", name ? `badge-${name}` : null]
   .filter(Boolean)
@@ -26,6 +26,8 @@ const badgeClass = ["badge", name ? `badge-${name}` : null]
   .badge {
     display: inline-flex;
     align-items: center;
+    max-width: 100%;
+    white-space: nowrap;
     gap: 0.4em;
     padding: 0.2em 0.4em;
     margin: 0 0.15em;
@@ -73,5 +75,11 @@ const badgeClass = ["badge", name ? `badge-${name}` : null]
     .badge:hover {
       transform: translateY(-0.1em);
     }
+  }
+
+  .badge span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 </style>

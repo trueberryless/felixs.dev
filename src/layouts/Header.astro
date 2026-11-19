@@ -1045,4 +1045,45 @@ const pathname = Astro.url.pathname;
       -webkit-backdrop-filter: none;
     }
   }
+
+  @media (max-width: 280px) {
+    .glass-header {
+      padding: 8px;
+    }
+
+    .logo-pill,
+    .menu-pill {
+      min-width: 0;
+    }
+
+    .logo-pill {
+      padding: 10px 8px 10px 16px;
+    }
+
+    .menu-pill {
+      padding: 10px 16px 10px 8px;
+    }
+
+    .header-inner.is-open .logo-pill,
+    .header-inner.is-open .menu-pill {
+      padding: 10px 14px;
+    }
+
+    .header-inner.is-open .menu-pill {
+      flex-grow: 1;
+    }
+
+    .rest,
+    .appendix,
+    .theme-text {
+      display: none;
+    }
+  }
+
+  /* Too narrow for both pills, so the open menu takes the whole header. */
+  @media (max-width: 180px) {
+    .header-inner.is-open .logo-pill {
+      display: none;
+    }
+  }
 </style>

@@ -53,7 +53,7 @@ const descParts = desc.split(URL_RE).filter(Boolean);
     background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: var(--radius-card);
-    padding: 20px 24px;
+    padding: 20px clamp(14px, 6vw, 24px);
     display: flex;
     flex-direction: column;
     gap: 12px;

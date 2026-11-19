@@ -474,4 +474,18 @@ const prints = await Promise.all(
       background: var(--bg-subtle);
     }
   }
+
+  @media (max-width: 280px) {
+    .hero-text {
+      font-size: 15vw;
+      padding: 24px 8px;
+    }
+  }
+
+  /* No room for the floating logos around the name on a watch. */
+  @media (max-width: 280px) {
+    .floating-logos {
+      display: none;
+    }
+  }
 </style>

@@ -33,7 +33,7 @@ const hasData = Boolean(books && books.length > 0);
 <style>
   .books-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
     gap: 4rem 2.5rem;
     padding-top: 1rem;
     padding-bottom: 2rem;

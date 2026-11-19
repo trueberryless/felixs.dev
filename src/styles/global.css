@@ -185,6 +185,7 @@ body {
   color: var(--text);
   font-family: var(--font-family);
   line-height: 1.6;
+  overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
   display: flex;
   flex-direction: column;
@@ -202,6 +203,21 @@ main {
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 0 24px;
+}
+
+/* Smartwatches and very narrow windows. */
+@media (max-width: 280px) {
+  html {
+    font-size: 14px;
+  }
+
+  body {
+    hyphens: auto;
+  }
+
+  .content-wrapper {
+    padding: 0 12px;
+  }
 }
 
 h1,
