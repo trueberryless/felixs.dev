@@ -60,9 +60,11 @@ const date = new Date(post.createdAt).toLocaleDateString("en-US", {
       box-shadow 0.25s ease;
   }
 
-  .bsky-embed:hover {
-    translate: 0 -2px;
-    box-shadow: var(--lift-shadow);
+  @media (hover: hover) {
+    .bsky-embed:hover {
+      translate: 0 -2px;
+      box-shadow: var(--lift-shadow);
+    }
   }
 
   .bsky-author {

@@ -131,10 +131,12 @@ const dateFormat = new Intl.DateTimeFormat("en-US", {
       fill 0.2s ease;
   }
 
-  .posts-link:hover .posts-dot,
-  .posts-link:focus-visible .posts-dot {
-    scale: 1.45;
-    fill: var(--accent);
+  @media (hover: hover) {
+    .posts-link:hover .posts-dot,
+    .posts-link:focus-visible .posts-dot {
+      scale: 1.45;
+      fill: var(--accent);
+    }
   }
 
   /* Dots slide in row by row once the section is on stage. */

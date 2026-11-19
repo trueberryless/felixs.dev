@@ -1011,9 +1011,11 @@ a.ms-recent-track:hover {
     box-shadow 0.25s ease;
 }
 
-.ms-highlight:hover {
-  translate: 0 -3px;
-  box-shadow: var(--lift-shadow);
+@media (hover: hover) {
+  .ms-highlight:hover {
+    translate: 0 -3px;
+    box-shadow: var(--lift-shadow);
+  }
 }
 
 .ms-highlight-value {
@@ -1152,10 +1154,12 @@ a.ms-recent-track:hover {
   outline: none;
 }
 
-.tr-link:hover .tr-cover,
-.tr-link:focus-visible .tr-cover {
-  scale: 1.12;
-  box-shadow: var(--lift-shadow);
+@media (hover: hover) {
+  .tr-link:hover .tr-cover,
+  .tr-link:focus-visible .tr-cover {
+    scale: 1.12;
+    box-shadow: var(--lift-shadow);
+  }
 }
 
 .tr-link:focus-visible .tr-cover {
@@ -1163,15 +1167,17 @@ a.ms-recent-track:hover {
   outline-offset: 3px;
 }
 
-.tr-link:hover .tr-card,
-.tr-link:focus-visible .tr-card {
-  translate: -50% 0;
-  opacity: 1;
-  visibility: visible;
-  transition:
-    translate 0.25s ease,
-    opacity 0.25s ease,
-    visibility 0s;
+@media (hover: hover) {
+  .tr-link:hover .tr-card,
+  .tr-link:focus-visible .tr-card {
+    translate: -50% 0;
+    opacity: 1;
+    visibility: visible;
+    transition:
+      translate 0.25s ease,
+      opacity 0.25s ease,
+      visibility 0s;
+  }
 }
 
 .tr-item:has(.tr-link:hover, .tr-link:focus-visible) {
