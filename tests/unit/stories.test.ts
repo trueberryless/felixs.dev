@@ -87,3 +87,19 @@ describe('resume', () => {
     )
   })
 })
+
+describe('tellCareer', () => {
+  test('drops short stints and adds open source', async () => {
+    const { tellCareer } = await import('../../src/lib/stories')
+    const day = 86_400_000
+    const rows = tellCareer(
+      [
+        { end: Date.UTC(2024, 0, 1), isCurrent: false, kind: 'work', label: 'Long', start: Date.UTC(2023, 0, 1), title: 'Long' },
+        { end: Date.UTC(2023, 7, 1) + 30 * day, isCurrent: false, kind: 'work', label: 'Short', start: Date.UTC(2023, 7, 1), title: 'Short' },
+      ],
+      Date.UTC(2026, 10, 20)
+    )
+    expect(rows.map((row) => row.label)).toEqual(['Open source', 'Long'])
+    expect(rows[0]).toMatchObject({ isCurrent: true, kind: 'open-source' })
+  })
+})

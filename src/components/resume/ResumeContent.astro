@@ -1,9 +1,7 @@
 ---
 import Section from "@/components/utils/Section.astro";
 import Fallback from "@/components/utils/Fallback.astro";
-import Timeline from "@/components/resume/Timeline.astro";
-import PositionCard from "@/components/resume/PositionCard.astro";
-import EducationCard from "@/components/resume/EducationCard.astro";
+import ResumeChapter from "@/components/resume/ResumeChapter.astro";
 import HonorCard from "@/components/resume/HonorCard.astro";
 import SkillChips from "@/components/resume/SkillChips.astro";
 import {
@@ -14,7 +12,12 @@ import {
 } from "@lucide/astro";
 import CareerTimeline from "@/components/charts/CareerTimeline.astro";
 import { fetchResume } from "@/lib/data";
-import { getCareerRows, getSkillUsage, parseResumeDate } from "@/lib/stories";
+import {
+  getCareerRows,
+  getSkillUsage,
+  parseResumeDate,
+  tellCareer,
+} from "@/lib/stories";
 import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
 
 const resume = await fetchResume().catch(() => null);
@@ -28,7 +31,28 @@ const hasData = Boolean(
 );
 
 const nowMs = Date.now();
-const rows = getCareerRows(resume, nowMs);
+const rows = tellCareer(getCareerRows(resume, nowMs), nowMs);
+// Short stints like internships are left out, like on the timeline.
+const SHORT_MS = 92 * 24 * 60 * 60 * 1000;
+const positions = (resume?.positions ?? []).filter((position) => {
+  const start = parseResumeDate(position.startLabel);
+  const end = position.isCurrent ? nowMs : parseResumeDate(position.endLabel);
+  return Number.isNaN(start) || Number.isNaN(end) || end - start >= SHORT_MS;
+});
+const openSource = {
+  description:
+    "I help maintain npmx, forges, bombshell, Nuxt and diglot, as well as the All Contributors ecosystem, and spend a lot of time in the Astro and Starlight repositories.",
+  start: "Oct 2023",
+};
+// Work and open source, newest first.
+const chapters = [
+  ...positions.map((position) => ({ kind: "work" as const, position })),
+  { kind: "open-source" as const, position: undefined },
+].toSorted(
+  (a, b) =>
+    parseResumeDate(b.position?.startLabel ?? openSource.start) -
+    parseResumeDate(a.position?.startLabel ?? openSource.start)
+);
 const firstYear = rows.length
   ? new Date(Math.min(...rows.map((row) => row.start))).getUTCFullYear()
   : undefined;
@@ -44,7 +68,7 @@ const numbers = [
       ? new Date(nowMs).getUTCFullYear() - new Date(firstJob).getUTCFullYear()
       : 0,
   },
-  { label: "positions", value: resume?.positions.length ?? 0 },
+  { label: "positions", value: positions.length },
   { label: "skills", value: resume?.skills.length ?? 0 },
   { label: "awards", value: resume?.honors.length ?? 0 },
 ].filter((number) => number.value > 0);
@@ -66,7 +90,7 @@ const numbers = [
     {rows.length > 0 && firstYear && (
       <Section title="At a glance">
         <CareerTimeline
-          label="Work and education over time"
+          label="Work, education and open source over time"
           nowMs={nowMs}
           rows={rows}
           visibleYears={Math.min(
@@ -77,27 +101,51 @@ const numbers = [
       </Section>
     )}
 
-    {resume!.positions.length > 0 && (
-      <Section title="Experience">
-        <BriefcaseBusiness
-          slot="leading"
-          class="section-icon"
-          width={18}
-          height={18}
-        />
-        <div class="timeline-stack">
-          {resume!.positions.map((p) => (
-            <Timeline
-              start={p.startLabel}
-              end={p.endLabel}
-              isCurrent={p.isCurrent}
+    <Section title="Experience">
+      <BriefcaseBusiness
+        slot="leading"
+        class="section-icon"
+        width={18}
+        height={18}
+      />
+      <ol class="chapters">
+        {chapters.map((chapter, index) =>
+          chapter.position ? (
+            <ResumeChapter
+              chips={chapter.position.skills}
+              description={chapter.position.description}
+              end={chapter.position.endLabel}
+              index={index}
+              isCurrent={chapter.position.isCurrent}
+              kind="work"
+              meta={[
+                chapter.position.location,
+                chapter.position.jobType,
+                chapter.position.workplaceType,
+              ]}
+              organisation={chapter.position.company}
+              start={chapter.position.startLabel}
+              title={chapter.position.title}
+            />
+          ) : (
+            <ResumeChapter
+              description={openSource.description}
+              end={null}
+              index={index}
+              isCurrent
+              kind="open-source"
+              organisation="On GitHub and Tangled"
+              start={openSource.start}
+              title="Open source maintainer"
             >
-              <PositionCard position={p} />
-            </Timeline>
-          ))}
-        </div>
-      </Section>
-    )}
+              <a class="button is-small" href="/projects">
+                See the projects <span aria-hidden="true">→</span>
+              </a>
+            </ResumeChapter>
+          )
+        )}
+      </ol>
+    </Section>
 
     {resume!.education.length > 0 && (
       <Section title="Education">
@@ -107,17 +155,25 @@ const numbers = [
           width={18}
           height={18}
         />
-        <div class="timeline-stack">
-          {resume!.education.map((e) => (
-            <Timeline
-              start={e.startLabel}
-              end={e.endLabel}
-              isCurrent={e.isCurrent}
-            >
-              <EducationCard education={e} />
-            </Timeline>
+        <ol class="chapters">
+          {resume!.education.map((education, index) => (
+            <ResumeChapter
+              description={education.description}
+              end={education.endLabel}
+              index={index}
+              isCurrent={education.isCurrent}
+              kind="education"
+              meta={[education.grade ? `Grade ${education.grade}` : null]}
+              organisation={education.institution}
+              start={education.startLabel}
+              title={
+                [education.degree, education.fieldOfStudy]
+                  .filter(Boolean)
+                  .join(", ") || education.institution
+              }
+            />
           ))}
-        </div>
+        </ol>
       </Section>
     )}
 
@@ -200,10 +256,9 @@ const numbers = [
     flex-shrink: 0;
   }
 
-  .timeline-stack {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
+  .chapters {
+    padding: 0;
+    list-style: none;
   }
 
   .honor-grid {

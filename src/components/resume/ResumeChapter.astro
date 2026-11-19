@@ -1,0 +1,221 @@
+---
+import { parseResumeDate } from "@/lib/stories";
+
+interface Props {
+  /** Small chips under the text, like the skills of a position. */
+  chips?: string[];
+  description?: string | null;
+  end: string | null;
+  index: number;
+  isCurrent: boolean;
+  kind: "education" | "open-source" | "work";
+  /** Details like the location or the type of work. */
+  meta?: (string | null)[];
+  organisation: string;
+  start: string;
+  title: string;
+}
+
+const {
+  chips = [],
+  description,
+  end,
+  index,
+  isCurrent,
+  kind,
+  meta = [],
+  organisation,
+  start,
+  title,
+} = Astro.props;
+
+const KINDS = {
+  education: "Education",
+  "open-source": "Open source",
+  work: "Work",
+} as const;
+
+// "1 yr 4 mo", counted in whole months.
+const startMs = parseResumeDate(start);
+const endMs = isCurrent ? Date.now() : parseResumeDate(end);
+const months =
+  Number.isNaN(startMs) || Number.isNaN(endMs)
+    ? 0
+    : Math.max(1, Math.round((endMs - startMs) / (30.44 * 86_400_000)));
+const years = Math.floor(months / 12);
+const rest = months % 12;
+const duration = [years && `${years} yr`, rest && `${rest} mo`]
+  .filter(Boolean)
+  .join(" ");
+const details = meta.filter(Boolean);
+---
+
+<li class="chapter" style={`--i: ${index}`} data-kind={kind}>
+  <div class="chapter-when">
+    <span class="chapter-dot" data-current={isCurrent || undefined}></span>
+    <span class="chapter-dates">
+      {start} – {isCurrent ? "now" : (end ?? "")}
+    </span>
+    {duration && <span class="chapter-duration">{duration}</span>}
+  </div>
+  <div class="chapter-body">
+    <span class="chapter-kind">{KINDS[kind]}</span>
+    <h3 class="chapter-title">{title}</h3>
+    <p class="chapter-organisation">
+      {organisation}
+      {details.length > 0 && (
+        <span class="chapter-meta"> · {details.join(" · ")}</span>
+      )}
+    </p>
+    {description && <p class="chapter-description">{description}</p>}
+    {chips.length > 0 && (
+      <ul class="chapter-chips">
+        {chips.map((chip) => (
+          <li>{chip}</li>
+        ))}
+      </ul>
+    )}
+    <slot />
+  </div>
+</li>
+
+<style>
+  .chapter {
+    display: grid;
+    grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
+    gap: 8px 32px;
+    padding: 28px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .chapter:first-child {
+    border-top: 0;
+    padding-top: 4px;
+  }
+
+  .chapter-when {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .chapter-dot {
+    width: 10px;
+    height: 10px;
+    margin-bottom: 6px;
+    border: 2px solid var(--text-muted);
+    border-radius: 50%;
+  }
+
+  .chapter-dot[data-current] {
+    border-color: var(--accent);
+    background: var(--accent);
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent) 22%, transparent);
+  }
+
+  .chapter[data-kind="education"] .chapter-dot[data-current] {
+    border-color: var(--glow-pr);
+    background: var(--glow-pr);
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--glow-pr) 22%, transparent);
+  }
+
+  .chapter-dates {
+    color: var(--text);
+  }
+
+  .chapter-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .chapter-kind {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .chapter-title {
+    font-size: clamp(1.25rem, 3vw, 1.6rem);
+    line-height: 1.2;
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+
+  .chapter-organisation {
+    color: var(--text);
+  }
+
+  .chapter-meta {
+    color: var(--text-muted);
+  }
+
+  .chapter-description {
+    max-width: 62ch;
+    margin-top: 4px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    white-space: pre-line;
+  }
+
+  .chapter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .chapter-chips li {
+    padding: 2px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--badge-bg);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  .chapter-body :global(.button) {
+    align-self: flex-start;
+    margin-top: 10px;
+  }
+
+  @media (max-width: 640px) {
+    .chapter {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .chapter-when {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px 10px;
+    }
+
+    .chapter-dot {
+      margin: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .chapter {
+      animation: chapter-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--i) * 80ms);
+    }
+  }
+
+  @keyframes chapter-rise {
+    from {
+      opacity: 0;
+      translate: 0 14px;
+      filter: blur(6px);
+    }
+  }
+</style>
