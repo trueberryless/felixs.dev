@@ -8,7 +8,7 @@ import { scrobblerEndpoint, tealProfileUrl } from "@/lib/const";
   <Section title="Listening">
     <ActionLink slot="header-actions" href={tealProfileUrl} text="teal.fm" />
     <a class="now-playing-card" data-link href={tealProfileUrl}>
-      <img class="cover" data-cover alt="" width="64" height="64" />
+      <img class="cover" data-cover alt="" width="96" height="96" />
       <div class="details">
         <span class="status">
           <span class="pulse" aria-hidden="true"></span>
@@ -147,10 +147,12 @@ import { scrobblerEndpoint, tealProfileUrl } from "@/lib/const";
   }
 
   .now-playing-card {
+    --cover-size: 96px;
+
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 16px 20px;
+    gap: 20px;
+    padding: 16px;
     border: 1px solid var(--border);
     border-radius: var(--radius-card);
     background: var(--card-bg);
@@ -165,8 +167,8 @@ import { scrobblerEndpoint, tealProfileUrl } from "@/lib/const";
 
   .cover {
     flex-shrink: 0;
-    width: 64px;
-    height: 64px;
+    width: var(--cover-size);
+    height: var(--cover-size);
     border-radius: 8px;
     background: var(--badge-bg);
     object-fit: cover;
@@ -176,7 +178,8 @@ import { scrobblerEndpoint, tealProfileUrl } from "@/lib/const";
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 2px;
+    justify-content: space-between;
+    height: var(--cover-size);
     min-width: 0;
   }
 
@@ -185,6 +188,7 @@ import { scrobblerEndpoint, tealProfileUrl } from "@/lib/const";
     align-items: center;
     gap: 6px;
     font-size: 0.8rem;
+    line-height: 1;
     font-weight: 500;
     color: var(--text-muted);
   }
@@ -211,17 +215,20 @@ import { scrobblerEndpoint, tealProfileUrl } from "@/lib/const";
   }
 
   .track {
+    font-size: 1.05rem;
     font-weight: 600;
+    line-height: 1.3;
   }
 
   .artists {
     font-size: 0.9rem;
+    line-height: 1.3;
     color: var(--text-muted);
   }
 
   .progress {
+    flex-shrink: 0;
     height: 3px;
-    margin-top: 8px;
     border-radius: var(--radius-pill);
     background: var(--border);
     overflow: hidden;
@@ -240,6 +247,14 @@ import { scrobblerEndpoint, tealProfileUrl } from "@/lib/const";
     }
     100% {
       box-shadow: 0 0 0 0 transparent;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .now-playing-card {
+      --cover-size: 80px;
+
+      gap: 14px;
     }
   }
 
