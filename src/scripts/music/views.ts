@@ -1,13 +1,6 @@
 import type { MusicStats, RangeStats } from "@/lib/music";
 
-import {
-  formatDate,
-  formatNumber,
-  formatRelative,
-  html,
-  slug,
-  svg,
-} from "./dom";
+import { formatDate, formatNumber, html, slug, svg } from "./dom";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const CURRENT_ROWS = 5;
@@ -264,6 +257,11 @@ export function renderCurrents(
     board.append(element);
   });
 
+  const hint = html("span", {
+    "aria-hidden": "true",
+    class: "ms-currents-hint",
+    text: "\u2190 Scroll for earlier",
+  });
   const scroller = html(
     "div",
     {
@@ -274,7 +272,7 @@ export function renderCurrents(
     },
     [board]
   );
-  container.replaceChildren(scroller);
+  container.replaceChildren(hint, scroller);
 
   const setActive = (artist: string | undefined) => {
     board.toggleAttribute("data-active", Boolean(artist));
@@ -296,11 +294,17 @@ export function renderCurrents(
   });
   board.addEventListener("focusout", () => setActive(undefined));
 
-  const draw = () => drawCurrentLines(board, lines);
+  const draw = () => {
+    drawCurrentLines(board, lines);
+    updateScrollHint(scroller);
+  };
+  scroller.addEventListener("scroll", () => updateScrollHint(scroller), {
+    passive: true,
+  });
   requestAnimationFrame(() => {
-    draw();
     // Start at the most recent period on narrow screens.
     scroller.scrollLeft = scroller.scrollWidth;
+    draw();
   });
 
   observers.get(container)?.disconnect();
@@ -323,37 +327,51 @@ function drawCurrentLines(board: HTMLElement, lines: SVGSVGElement) {
     const next = columns[index + 1];
     if (!next) return;
 
+    // Lines run straight out of the name, and only bend in the gutter
+    // between two columns, so they never cross another artist's name.
+    const gutter = column.getBoundingClientRect().right - bounds.left - 30;
     for (const from of column.querySelectorAll<HTMLElement>(".ms-current")) {
       const to = next.querySelector<HTMLElement>(
         `.ms-current[data-artist="${from.dataset.artist}"]`
       );
       if (!to) continue;
 
-      const start = from
+      const name = from
         .querySelector(".ms-current-name")!
         .getBoundingClientRect();
-      const end = to
+      const count = to
         .querySelector(".ms-current-count")!
         .getBoundingClientRect();
-      const x1 =
-        Math.min(start.right, from.getBoundingClientRect().right) -
-        bounds.left +
-        6;
-      const y1 = start.top + start.height / 2 - bounds.top;
-      const x2 = end.left - bounds.left - 6;
-      const y2 = end.top + end.height / 2 - bounds.top;
-      if (x2 <= x1) continue;
+      const fromBox = from.getBoundingClientRect();
+      const toBox = to.getBoundingClientRect();
+      const x1 = name.right - bounds.left + 8;
+      const y1 = fromBox.top + fromBox.height / 2 - bounds.top;
+      const x2 = count.left - bounds.left - 6;
+      const y2 = toBox.top + toBox.height / 2 - bounds.top;
+      const bendStart = Math.max(x1, gutter);
+      if (x2 <= bendStart) continue;
 
-      const bend = (x2 - x1) / 2;
+      const bend = (x2 - bendStart) / 2;
       lines.append(
         svg("path", {
           class: "ms-current-line",
-          d: `M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}`,
+          d: `M ${x1} ${y1} H ${bendStart} C ${bendStart + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}`,
           "data-artist": from.dataset.artist,
         })
       );
     }
   });
+}
+
+function updateScrollHint(scroller: HTMLElement) {
+  const hasMoreBefore = scroller.scrollLeft > 4;
+  const hasMoreAfter =
+    scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 4;
+  const state = [hasMoreBefore && "start", hasMoreAfter && "end"]
+    .filter(Boolean)
+    .join(" ");
+  if (state) scroller.dataset.scroll = state;
+  else delete scroller.dataset.scroll;
 }
 
 export function renderClock(container: Element, range: RangeStats) {
@@ -605,7 +623,8 @@ export function renderCalendar(
 }
 
 export function renderHighlights(container: Element, stats: MusicStats) {
-  const { busiestDay, firstPlay, longestStreak, topRepeat } = stats.highlights;
+  const { busiestDay, longestStreak, topRepeat, weekObsession } =
+    stats.highlights;
   const cards: HTMLElement[] = [];
 
   if (longestStreak) {
@@ -635,12 +654,12 @@ export function renderHighlights(container: Element, stats: MusicStats) {
       )
     );
   }
-  if (firstPlay) {
+  if (weekObsession) {
     cards.push(
       renderHighlight(
-        "Where it began",
-        firstPlay.track,
-        `By ${firstPlay.artist}, my first recorded play on ${formatDate(firstPlay.at)}.`
+        "This week’s obsession",
+        weekObsession.track,
+        `By ${weekObsession.artist}, ${formatNumber(weekObsession.plays)} plays in the last seven days.`
       )
     );
   }
@@ -654,66 +673,6 @@ function renderHighlight(kicker: string, value: string, text: string) {
     html("span", { class: "ms-highlight-value", text: value }),
     html("p", { class: "ms-highlight-text", text }),
   ]);
-}
-
-export async function renderRecent(
-  container: Element,
-  pds: string,
-  did: string
-) {
-  const url = new URL("/xrpc/com.atproto.repo.listRecords", pds);
-  url.searchParams.set("repo", did);
-  url.searchParams.set("collection", "fm.teal.feed.play");
-  url.searchParams.set("limit", "10");
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) return;
-
-    const { records } = (await response.json()) as {
-      records: {
-        value: {
-          artists?: { artistName: string }[];
-          originUri?: string;
-          playedTime: string;
-          trackName: string;
-        };
-      }[];
-    };
-
-    container.replaceChildren(
-      ...records.map(({ value }, index) => {
-        const artist =
-          value.artists?.map((entry) => entry.artistName).join(", ") ?? "";
-        const title = value.originUri
-          ? html("a", {
-              class: "ms-recent-track",
-              href: value.originUri,
-              text: value.trackName,
-            })
-          : html("span", { class: "ms-recent-track", text: value.trackName });
-
-        return html(
-          "li",
-          { class: "ms-recent-item ms-enter", style: `--i: ${index}` },
-          [
-            html("span", { "aria-hidden": "true", class: "ms-recent-dot" }),
-            html("span", { class: "ms-recent-text" }, [
-              title,
-              html("span", { class: "ms-recent-artist", text: artist }),
-            ]),
-            html("time", {
-              class: "ms-recent-time",
-              datetime: value.playedTime,
-              text: formatRelative(Date.parse(value.playedTime)),
-            }),
-          ]
-        );
-      })
-    );
-  } catch {
-    // The rest of the page does not depend on this list.
-  }
 }
 
 function renderEmpty() {
