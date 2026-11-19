@@ -761,11 +761,16 @@ export function renderHighlights(container: Element, range: RangeStats) {
     );
   }
   if (evergreen) {
+    const month = (date: string) => formatDate(date, { day: undefined });
+    const span =
+      month(evergreen.from) === month(evergreen.to)
+        ? `in ${month(evergreen.from)}`
+        : `between ${month(evergreen.from)} and ${month(evergreen.to)}`;
     cards.push(
       renderHighlight(
         "Evergreen",
         evergreen.track,
-        `${evergreen.artist ? `By ${evergreen.artist}, on` : "On"} ${formatNumber(evergreen.days)} different days between ${formatDate(evergreen.from, { day: undefined })} and ${formatDate(evergreen.to, { day: undefined })}.`
+        `${evergreen.artist ? `By ${evergreen.artist}, on` : "On"} ${formatNumber(evergreen.days)} different days ${span}.`
       )
     );
   }
