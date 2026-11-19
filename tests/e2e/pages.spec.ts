@@ -49,8 +49,17 @@ test('shows the not found page', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Return to Home' })).toBeVisible()
 })
 
+test.describe('blog post', () => {
+  test('shows a not found state for unknown posts', async ({ page }) => {
+    const response = await page.goto('/blog/zzzzzzzzzzzzz')
+
+    expect(response?.status()).toBe(404)
+    await expect(page.getByRole('heading', { level: 1, name: 'Post not found' })).toBeVisible()
+  })
+})
+
 test.describe('accessibility', () => {
-  for (const path of ['/', '/blog', '/books', '/music', '/events', '/projects', '/resume', '/404']) {
+  for (const path of ['/', '/blog', '/blog/3mpvwzmluok2z', '/books', '/music', '/events', '/projects', '/resume', '/404']) {
     for (const colorScheme of ['dark', 'light'] as const) {
       test(`${path} has no violations in ${colorScheme} mode`, async ({ page }) => {
         await page.emulateMedia({ colorScheme })

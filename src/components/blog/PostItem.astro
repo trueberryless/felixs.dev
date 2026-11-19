@@ -1,9 +1,8 @@
 ---
 import { processPost } from "@/lib/posts";
-import ExternalIcon from "@/components/utils/ExternalIcon.astro";
 
 const { post } = Astro.props;
-const { title, formattedDate, postUrl, firstTag, otherTags } =
+const { title, formattedDate, localUrl, firstTag, otherTags } =
   processPost(post);
 
 const lastSpaceIdx = title.lastIndexOf(" ");
@@ -12,14 +11,14 @@ const titleEnd = lastSpaceIdx !== -1 ? title.slice(lastSpaceIdx + 1) : title;
 ---
 
 <article class="post-item">
-  <a href={postUrl} class="post-link">
+  <a href={localUrl} class="post-link">
     <div class="post-title-container">
       <h3 class="post-title">
         {titleStart}
         <span class="nowrap">
           {titleEnd}
-          <span class="post-external">
-            <ExternalIcon size={11} />
+          <span class="post-external" aria-hidden="true">
+            →
           </span>
         </span>
       </h3>
