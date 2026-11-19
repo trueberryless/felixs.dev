@@ -167,14 +167,14 @@ const compact = new Intl.NumberFormat("en-US", {
       transition: opacity 0.5s ease calc(0.6s + var(--i) * 60ms);
     }
 
-    :global(.story-frame[data-active="false"]) .radar-shape {
+    :global(.story-frame:not([data-active="true"])) .radar-shape {
       scale: 0.1;
       rotate: -40deg;
       transition-duration: 0.4s;
       transition-delay: 0s;
     }
 
-    :global(.story-frame[data-active="false"]) .radar-point {
+    :global(.story-frame:not([data-active="true"])) .radar-point {
       opacity: 0;
       transition-delay: 0s;
     }

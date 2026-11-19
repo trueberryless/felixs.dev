@@ -134,8 +134,8 @@ const when = startDate
 
   @media (hover: hover) {
     .meeting-card:hover {
-      translate: 0 -4px;
       box-shadow: var(--lift-shadow);
+      border-color: var(--text-muted);
     }
   }
 
@@ -218,11 +218,5 @@ const when = startDate
 
   .meeting-avatars img:first-child {
     margin-left: 0;
-  }
-
-  @media (hover: hover) {
-    .meeting-card:hover .meeting-avatars img {
-      translate: 0 -3px;
-    }
   }
 </style>

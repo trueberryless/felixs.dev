@@ -11,7 +11,7 @@ const { description, fallbackHref, fallbackLabel } = Astro.props;
 <div class="fallback">
   <p class="fallback-title">Content unavailable</p>
   <p class="fallback-description">{description}</p>
-  <a href={fallbackHref} class="fallback-link">
+  <a href={fallbackHref} class="fallback-link button">
     {fallbackLabel}
     <span class="arrow">→</span>
   </a>
@@ -44,31 +44,8 @@ const { description, fallbackHref, fallbackLabel } = Astro.props;
 
   .fallback-link {
     align-self: flex-start;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 16px;
-    font-size: 0.85rem;
-    color: var(--text);
-    background: var(--badge-bg);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    text-decoration: none;
     margin-top: 4px;
     max-width: 100%;
     overflow-wrap: anywhere;
-    transition: opacity 0.2s ease;
-  }
-
-  .fallback-link:hover {
-    opacity: 0.8;
-  }
-
-  .fallback-link .arrow {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .fallback-link:hover .arrow {
-    transform: translateX(4px);
   }
 </style>
