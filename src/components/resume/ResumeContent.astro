@@ -12,7 +12,9 @@ import {
   Trophy,
   Wrench,
 } from "@lucide/astro";
+import CareerTimeline from "@/components/charts/CareerTimeline.astro";
 import { fetchResume } from "@/lib/data";
+import { getCareerRows, getSkillUsage, parseResumeDate } from "@/lib/stories";
 import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
 
 const resume = await fetchResume().catch(() => null);
@@ -24,10 +26,57 @@ const hasData = Boolean(
     resume.honors.length > 0 ||
     resume.skills.length > 0)
 );
+
+const nowMs = Date.now();
+const rows = getCareerRows(resume, nowMs);
+const firstYear = rows.length
+  ? new Date(Math.min(...rows.map((row) => row.start))).getUTCFullYear()
+  : undefined;
+const firstJob = (resume?.positions ?? [])
+  .map((position) => parseResumeDate(position.startLabel))
+  .filter((ms) => !Number.isNaN(ms))
+  .toSorted((a, b) => a - b)[0];
+const usage = getSkillUsage(resume?.positions ?? []);
+const numbers = [
+  {
+    label: "years shipping software",
+    value: firstJob
+      ? new Date(nowMs).getUTCFullYear() - new Date(firstJob).getUTCFullYear()
+      : 0,
+  },
+  { label: "positions", value: resume?.positions.length ?? 0 },
+  { label: "skills", value: resume?.skills.length ?? 0 },
+  { label: "awards", value: resume?.honors.length ?? 0 },
+].filter((number) => number.value > 0);
 ---
 
 {hasData ? (
   <>
+    {numbers.length > 0 && (
+      <ul class="resume-numbers">
+        {numbers.map((number, index) => (
+          <li class="resume-number" style={`--i: ${index}`}>
+            <span class="resume-number-value">{number.value}</span>
+            <span class="resume-number-label">{number.label}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    {rows.length > 0 && firstYear && (
+      <Section title="At a glance">
+        <CareerTimeline
+          label="Work and education over time"
+          nowMs={nowMs}
+          rows={rows}
+          visibleYears={Math.min(
+            6,
+            new Date(nowMs).getUTCFullYear() - firstYear + 1
+          )}
+        />
+      </Section>
+    )}
+
     {resume!.positions.length > 0 && (
       <Section title="Experience">
         <BriefcaseBusiness
@@ -86,7 +135,7 @@ const hasData = Boolean(
     {resume!.skills.length > 0 && (
       <Section title="Skills">
         <Wrench slot="leading" class="section-icon" width={18} height={18} />
-        <SkillChips skills={resume!.skills} />
+        <SkillChips skills={resume!.skills} usage={usage} />
       </Section>
     )}
   </>
@@ -99,6 +148,53 @@ const hasData = Boolean(
 )}
 
 <style>
+  .resume-numbers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+    gap: 16px;
+    margin-bottom: 56px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .resume-number {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 20px clamp(14px, 4vw, 22px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--card-bg);
+  }
+
+  .resume-number-value {
+    font-family: var(--font-family-heading);
+    font-size: clamp(1.8rem, 6vw, 2.6rem);
+    line-height: 1.1;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .resume-number-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .resume-number {
+      animation: resume-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--i) * 70ms);
+    }
+  }
+
+  @keyframes resume-rise {
+    from {
+      opacity: 0;
+      translate: 0 12px;
+      filter: blur(6px);
+    }
+  }
+
   .section-icon {
     color: var(--text-muted);
     flex-shrink: 0;

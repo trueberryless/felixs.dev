@@ -59,3 +59,31 @@ describe('parseResumeDate', () => {
     expect(parseResumeDate(null)).toBeNaN()
   })
 })
+
+describe('resume', () => {
+  test('turns work and education into timeline rows, newest first', async () => {
+    const { getCareerRows } = await import('../../src/lib/stories')
+    const rows = getCareerRows(
+      {
+        education: [{ degree: 'BSc', endLabel: null, fieldOfStudy: 'CS', institution: 'TU Wien', isCurrent: true, startLabel: 'Oct 2025' }],
+        positions: [{ company: 'Fronius', endLabel: null, isCurrent: true, startLabel: 'Jul 2025', title: 'Developer' }],
+      },
+      Date.parse('2026-11-19T00:00:00Z')
+    )
+    expect(rows.map((row) => [row.label, row.kind])).toEqual([
+      ['TU Wien', 'education'],
+      ['Fronius', 'work'],
+    ])
+    expect(rows[0]?.title).toBe('BSc, CS, TU Wien')
+  })
+
+  test('counts how many positions use a skill', async () => {
+    const { getSkillUsage } = await import('../../src/lib/stories')
+    expect(getSkillUsage([{ skills: ['C#', '.NET'] }, { skills: ['c#'] }])).toEqual(
+      new Map([
+        ['c#', 2],
+        ['.net', 1],
+      ])
+    )
+  })
+})
