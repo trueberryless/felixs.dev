@@ -1,4 +1,5 @@
 ---
+import Book from "@/components/books/Book.astro";
 import Story from "@/components/story/Story.astro";
 import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
 import { buildReadingSummary, fetchBooks } from "@/lib/data";
@@ -7,96 +8,105 @@ const books = await fetchBooks().catch(() => null);
 applyCache(Astro.response, books ? longLivedCache : degradedCache);
 
 const summary = books ? buildReadingSummary(books) : null;
-const shelf = (books ?? []).filter((book) => book.coverUrl).slice(0, 7);
-const rated = (books ?? []).filter((book) => typeof book.stars === "number");
-const averageStars = rated.length
-  ? rated.reduce((sum, book) => sum + (book.stars ?? 0), 0) / rated.length / 2
-  : undefined;
+const shelf = (books ?? []).slice(0, 5);
+
+const authorCounts = new Map<string, number>();
+for (const book of (books ?? []).slice(0, 12)) {
+  authorCounts.set(book.authors, (authorCounts.get(book.authors) ?? 0) + 1);
+}
+const [topAuthor, topAuthorBooks = 0] =
+  [...authorCounts].toSorted((a, b) => b[1] - a[1])[0] ?? [];
 ---
 
 <Story kicker="Reading" href="/books" linkText="Browse the bookshelf">
   <Fragment slot="title">
     {books && books.length > 0 ? (
       <>
-        <em>{books.length}</em> books finished
+        <em>{books.length}</em> books, mostly fantasy
       </>
     ) : (
-      "Fantasy and fiction"
+      "Mostly fantasy"
     )}
   </Fragment>
-  <p slot="text">
-    {summary
-      ? `Right now I'm reading ${summary.latest.title}.`
-      : "My reading log lives on Bookhive."}
-    {averageStars !== undefined &&
-      ` On average I give a book ${averageStars.toFixed(1)} out of 5 stars.`}
-  </p>
-  <div
-    slot="visual"
-    class="reading-shelf"
-    role="list"
-    aria-label="Recently finished books"
-  >
-    {shelf.map((book, index) => (
-      <a
-        class="reading-book"
-        role="listitem"
-        href={`https://bookhive.buzz/books/${book.hiveId}`}
-        style={`--i: ${index}; --tilt: ${((index * 37) % 7) - 3}deg`}
-      >
-        <img
-          src={book.coverUrl!}
-          alt={book.title}
-          loading="lazy"
-          width="120"
-          height="180"
+  <Fragment slot="text">
+    {summary && <p>Right now I'm reading {summary.latest.title}.</p>}
+    {topAuthor && topAuthorBooks > 1 && (
+      <p>Lately a lot of {topAuthor}, apparently.</p>
+    )}
+  </Fragment>
+  <div slot="visual" class="reading-shelf">
+    {shelf.map((book) => (
+      <div class="reading-book">
+        <Book
+          title={book.title}
+          authors={book.authors}
+          coverUrl={book.coverUrl}
+          rotation={book.rotation}
+          hiveId={book.hiveId}
+          thickness={book.thickness}
+          compact
         />
-      </a>
+      </div>
     ))}
   </div>
 </Story>
 
 <style>
   .reading-shelf {
+    position: relative;
     display: flex;
+    flex-wrap: nowrap;
     align-items: flex-end;
     justify-content: center;
-    gap: 0;
-    padding: 24px 12px 18px;
-    border-bottom: 6px solid color-mix(in oklch, var(--text) 18%, transparent);
-    border-radius: 2px;
+    padding-bottom: 28px;
   }
 
+  /* A soft pool of shadow instead of a shelf board, so the books stand on
+     the page in every theme. */
+  .reading-shelf::after {
+    content: "";
+    position: absolute;
+    left: 6%;
+    right: 6%;
+    bottom: 6px;
+    height: 26px;
+    border-radius: 50%;
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklch, var(--header-shadow) 70%, transparent),
+      transparent
+    );
+    z-index: -1;
+  }
+
+  /* The books stand close together and overlap a little, like on a real
+     shelf. The one you point at comes forward. */
   .reading-book {
     position: relative;
-    flex: 0 1 120px;
-    min-width: 0;
-    margin-inline: -10px;
-    rotate: var(--tilt);
-    transform-origin: bottom center;
-    z-index: calc(10 - var(--i));
-    transition:
-      translate 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-      rotate 0.35s ease,
-      z-index 0s;
-  }
-
-  .reading-book img {
-    display: block;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 2 / 3;
-    object-fit: cover;
-    border-radius: 3px 6px 6px 3px;
-    box-shadow:
-      inset 3px 0 6px rgb(0 0 0 / 0.25),
-      0 12px 24px -10px var(--header-shadow);
+    margin-inline: -14px;
+    zoom: 0.66;
   }
 
   .reading-book:hover,
-  .reading-book:focus-visible {
-    translate: 0 -18px;
-    rotate: 0deg;
-    z-index: 20;
+  .reading-book:focus-within {
+    z-index: 2;
+  }
+
+  @media (max-width: 600px) {
+    .reading-book {
+      margin-inline: -18px;
+      zoom: 0.48;
+    }
+  }
+
+  @media (max-width: 280px) {
+    .reading-book {
+      margin-inline: -16px;
+      zoom: 0.36;
+    }
+
+    .reading-book:nth-child(n + 4) {
+      display: none;
+    }
   }
 </style>

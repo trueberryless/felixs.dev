@@ -1,5 +1,5 @@
 ---
-import DotTimeline from "@/components/charts/DotTimeline.astro";
+import PostTimeline from "@/components/charts/PostTimeline.astro";
 import Story from "@/components/story/Story.astro";
 import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
 import { fetchPosts } from "@/lib/data";
@@ -13,72 +13,32 @@ const items = (posts ?? []).map((post) => ({
   href: processPost(post).postUrl,
   title: post.data.title || "Untitled post",
 }));
-const latest = items
-  .toSorted((a, b) => Date.parse(b.date) - Date.parse(a.date))
-  .slice(0, 3);
-const tags = new Set((posts ?? []).flatMap((post) => post.data.tags ?? []));
 ---
 
-<Story kicker="Writing" href="/blog" linkText="Read the blog" reverse>
+<Story kicker="Writing" href="/blog" linkText="Read the blog">
   <Fragment slot="title">
     {items.length > 0 ? (
       <>
-        <em>{items.length}</em> posts about {tags.size} topics
+        <em>{items.length}</em> posts, mostly notes to my future self
       </>
     ) : (
-      "Notes and longer thoughts"
+      "Mostly notes to my future self"
     )}
   </Fragment>
-  <div slot="text" class="writing-text">
+  <Fragment slot="text">
     <p>
-      Recipes, notes and longer thoughts, published on Leaflet and stored as
-      records in my repository.
+      Recipes, small fixes I don't want to look up twice, and the odd longer
+      thought.
     </p>
-    {latest.length > 0 && (
-      <ol class="writing-latest">
-        {latest.map((post) => (
-          <li>
-            <a href={post.href}>{post.title}</a>
-          </li>
-        ))}
-      </ol>
-    )}
-  </div>
+    <p>Every dot is a post. Pick one.</p>
+  </Fragment>
   <div slot="visual">
     {items.length > 0 && (
-      <DotTimeline
+      <PostTimeline
         items={items}
         nowMs={Date.now()}
-        label={`${items.length} blog posts over time`}
+        label={`${items.length} blog posts by quarter, newest first`}
       />
     )}
   </div>
 </Story>
-
-<style>
-  .writing-text {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .writing-latest {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .writing-latest a {
-    color: var(--text);
-    font-weight: 600;
-    text-decoration: underline;
-    text-decoration-color: var(--border);
-    text-underline-offset: 4px;
-    transition: text-decoration-color 0.2s ease;
-  }
-
-  .writing-latest a:hover {
-    text-decoration-color: var(--text);
-  }
-</style>

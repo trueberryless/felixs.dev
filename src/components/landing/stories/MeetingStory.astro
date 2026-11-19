@@ -3,6 +3,8 @@ import Story from "@/components/story/Story.astro";
 import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
 import { fetchEvents } from "@/lib/data";
 
+const MAX_AVATARS = 8;
+
 const events = await fetchEvents().catch(() => null);
 applyCache(Astro.response, events ? longLivedCache : degradedCache);
 
@@ -10,58 +12,75 @@ const nowMs = Date.now();
 const upcoming = (events ?? [])
   .filter((event) => Date.parse(event.endDate || event.startDate) >= nowMs)
   .toSorted((a, b) => Date.parse(a.startDate) - Date.parse(b.startDate));
-const past = (events ?? []).length - upcoming.length;
 const next = upcoming[0];
 const dateFormat = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
   month: "long",
   weekday: "long",
 });
+const others = next ? Math.max(next.totalAttendees - MAX_AVATARS, 0) : 0;
+// "See you Tuesday?" only reads right within the next week.
+const isSoon = next
+  ? Date.parse(next.startDate) - nowMs < 6 * 86_400_000
+  : false;
+const when = next
+  ? new Date(next.startDate).toLocaleDateString(
+      "en-US",
+      isSoon ? { weekday: "long" } : { month: "long" }
+    )
+  : "";
 ---
 
-<Story kicker="Meeting" href="/events" linkText="See all events">
-  <Fragment slot="title">
-    {events && events.length > 0 ? (
-      <>
-        <em>{events.length}</em> events, {upcoming.length} coming up
-      </>
-    ) : (
-      "Sometimes I go outside"
-    )}
-  </Fragment>
-  <p slot="text">
-    Meetups and conferences I RSVP to on atmo.rsvp.
-    {past > 0 && ` I've been to ${past} so far.`}
-  </p>
-  <div slot="visual">
-    {next && (
-      <a class="meeting-card" href={next.atmoUrl}>
-        {next.imageUrl && (
-          <img
-            class="meeting-image"
-            src={next.imageUrl}
-            alt=""
-            loading="lazy"
-          />
+{next && (
+  <Story kicker="Meeting" href="/events" linkText="See all events">
+    <Fragment slot="title">
+      {upcoming.length === 1 ? (
+        <>
+          See you {isSoon ? "" : "in "}
+          <em>{when}</em>?
+        </>
+      ) : (
+        <>
+          <em>{upcoming.length}</em> events coming up
+        </>
+      )}
+    </Fragment>
+    <p slot="text">Sometimes I go outside and meet people. Come say hi.</p>
+    <a slot="visual" class="meeting-card" href={next.atmoUrl}>
+      {next.imageUrl && (
+        <img class="meeting-image" src={next.imageUrl} alt="" loading="lazy" />
+      )}
+      <div class="meeting-body">
+        <span class="meeting-when">
+          {dateFormat.format(new Date(next.startDate))}
+        </span>
+        <span class="meeting-name">{next.data?.name ?? "Event"}</span>
+        {next.locationText && (
+          <span class="meeting-where">{next.locationText}</span>
         )}
-        <div class="meeting-body">
-          <span class="meeting-when">
-            Next up · {dateFormat.format(new Date(next.startDate))}
-          </span>
-          <span class="meeting-name">{next.data?.name ?? "Event"}</span>
-          {next.locationText && (
-            <span class="meeting-where">{next.locationText}</span>
-          )}
-          {next.totalAttendees > 0 && (
-            <span class="meeting-where">
-              {next.totalAttendees} people going
+        {next.attendees.length > 0 && (
+          <span class="meeting-people">
+            <span class="meeting-avatars">
+              {next.attendees.slice(0, MAX_AVATARS).map((avatar, index) => (
+                <img
+                  src={avatar}
+                  alt=""
+                  width="34"
+                  height="34"
+                  loading="lazy"
+                  style={`--i: ${index}`}
+                />
+              ))}
             </span>
-          )}
-        </div>
-      </a>
-    )}
-  </div>
-</Story>
+            <span class="meeting-going">
+              {others > 0 ? `+${others} going` : `${next.totalAttendees} going`}
+            </span>
+          </span>
+        )}
+      </div>
+    </a>
+  </Story>
+)}
 
 <style>
   .meeting-card {
@@ -95,12 +114,13 @@ const dateFormat = new Intl.DateTimeFormat("en-US", {
   .meeting-body {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
     padding: clamp(14px, 4vw, 24px);
   }
 
   .meeting-when,
-  .meeting-where {
+  .meeting-where,
+  .meeting-going {
     color: var(--text-muted);
     font-size: 0.9rem;
   }
@@ -109,5 +129,36 @@ const dateFormat = new Intl.DateTimeFormat("en-US", {
     font-family: var(--font-family-heading);
     font-size: clamp(1.3rem, 3vw, 1.8rem);
     overflow-wrap: anywhere;
+  }
+
+  .meeting-people {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin-top: 8px;
+  }
+
+  .meeting-avatars {
+    display: flex;
+  }
+
+  .meeting-avatars img {
+    width: 34px;
+    height: 34px;
+    margin-left: -10px;
+    border: 2px solid var(--card-bg);
+    border-radius: 50%;
+    object-fit: cover;
+    transition: translate 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition-delay: calc(var(--i) * 30ms);
+  }
+
+  .meeting-avatars img:first-child {
+    margin-left: 0;
+  }
+
+  .meeting-card:hover .meeting-avatars img {
+    translate: 0 -3px;
   }
 </style>

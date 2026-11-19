@@ -32,14 +32,15 @@ const rows: GanttRow[] = [
   .filter((row) => !Number.isNaN(row.start) && !Number.isNaN(row.end))
   .toSorted((a, b) => b.start - a.start);
 
-const skills = resume?.skills.length ?? 0;
+const job = resume?.positions.find((position) => position.isCurrent);
+const study = resume?.education.find((education) => education.isCurrent);
 const firstJob = (resume?.positions ?? [])
   .map((position) => parseResumeDate(position.startLabel))
   .filter((ms) => !Number.isNaN(ms))
   .toSorted((a, b) => a - b)[0];
 ---
 
-<Story kicker="Working" href="/resume" linkText="Read the resume" reverse>
+<Story kicker="Working" href="/resume" linkText="Read the resume">
   <Fragment slot="title">
     {firstJob ? (
       <>
@@ -50,9 +51,11 @@ const firstJob = (resume?.positions ?? [])
     )}
   </Fragment>
   <p slot="text">
-    I work on IoT and web services and study computer science at TU Wien.
-    {skills > 0 &&
-      ` My Sifa profile lists ${skills} skills, from C# to Starlight.`}
+    {job && `${job.title} at ${job.company}`}
+    {job && study && ", "}
+    {study &&
+      `studying ${study.fieldOfStudy ?? study.degree ?? ""} at ${study.institution}`}
+    {(job || study) && "."}
   </p>
   <div slot="visual">
     {rows.length > 0 && (
