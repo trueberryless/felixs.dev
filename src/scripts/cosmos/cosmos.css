@@ -721,9 +721,10 @@
 
 /* Pause control */
 
+/* Bottom left, out of the way of the visitor count on the right. */
 .cosmos-still-toggle {
   position: fixed;
-  right: 16px;
+  left: 16px;
   bottom: 16px;
   z-index: 900;
   display: none;
