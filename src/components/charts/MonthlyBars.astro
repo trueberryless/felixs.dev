@@ -1,0 +1,94 @@
+---
+interface Props {
+  label: string;
+  months: { count: number; month: string }[];
+  /** What one item is called, like "merged pull request". */
+  unit: string;
+}
+
+const { label, months, unit } = Astro.props;
+
+const max = Math.max(...months.map((month) => month.count), 1);
+const busiest = months.reduce(
+  (best, month) => (month.count > best.count ? month : best),
+  months[0] ?? { count: 0, month: "" }
+);
+const format = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  timeZone: "UTC",
+  year: "numeric",
+});
+const name = (month: string) => format.format(Date.parse(`${month}-01`));
+---
+
+<figure class="bars">
+  <div class="bars-plot" aria-hidden="true">
+    {months.map((month, index) => (
+      <span
+        class:list={["bar", { "is-busiest": month === busiest }]}
+        style={`--value: ${month.count / max}; --i: ${index}`}
+        title={`${name(month.month)}: ${month.count} ${month.count === 1 ? unit : `${unit}s`}`}
+      >
+        {month.month.endsWith("-01") && index < months.length - 3 && (
+          <span class="bar-year">{month.month.slice(0, 4)}</span>
+        )}
+      </span>
+    ))}
+  </div>
+  <figcaption class="sr-only">
+    {label}. The busiest month was {name(busiest.month)} with {busiest.count}.
+  </figcaption>
+</figure>
+
+<style>
+  .bars {
+    margin: 0;
+  }
+
+  .bars-plot {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 160px;
+    padding-bottom: 22px;
+  }
+
+  .bar {
+    position: relative;
+    flex: 1;
+    min-width: 1px;
+    height: calc(var(--value) * 100% + 2px);
+    border-radius: 3px 3px 1px 1px;
+    background: color-mix(in oklch, var(--accent) 45%, transparent);
+    transform-origin: bottom;
+    transition: background 0.2s ease;
+  }
+
+  .bar.is-busiest,
+  .bar:hover {
+    background: var(--accent);
+  }
+
+  .bar-year {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .bar {
+      animation: bars-grow 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--i) * 8ms);
+    }
+  }
+
+  @keyframes bars-grow {
+    from {
+      scale: 1 0;
+    }
+  }
+</style>

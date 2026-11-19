@@ -1,22 +1,115 @@
 ---
-import Section from "@/components/utils/Section.astro";
+import BubbleChart from "@/components/charts/BubbleChart.astro";
+import MonthlyBars from "@/components/charts/MonthlyBars.astro";
+import Swimlanes from "@/components/charts/Swimlanes.astro";
 import Card from "@/components/projects/Card.astro";
 import Fallback from "@/components/utils/Fallback.astro";
+import Section from "@/components/utils/Section.astro";
 import { fetchProjects } from "@/lib/data";
+import {
+  getLanes,
+  getMonthlyCounts,
+  getTopRepos,
+  getTotals,
+} from "@/lib/projects";
 
 const data = await fetchProjects().catch((err) => {
   console.error("[projects] fetch failed:", err);
   return null;
 });
+
+const nowMs = Date.now();
+const orgs = (data?.contributedProjects ?? []).toSorted(
+  (a, b) => b.contributions - a.contributions
+);
+const lanes = getLanes(orgs);
+const totals = getTotals(orgs);
+const months = getMonthlyCounts(orgs, nowMs);
+const numberFormat = new Intl.NumberFormat("en-US");
+const numbers = [
+  { label: "merged pull requests", value: totals.pullRequests },
+  { label: "repositories", value: totals.repositories },
+  { label: "organisations", value: totals.organisations },
+  {
+    label: "years of open source",
+    value: totals.firstYear
+      ? new Date(nowMs).getUTCFullYear() - totals.firstYear + 1
+      : 0,
+  },
+];
+const bubbles = orgs
+  .filter((org) => org.contributions > 0)
+  .map((org) => ({
+    href: org.url,
+    label: org.name,
+    title: `${org.name}: ${org.contributions} merged pull requests`,
+    value: org.contributions,
+  }));
 ---
 
 {data ? (
-  <>
-    {data.contributedProjects.length > 0 && (
+  <div class="projects">
+    {totals.pullRequests > 0 && (
+      <ul class="projects-numbers">
+        {numbers.map((number, index) => (
+          <li class="projects-number" style={`--i: ${index}`}>
+            <span class="projects-number-value">
+              {numberFormat.format(number.value)}
+            </span>
+            <span class="projects-number-label">{number.label}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    {lanes.length > 0 && (
+      <Section title="Over time">
+        <p class="projects-lede">
+          Every dot is a merged pull request, one lane per organisation, in the
+          order I found them.
+        </p>
+        <Swimlanes
+          label="Merged pull requests over time, one lane per organisation"
+          lanes={lanes}
+          nowMs={nowMs}
+        />
+      </Section>
+    )}
+
+    {months.length > 1 && (
+      <Section title="Month by month">
+        <div class="projects-split">
+          <MonthlyBars
+            label="Merged pull requests per month"
+            months={months}
+            unit="merged pull request"
+          />
+          {bubbles.length > 1 && (
+            <BubbleChart
+              bubbles={bubbles}
+              height={300}
+              label="Merged pull requests per organisation"
+              scale="sqrt"
+              width={300}
+            />
+          )}
+        </div>
+      </Section>
+    )}
+
+    {orgs.length > 0 && (
       <Section title="Contributions">
         <div class="projects-grid">
-          {data.contributedProjects.map((p) => (
-            <Card {...p} />
+          {orgs.map((org) => (
+            <Card
+              avatar={org.avatar}
+              contributions={org.contributions}
+              description={org.description}
+              name={org.name}
+              repos={getTopRepos(org.pullRequests)}
+              stars={org.stars}
+              url={org.url}
+            />
           ))}
         </div>
       </Section>
@@ -25,13 +118,13 @@ const data = await fetchProjects().catch((err) => {
     {data.ownProjects.length > 0 && (
       <Section title="Personal creations">
         <div class="projects-grid">
-          {data.ownProjects.map((p) => (
-            <Card {...p} />
+          {data.ownProjects.map((project) => (
+            <Card {...project} />
           ))}
         </div>
       </Section>
     )}
-  </>
+  </div>
 ) : (
   <Fallback
     description="I couldn't reach GitHub right now. You can browse my repositories directly on GitHub."
@@ -41,6 +134,56 @@ const data = await fetchProjects().catch((err) => {
 )}
 
 <style>
+  .projects-numbers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+    gap: 16px;
+    margin-bottom: 56px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .projects-number {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 20px clamp(14px, 4vw, 22px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--card-bg);
+  }
+
+  .projects-number-value {
+    font-family: var(--font-family-heading);
+    font-size: clamp(1.8rem, 6vw, 2.6rem);
+    line-height: 1.1;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .projects-number-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .projects-lede {
+    margin-bottom: 16px;
+    color: var(--text-muted);
+  }
+
+  .projects-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: 32px;
+  }
+
+  @media (min-width: 760px) {
+    .projects-split {
+      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    }
+  }
+
   .projects-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -50,6 +193,21 @@ const data = await fetchProjects().catch((err) => {
   @media (min-width: 640px) {
     .projects-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .projects-number {
+      animation: projects-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--i) * 70ms);
+    }
+  }
+
+  @keyframes projects-rise {
+    from {
+      opacity: 0;
+      translate: 0 12px;
+      filter: blur(6px);
     }
   }
 </style>

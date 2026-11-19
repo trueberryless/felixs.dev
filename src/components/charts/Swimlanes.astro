@@ -1,0 +1,286 @@
+---
+import type { Lane } from "@/lib/projects";
+
+interface Props {
+  label: string;
+  lanes: Lane[];
+  nowMs: number;
+}
+
+const { label, lanes, nowMs } = Astro.props;
+
+const YEAR_WIDTH = 180;
+const HEIGHT = 44;
+const MIDDLE = HEIGHT / 2;
+const SPREAD = 11;
+
+const firstYear = new Date(
+  Math.min(...lanes.map((lane) => lane.first), nowMs)
+).getUTCFullYear();
+const lastYear = new Date(nowMs).getUTCFullYear() + 1;
+const from = Date.UTC(firstYear, 0, 1);
+const to = Date.UTC(lastYear, 0, 1);
+const width = (lastYear - firstYear) * YEAR_WIDTH;
+const x = (time: number) => ((time - from) / (to - from)) * width;
+const years = Array.from(
+  { length: lastYear - firstYear },
+  (_, index) => firstYear + index
+);
+// A fixed scatter, so a busy week reads as a cloud instead of a single dot.
+const jitter = (index: number) => {
+  const value = Math.sin(index * 12.9898 + 78.233) * 43758.5453;
+  return (value - Math.floor(value) - 0.5) * 2 * SPREAD;
+};
+const month = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  timeZone: "UTC",
+  year: "numeric",
+});
+---
+
+<div
+  class="lanes"
+  role="region"
+  tabindex="0"
+  aria-label={`${label}, scrollable`}
+  data-lanes
+>
+  <div class="lanes-inner" style={`--width: ${width}px`}>
+    {lanes.map((lane, row) => (
+      <div class="lane" style={`--row: ${row}`}>
+        <a
+          class="lane-label"
+          href={lane.url}
+          aria-label={`${lane.name}: ${lane.count} merged pull requests, from ${month.format(lane.first)} to ${month.format(lane.last)}`}
+        >
+          {lane.avatar && (
+            <img
+              src={`${lane.avatar}${lane.avatar.includes("?") ? "&" : "?"}s=64`}
+              alt=""
+              width="22"
+              height="22"
+              loading="lazy"
+            />
+          )}
+          <span class="lane-name">{lane.name}</span>
+          <span class="lane-count">{lane.count}</span>
+        </a>
+        <svg
+          class="lane-track"
+          viewBox={`0 0 ${width} ${HEIGHT}`}
+          width={width}
+          height={HEIGHT}
+          aria-hidden="true"
+        >
+          {years.map((year) => (
+            <line
+              class="lane-grid"
+              x1={x(Date.UTC(year, 0, 1))}
+              x2={x(Date.UTC(year, 0, 1))}
+              y1="0"
+              y2={HEIGHT}
+            />
+          ))}
+          <line
+            class="lane-span"
+            x1={x(lane.first)}
+            x2={Math.max(x(lane.last), x(lane.first) + 1)}
+            y1={MIDDLE}
+            y2={MIDDLE}
+          />
+          {lane.times.map((time, index) => (
+            <circle
+              class="lane-dot"
+              cx={x(time).toFixed(1)}
+              cy={(MIDDLE + jitter(index)).toFixed(1)}
+              r="3.5"
+              style={`--at: ${(x(time) / width).toFixed(3)}`}
+            />
+          ))}
+        </svg>
+      </div>
+    ))}
+    <div class="lane lane-axis" aria-hidden="true">
+      <span class="lane-label" />
+      <svg
+        class="lane-track"
+        viewBox={`0 0 ${width} 24`}
+        width={width}
+        height="24"
+      >
+        {years.map((year) => (
+          <text class="lane-year" x={x(Date.UTC(year, 6, 1))} y="16">
+            {year}
+          </text>
+        ))}
+      </svg>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Start at the most recent years, older ones are a scroll away.
+  function scrollLanes() {
+    for (const element of document.querySelectorAll<HTMLElement>(
+      "[data-lanes]:not([data-ready])"
+    )) {
+      element.scrollLeft = element.scrollWidth;
+      element.dataset.ready = "";
+    }
+  }
+  scrollLanes();
+  document.addEventListener("astro:page-load", scrollLanes);
+</script>
+
+<style>
+  .lanes {
+    --label: 200px;
+
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--card-bg);
+    scrollbar-width: thin;
+  }
+
+  .lanes:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
+  }
+
+  .lanes-inner {
+    width: calc(var(--label) + var(--width));
+    padding-block: 8px;
+  }
+
+  .lane {
+    display: flex;
+    align-items: center;
+  }
+
+  /* Names stay in view while the years scroll past. */
+  .lane-label {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 8px;
+    width: var(--label);
+    min-height: 44px;
+    padding: 0 12px 0 14px;
+    background: var(--card-bg);
+    color: var(--text);
+    font-size: 0.88rem;
+    text-decoration: none;
+  }
+
+  .lane-label img {
+    flex-shrink: 0;
+    border-radius: 6px;
+  }
+
+  .lane-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .lane-count {
+    margin-left: auto;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  a.lane-label:hover .lane-name,
+  a.lane-label:focus-visible .lane-name {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  a.lane-label:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: -2px;
+  }
+
+  .lane-track {
+    display: block;
+    flex-shrink: 0;
+    overflow: visible;
+  }
+
+  .lane-grid {
+    stroke: var(--border);
+    stroke-dasharray: 2 4;
+  }
+
+  .lane-span {
+    stroke: color-mix(in oklch, var(--accent) 35%, transparent);
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  .lane-dot {
+    fill: color-mix(in oklch, var(--accent) 60%, transparent);
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .lane:has(a.lane-label:hover) .lane-dot {
+    fill: var(--accent);
+  }
+
+  .lane-year {
+    font-size: 12px;
+    fill: var(--text-muted);
+    text-anchor: middle;
+  }
+
+  /* Dots appear from left to right, lane after lane. */
+  @media (prefers-reduced-motion: no-preference) {
+    .lane-dot {
+      animation: lane-pop 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--row) * 60ms + var(--at) * 900ms);
+    }
+
+    .lane-span {
+      animation: lane-draw 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--row) * 60ms);
+    }
+  }
+
+  @keyframes lane-pop {
+    from {
+      opacity: 0;
+      scale: 0;
+    }
+  }
+
+  @keyframes lane-draw {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .lanes {
+      --label: 132px;
+    }
+
+    .lane-count {
+      display: none;
+    }
+  }
+
+  @media (max-width: 280px) {
+    .lanes {
+      --label: 96px;
+    }
+
+    .lane-label img {
+      display: none;
+    }
+  }
+</style>
