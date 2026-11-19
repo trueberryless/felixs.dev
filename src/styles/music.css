@@ -84,6 +84,8 @@
   overflow-x: auto;
   scrollbar-width: none;
   isolation: isolate;
+  /* Fieldsets refuse to shrink below their content by default. */
+  min-inline-size: 0;
 }
 
 .ms-ranges::-webkit-scrollbar {
