@@ -823,7 +823,6 @@ a.ms-recent-track:hover {
 
   position: relative;
   height: 320px;
-  margin-inline: -8px;
 }
 
 .tr-svg {
@@ -1037,6 +1036,14 @@ a.ms-recent-track:hover {
     --tr-cover: 48px;
 
     height: 280px;
+  }
+}
+
+@media (max-width: 280px) {
+  .tr {
+    --tr-cover: 36px;
+
+    height: 240px;
   }
 }
 
