@@ -12,7 +12,11 @@ interface Props {
 const { label, nowMs, rows, visibleYears = 4 } = Astro.props;
 
 const YEAR_WIDTH = 110;
-const ROW = 42;
+// Every row is a label line over a bar, so a label always sits on its own
+// stint and never next to someone else's.
+const ROW = 60;
+const BAR = 24;
+const LABEL = 18;
 const AXIS = 30;
 const SHORT_MS = 92 * 24 * 60 * 60 * 1000;
 
@@ -63,24 +67,18 @@ const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
     {rows.map((row, index) => {
       const start = x(row.start);
       const end = x(row.end);
-      const y = index * ROW + 6;
-      const middle = y + (ROW - 12) / 2;
+      const top = index * ROW + 4;
+      const barY = top + LABEL + 6;
+      const middle = barY + BAR / 2;
       // Short stints like internships read as a moment, not a cut-off bar.
       const isShort = row.end - row.start < SHORT_MS;
-      const barWidth = Math.max(end - start, 8);
-      const fitsInside = !isShort && barWidth > row.label.length * 7.4 + 24;
-      const labelWidth = row.label.length * 7.4;
-      // Labels that don't fit after a bar (because it runs until today) go
-      // in front of it instead.
-      const labelBefore =
-        !isShort && !fitsInside && end + 10 + labelWidth > width;
-      const labelX = isShort
-        ? (start + end) / 2 + 12
-        : fitsInside
-          ? start + 12
-          : labelBefore
-            ? start - 10
-            : end + 10;
+      const anchorX = isShort ? (start + end) / 2 : end;
+      const labelWidth =
+        row.label.length * 7.4 + (isShort ? " · internship".length * 6.4 : 0);
+      // Labels end where a stint ends, the side that is always in view,
+      // unless that would push them off the start of the chart. Internships
+      // are a single point, so their label starts there.
+      const alignEnd = !isShort && anchorX - labelWidth > 0;
 
       return (
         <g
@@ -89,35 +87,36 @@ const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
             `is-${row.kind}`,
             { "is-current": row.isCurrent },
           ]}
+          style={`--row: ${index}`}
         >
           {isShort ? (
             <rect
               class="career-marker"
-              x={(start + end) / 2 - 7}
+              x={anchorX - 7}
               y={middle - 7}
               width="14"
               height="14"
               rx="3"
-              transform={`rotate(45 ${(start + end) / 2} ${middle})`}
+              transform={`rotate(45 ${anchorX} ${middle})`}
             />
           ) : (
             <rect
               class="career-bar"
               x={start}
-              y={y}
-              width={barWidth}
-              height={ROW - 12}
-              rx="9"
+              y={barY}
+              width={Math.max(end - start, 8)}
+              height={BAR}
+              rx={BAR / 2}
             />
           )}
           {row.isCurrent && !isShort && (
-            <circle class="career-now" cx={end - 11} cy={middle} r="4" />
+            <circle class="career-now" cx={end - BAR / 2} cy={middle} r="4" />
           )}
           <text
             class="career-label"
-            x={labelX}
-            y={middle}
-            text-anchor={labelBefore ? "end" : "start"}
+            x={alignEnd ? anchorX : Math.max(isShort ? anchorX - 7 : start, 0)}
+            y={top + LABEL - 4}
+            text-anchor={alignEnd ? "end" : "start"}
           >
             {row.label}
             {isShort && <tspan class="career-note"> · internship</tspan>}
@@ -177,11 +176,6 @@ const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
     text-anchor: middle;
   }
 
-  .career-bar,
-  .career-marker {
-    transition: filter 0.2s ease;
-  }
-
   .career-bar {
     transform-box: fill-box;
     transform-origin: left;
@@ -207,7 +201,6 @@ const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
     font-size: 13px;
     font-weight: 600;
     fill: var(--text);
-    dominant-baseline: middle;
   }
 
   .career-note {
@@ -250,19 +243,28 @@ const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
     border-radius: 4px;
   }
 
+  /* Bars grow from their start once the section is on stage. */
   @media (prefers-reduced-motion: no-preference) {
-    @supports (animation-timeline: view()) {
-      .career-bar {
-        animation: career-grow linear both;
-        animation-timeline: view();
-        animation-range: entry 10% cover 40%;
-      }
+    .career-bar,
+    .career-marker,
+    .career-label {
+      transition:
+        scale 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 0.5s ease,
+        filter 0.2s ease;
+      transition-delay:
+        calc(0.3s + var(--row) * 90ms), calc(0.3s + var(--row) * 90ms), 0s;
     }
-  }
 
-  @keyframes career-grow {
-    from {
+    :global(.story-frame[data-active="false"]) .career-bar {
       scale: 0 1;
+      transition-delay: 0s;
+    }
+
+    :global(.story-frame[data-active="false"])
+      :is(.career-marker, .career-label) {
+      opacity: 0;
+      transition-delay: 0s;
     }
   }
 

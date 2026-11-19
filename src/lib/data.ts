@@ -210,6 +210,43 @@ async function fetchOwnRepos(): Promise<OwnProject[]> {
     }));
 }
 
+export interface GitHubActivity {
+  following: number;
+  starred: number;
+}
+
+/**
+ * How many people I follow and how many repositories I starred on GitHub.
+ * The starred count comes from the last page number of a one-per-page list.
+ * This runs on request, so it doesn't wait out rate limits like the build.
+ */
+export async function fetchGitHubActivity(): Promise<GitHubActivity | null> {
+  try {
+    const [user, starred] = await Promise.all([
+      fetch(`${GITHUB_API}/users/${GITHUB_USERNAME}`, {
+        headers: githubHeaders(),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      }),
+      fetch(`${GITHUB_API}/users/${GITHUB_USERNAME}/starred?per_page=1`, {
+        headers: githubHeaders(),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      }),
+    ]);
+    if (!user.ok || !starred.ok) return null;
+
+    const { following } = (await user.json()) as { following?: number };
+    const last = /[?&]page=(\d+)>; rel="last"/.exec(
+      starred.headers.get("link") ?? ""
+    )?.[1];
+    const starredCount = last
+      ? Number(last)
+      : ((await starred.json()) as unknown[]).length;
+    return { following: following ?? 0, starred: starredCount };
+  } catch {
+    return null;
+  }
+}
+
 async function searchPRs(owner: string) {
   const items: any[] = [];
   let totalCount = 0;

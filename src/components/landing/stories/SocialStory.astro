@@ -3,13 +3,17 @@ import RadarChart from "@/components/charts/RadarChart.astro";
 import Story from "@/components/story/Story.astro";
 import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
 import { actorDid } from "@/lib/const";
+import { fetchGitHubActivity } from "@/lib/data";
 import { getRepoRecords } from "@/lib/repo";
 import { getSocialActivity } from "@/lib/stories";
 
-const records = await getRepoRecords().catch(() => null);
+const [records, github] = await Promise.all([
+  getRepoRecords().catch(() => null),
+  fetchGitHubActivity(),
+]);
 applyCache(Astro.response, records ? longLivedCache : degradedCache);
 
-const activities = records ? getSocialActivity(records) : [];
+const activities = records ? getSocialActivity(records, github) : [];
 const top = activities.toSorted((a, b) => b.value - a.value)[0];
 const hasData = activities.some((activity) => activity.value > 0);
 ---
@@ -29,8 +33,8 @@ const hasData = activities.some((activity) => activity.value > 0);
     )}
   </Fragment>
   <p slot="text">
-    What I actually do on the open social web, from posts and replies to stars
-    on Tangled.
+    What I actually do on Bluesky, GitHub and Tangled, from posts and replies to
+    stars and follows.
   </p>
   <div slot="visual">
     {hasData && (

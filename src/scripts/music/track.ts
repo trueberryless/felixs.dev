@@ -2,11 +2,16 @@ import { formatRelative, html, svg } from "./dom";
 
 const PLAY_LIMIT = 10;
 const REFRESH_MS = 60_000;
-const DRIFT_MS = 15_000;
-const COVER_CACHE_KEY = "music-covers";
 // The newest song sits near the right end, the oldest near the left.
 const NEWEST_AT = 0.9;
 const OLDEST_AT = 0.07;
+// Each song glides to its place on a critically damped spring: it never
+// overshoots and its speed never jumps, even when a new song pushes
+// everything along.
+const SPRING = 1.6;
+const STEM = 18;
+const DOT = 5;
+const SAMPLES = 320;
 
 interface TrackPlay {
   artist: string;
@@ -16,122 +21,291 @@ interface TrackPlay {
   url: string | undefined;
 }
 
+interface Item {
+  card: HTMLElement;
+  dot: SVGCircleElement;
+  element: HTMLLIElement;
+  extra: number;
+  isLeaving: boolean;
+  play: TrackPlay;
+  position: number;
+  side: 1 | -1;
+  stem: SVGLineElement;
+  velocity: number;
+}
+
+interface Sample {
+  x: number;
+  y: number;
+}
+
 /**
- * Renders recent plays as covers hanging off a winding track. Positions mix
- * the order of the songs with how long ago they played, and are refreshed
- * every few seconds with a matching transition, so the songs keep drifting
- * along as time goes by.
+ * Renders recent plays as covers hanging off a winding track. Every cover
+ * hangs at a right angle off the track, and the songs keep drifting along as
+ * time goes by.
  */
 export function renderTrack(
   container: HTMLElement,
   options: { did: string; nowPlaying?: string | undefined; pds: string }
 ) {
   const line = svg("path", { class: "tr-line" });
-  const lines = svg("svg", { "aria-hidden": "true", class: "tr-svg" }, [line]);
-  const pulse = html("span", { "aria-hidden": "true", class: "tr-pulse" });
+  const stems = svg("g", { class: "tr-stems" });
+  const dots = svg("g", { class: "tr-dots" });
+  const pulse = svg("circle", { class: "tr-pulse", r: DOT });
+  const ends = {
+    earlier: svg("text", { class: "tr-end" }, [
+      document.createTextNode("earlier"),
+    ]),
+    now: svg("text", { class: "tr-end" }, [document.createTextNode("now")]),
+  };
+  const lines = svg("svg", { "aria-hidden": "true", class: "tr-svg" }, [
+    line,
+    stems,
+    dots,
+    pulse,
+    ends.earlier,
+    ends.now,
+  ]);
   const list = html("ol", { class: "tr-items" });
-  const ends = [
-    html("span", {
-      "aria-hidden": "true",
-      class: "tr-end is-start",
-      text: "earlier",
-    }),
-    html("span", {
-      "aria-hidden": "true",
-      class: "tr-end is-now",
-      text: "now",
-    }),
-  ];
-  const board = html("div", { class: "tr" }, [lines, ...ends, pulse, list]);
+  const board = html("div", { class: "tr" }, [lines, list]);
   container.replaceChildren(board);
 
-  let plays: TrackPlay[] = [];
-  const items = new Map<string, HTMLLIElement>();
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const items = new Map<string, Item>();
+  let order: TrackPlay[] = [];
+  let samples: Sample[] = [];
+  let width = 0;
+  let cover = 64;
+  let isLive = false;
+  let isVisible = false;
+  let frame = 0;
+  let last = 0;
 
   const layout = () => {
-    const { height, width } = board.getBoundingClientRect();
-    const path = createWave(width, height);
+    width = board.clientWidth;
+    const height = board.clientHeight;
+    cover =
+      Number.parseFloat(
+        getComputedStyle(board).getPropertyValue("--tr-cover")
+      ) || 64;
     lines.setAttribute("viewBox", `0 0 ${width} ${height}`);
-    line.setAttribute("d", path);
-    board.style.setProperty("--tr-path", `path("${path}")`);
-    if (plays.length > 0) place(true);
+    line.setAttribute("d", createWave(width, height));
+    // The path is sampled once, so every frame reads positions from this
+    // table instead of asking the browser about the path.
+    const total = line.getTotalLength();
+    samples = Array.from({ length: SAMPLES + 1 }, (_, index) => {
+      const point = line.getPointAtLength((index / SAMPLES) * total);
+      return { x: point.x, y: point.y };
+    });
+    render(performance.now(), true);
   };
 
-  const place = (isFirst = false) => {
-    const nowMs = Date.now();
-    const oldest = plays.at(-1);
+  const pointAt = (x: number) => {
+    let low = 0;
+    let high = samples.length - 1;
+    while (high - low > 1) {
+      const middle = (low + high) >> 1;
+      if (samples[middle]!.x < x) low = middle;
+      else high = middle;
+    }
+    const a = samples[low]!;
+    const b = samples[high]!;
+    const t = b.x === a.x ? 0 : (x - a.x) / (b.x - a.x);
+    const length = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    return {
+      nx: -(b.y - a.y) / length,
+      ny: (b.x - a.x) / length,
+      x,
+      y: a.y + (b.y - a.y) * t,
+    };
+  };
+
+  // How far along the track a song belongs: a mix of its place in the list
+  // and how long ago it played, so songs never pile up and gaps still show.
+  const targetOf = (item: Item, nowMs: number) => {
+    if (item.isLeaving) return 1.15;
+    const index = order.indexOf(item.play);
+    const oldest = order.at(-1);
     const span = oldest ? Math.max(nowMs - oldest.at, 30 * 60_000) : 1;
+    const byRank = order.length > 1 ? index / (order.length - 1) : 0;
+    const byTime = (nowMs - item.play.at) / span;
+    return Math.min(1, byRank * 0.55 + byTime * 0.45);
+  };
 
-    plays.forEach((play, index) => {
-      const item = items.get(play.key);
-      if (!item) return;
+  // Whether a cover centred here would touch the track.
+  const touchesTrack = (cx: number, cy: number, half: number) => {
+    const reach = half + 6;
+    return samples.some(
+      (sample) =>
+        Math.abs(sample.x - cx) < reach && Math.abs(sample.y - cy) < reach
+    );
+  };
 
-      const byRank = plays.length > 1 ? index / (plays.length - 1) : 0;
-      const byTime = (nowMs - play.at) / span;
-      const progress = Math.min(1, byRank * 0.55 + byTime * 0.45);
-      const x = NEWEST_AT - progress * (NEWEST_AT - OLDEST_AT);
-      // Covers stay whole on screen, however narrow the track gets.
-      const cover =
-        parseFloat(getComputedStyle(board).getPropertyValue("--tr-cover")) ||
-        64;
-      const margin = cover / 2 + 4;
-      const clampedX = Math.min(
-        Math.max(x * board.clientWidth, margin),
-        board.clientWidth - margin
+  // The end labels sit on the side of the track without a cover.
+  const placeEnd = (
+    label: SVGTextElement,
+    x: number,
+    play: TrackPlay | undefined
+  ) => {
+    const item = play ? items.get(play.key) : undefined;
+    const point = pointAt(x);
+    const side = item ? -item.side : 1;
+    label.setAttribute("x", String(x));
+    label.setAttribute("y", (point.y + side * 20 + 4).toFixed(1));
+    label.setAttribute("text-anchor", x > width / 2 ? "end" : "start");
+  };
+
+  function render(now: number, snap = false) {
+    if (samples.length === 0) return;
+    const isStatic = snap || reduced.matches;
+    const dt = last && !isStatic ? Math.min(0.1, (now - last) / 1000) : 0;
+    last = now;
+    const nowMs = Date.now();
+    const half = cover / 2;
+    const margin = half + 6;
+    const newestX = Math.min(width * NEWEST_AT, width - margin);
+    const oldestX = Math.max(width * OLDEST_AT, margin);
+
+    for (const [key, item] of items) {
+      const target = targetOf(item, nowMs);
+      if (isStatic) {
+        item.position = target;
+        item.velocity = 0;
+      } else {
+        const steps = Math.max(1, Math.ceil(dt / (1 / 120)));
+        const h = dt / steps;
+        for (let step = 0; step < steps; step++) {
+          const acceleration =
+            SPRING * SPRING * (target - item.position) -
+            2 * SPRING * item.velocity;
+          item.velocity += acceleration * h;
+          item.position += item.velocity * h;
+        }
+      }
+
+      if (item.isLeaving && item.position > 1.1) {
+        item.element.remove();
+        item.stem.remove();
+        item.dot.remove();
+        items.delete(key);
+        continue;
+      }
+
+      const x = newestX + (oldestX - newestX) * item.position;
+      const point = pointAt(Math.min(Math.max(x, 0), width));
+      // The normal points to the item's side of the track.
+      const flip = Math.sign(point.ny) === item.side ? 1 : -1;
+      const nx = point.nx * flip;
+      const ny = point.ny * flip;
+      const base = STEM + half / Math.max(Math.abs(nx), Math.abs(ny));
+
+      // Where the track curves towards a cover, it moves further out.
+      let needed = 0;
+      while (
+        needed < 80 &&
+        touchesTrack(
+          point.x + nx * (base + needed),
+          point.y + ny * (base + needed),
+          half
+        )
+      ) {
+        needed += 4;
+      }
+      item.extra = isStatic
+        ? needed
+        : item.extra + (needed - item.extra) * Math.min(1, dt * 6);
+      const distance = base + item.extra;
+      const cx = point.x + nx * distance;
+      const cy = point.y + ny * distance;
+
+      const opacity = Math.min(
+        1,
+        Math.max(0, 1 + item.position * 8),
+        Math.max(0, (1.1 - item.position) * 8)
+      ).toFixed(3);
+      item.element.style.translate = `${(cx - half).toFixed(1)}px ${(cy - half).toFixed(1)}px`;
+      item.element.style.opacity = opacity;
+      item.element.classList.toggle("is-below", item.side === 1);
+      item.stem.setAttribute("x1", point.x.toFixed(1));
+      item.stem.setAttribute("y1", point.y.toFixed(1));
+      item.stem.setAttribute(
+        "x2",
+        (point.x + nx * (STEM + item.extra)).toFixed(1)
       );
-      const distance = getLengthAtX(line, clampedX);
-
-      if (isFirst) item.style.transition = "none";
-      item.style.setProperty("--distance", `${distance.toFixed(1)}px`);
-      item.querySelector(".tr-time")!.textContent = formatRelative(
-        play.at,
-        nowMs
+      item.stem.setAttribute(
+        "y2",
+        (point.y + ny * (STEM + item.extra)).toFixed(1)
       );
-      if (isFirst) requestAnimationFrame(() => (item.style.transition = ""));
-    });
+      item.stem.style.opacity = opacity;
+      item.dot.setAttribute("cx", point.x.toFixed(1));
+      item.dot.setAttribute("cy", point.y.toFixed(1));
+      item.dot.style.opacity = opacity;
+    }
+
+    placeEnd(ends.now, width - 4, order[0]);
+    placeEnd(ends.earlier, 4, order.at(-1));
+
+    if (isLive) {
+      // A light runs along the track from now to earlier, every few seconds.
+      const progress = reduced.matches ? 0 : (now / 6000) % 1;
+      const eased = 0.5 - Math.cos(progress * Math.PI) / 2;
+      const point = pointAt(newestX + (oldestX - newestX) * eased);
+      pulse.setAttribute("cx", point.x.toFixed(1));
+      pulse.setAttribute("cy", point.y.toFixed(1));
+    }
+  }
+
+  const loop = (now: number) => {
+    render(now);
+    frame =
+      isVisible && document.visibilityState === "visible"
+        ? requestAnimationFrame(loop)
+        : 0;
+  };
+  const start = () => {
+    if (frame || reduced.matches) return;
+    last = 0;
+    frame = requestAnimationFrame(loop);
   };
 
   const refresh = async () => {
     // Fewer songs on narrow screens, so covers never pile up.
-    const limit =
-      board.clientWidth < 300 ? 4 : board.clientWidth < 600 ? 6 : PLAY_LIMIT;
+    const limit = Math.min(
+      PLAY_LIMIT,
+      Math.max(4, Math.floor(width / (cover * 1.7)))
+    );
     const next = (await fetchPlays(options.pds, options.did)).slice(0, limit);
     if (next.length === 0) return;
 
-    const isFirst = plays.length === 0;
-    plays = next;
+    const isFirst = items.size === 0;
     const keys = new Set(next.map((play) => play.key));
-
-    for (const [key, item] of items) {
-      if (keys.has(key)) continue;
-      item.classList.add("is-leaving");
-      item.addEventListener("transitionend", () => item.remove(), {
-        once: true,
-      });
-      items.delete(key);
+    for (const item of items.values()) {
+      if (!keys.has(item.play.key)) item.isLeaving = true;
     }
 
-    next.forEach((play, index) => {
-      let item = items.get(play.key);
-      if (!item) {
-        item = createItem(play);
-        // New songs join at the very end of the track and glide into place.
-        item.style.transition = "none";
-        item.style.setProperty("--distance", `${line.getTotalLength()}px`);
-        list.prepend(item);
-        items.set(play.key, item);
-        void loadCover(play).then((src) => {
-          if (src) item!.querySelector("img")!.src = src;
-        });
-      }
-      item.classList.toggle("is-below", index % 2 === 1);
-      item.style.setProperty("--i", String(index));
-    });
+    // New songs join just past the right end, on the side opposite the song
+    // before them, and every song keeps its side for good.
+    let newest = order[0] ? items.get(order[0].key) : undefined;
+    for (const play of next.toReversed()) {
+      if (items.has(play.key)) continue;
+      const item = createItem(play, newest ? (-newest.side as 1 | -1) : -1);
+      item.position = -0.15;
+      items.set(play.key, item);
+      list.prepend(item.element);
+      stems.append(item.stem);
+      dots.append(item.dot);
+      newest = item;
+    }
+    order = next.map((play) => items.get(play.key)!.play);
 
-    requestAnimationFrame(() => {
-      for (const item of items.values()) item.style.transition = "";
-      place(isFirst);
-    });
+    const nowMs = Date.now();
+    for (const item of items.values()) {
+      item.card.querySelector(".tr-time")!.textContent = formatRelative(
+        item.play.at,
+        nowMs
+      );
+    }
+    render(performance.now(), isFirst || reduced.matches);
   };
 
   const checkPlaying = async () => {
@@ -139,14 +313,23 @@ export function renderTrack(
     try {
       const response = await fetch(options.nowPlaying);
       const data = (await response.json()) as { isPlaying?: boolean };
-      board.classList.toggle("is-live", Boolean(data.isPlaying));
+      isLive = Boolean(data.isPlaying);
     } catch {
-      board.classList.remove("is-live");
+      isLive = false;
     }
+    board.classList.toggle("is-live", isLive);
+    render(performance.now(), reduced.matches);
   };
 
   layout();
   new ResizeObserver(layout).observe(board);
+  new IntersectionObserver(([entry]) => {
+    isVisible = Boolean(entry?.isIntersecting);
+    if (isVisible) start();
+  }).observe(board);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && isVisible) start();
+  });
   void refresh();
   void checkPlaying();
   setInterval(() => {
@@ -154,33 +337,23 @@ export function renderTrack(
     void refresh();
     void checkPlaying();
   }, REFRESH_MS);
-  setInterval(() => {
-    if (document.visibilityState === "visible") place();
-  }, DRIFT_MS);
 }
 
-// Spacing songs by horizontal position looks even, while percentages of a
-// winding path bunch up where it curves. The path only moves forward along
-// x, so a binary search finds the right distance along it.
-function getLengthAtX(path: SVGPathElement, x: number) {
-  const total = path.getTotalLength();
-  let low = 0;
-  let high = total;
-  for (let step = 0; step < 18; step++) {
-    const middle = (low + high) / 2;
-    if (path.getPointAtLength(middle).x < x) low = middle;
-    else high = middle;
-  }
-  return (low + high) / 2;
-}
-
-function createItem(play: TrackPlay) {
+function createItem(play: TrackPlay, side: 1 | -1): Item {
   const label = `${play.title} by ${play.artist}`;
-  const cover = html("img", {
+  const id = /open\.spotify\.com\/track\/([A-Za-z0-9]{22})/.exec(
+    play.url ?? ""
+  )?.[1];
+  const image = html("img", {
     alt: "",
     class: "tr-cover",
+    decoding: "async",
     height: 64,
+    src: id ? `/api/cover/${id}` : undefined,
     width: 64,
+  });
+  image.addEventListener("error", () => image.removeAttribute("src"), {
+    once: true,
   });
   const card = html("span", { class: "tr-card" }, [
     html("span", { class: "tr-title", text: play.title }),
@@ -189,22 +362,31 @@ function createItem(play: TrackPlay) {
   ]);
   const content = play.url
     ? html("a", { "aria-label": label, class: "tr-link", href: play.url }, [
-        cover,
+        image,
         card,
       ])
-    : html("span", { "aria-label": label, class: "tr-link" }, [cover, card]);
+    : html("span", { "aria-label": label, class: "tr-link" }, [image, card]);
 
-  return html("li", { class: "tr-item" }, [
-    html("span", { "aria-hidden": "true", class: "tr-stem" }),
-    content,
-  ]);
+  return {
+    card,
+    dot: svg("circle", { class: "tr-dot", r: DOT }),
+    element: html("li", { class: "tr-item" }, [content]),
+    extra: 0,
+    isLeaving: false,
+    play,
+    position: 0,
+    side,
+    stem: svg("line", { class: "tr-stem" }),
+    velocity: 0,
+  };
 }
 
-// A gentle wave through the board, drawn as a Catmull-Rom curve through
-// sampled points, so it looks hand drawn rather than like a sine plot.
+// A gentle wave through the middle of the board, drawn as a Catmull-Rom
+// curve through sampled points, so it looks hand drawn rather than like a
+// sine plot. It stays in a narrow band, so covers fit on both sides.
 function createWave(width: number, height: number) {
   const samples = 14;
-  const amplitude = height * 0.26;
+  const amplitude = height * 0.12;
   const points = Array.from({ length: samples + 1 }, (_, index) => {
     const t = index / samples;
     const wave =
@@ -261,46 +443,5 @@ async function fetchPlays(pds: string, did: string): Promise<TrackPlay[]> {
     }));
   } catch {
     return [];
-  }
-}
-
-// Covers come from Spotify's oEmbed endpoint and are remembered for the
-// session, so drifting and refreshing never fetch the same cover twice.
-async function loadCover(play: TrackPlay): Promise<string | undefined> {
-  if (!play.url?.startsWith("https://open.spotify.com/")) return;
-
-  const cache = readCoverCache();
-  if (cache[play.url]) return cache[play.url];
-
-  try {
-    const response = await fetch(
-      `https://open.spotify.com/oembed?url=${encodeURIComponent(play.url)}`
-    );
-    if (!response.ok) return;
-
-    const { thumbnail_url } = (await response.json()) as {
-      thumbnail_url?: string;
-    };
-    if (!thumbnail_url) return;
-
-    cache[play.url] = thumbnail_url;
-    try {
-      sessionStorage.setItem(COVER_CACHE_KEY, JSON.stringify(cache));
-    } catch {
-      // Storage is optional.
-    }
-    return thumbnail_url;
-  } catch {
-    return;
-  }
-}
-
-function readCoverCache(): Record<string, string> {
-  try {
-    return JSON.parse(
-      sessionStorage.getItem(COVER_CACHE_KEY) ?? "{}"
-    ) as Record<string, string>;
-  } catch {
-    return {};
   }
 }

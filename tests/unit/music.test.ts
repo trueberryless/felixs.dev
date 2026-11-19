@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { computeMusicStats, recordToPlay } from '../../src/lib/music'
+import { computeDayStats, computeMusicStats, recordToPlay } from '../../src/lib/music'
 import type { Play } from '../../src/lib/music'
 
 const NOW = Date.parse('2026-11-19T12:00:00Z')
@@ -65,11 +65,21 @@ describe('computeMusicStats', () => {
     expect(range('4w')?.hours[22]).toBe(1)
   })
 
-  test('finds the highlights', () => {
-    expect(stats.highlights.longestStreak).toEqual({ days: 3, from: '2026-11-17', to: '2026-11-19' })
-    expect(stats.highlights.busiestDay).toEqual({ date: '2026-11-18', plays: 2 })
-    expect(stats.highlights.topRepeat).toMatchObject({ plays: 2, track: 'b' })
-    expect(stats.highlights.weekObsession).toMatchObject({ artist: 'Beta', plays: 3, track: 'b' })
+  test('finds the highlights within each range', () => {
+    const { highlights } = range('4w')!
+    expect(highlights.longestStreak).toEqual({ days: 3, from: '2026-11-17', to: '2026-11-19' })
+    expect(highlights.busiestDay).toEqual({ date: '2026-11-18', plays: 2 })
+    expect(highlights.topRepeat).toMatchObject({ plays: 2, track: 'b' })
+    expect(highlights.evergreen).toMatchObject({ days: 2, from: '2026-11-17', to: '2026-11-18', track: 'b' })
+    expect(range('2024')?.highlights.longestStreak).toBeUndefined()
+    expect(range('2024')?.highlights.firstPlay).toMatchObject({ track: 'a' })
+  })
+
+  test('computes a single day', () => {
+    const day = computeDayStats(plays, '2026-11-18')
+    expect(day).toMatchObject({ id: '2026-11-18', label: 'Nov 18, 2026', plays: 2 })
+    expect(day.highlights.topRepeat).toMatchObject({ plays: 2, track: 'b' })
+    expect(day.highlights.busiestDay).toBeUndefined()
   })
 
   test('keeps a daily history and the top artists per month', () => {

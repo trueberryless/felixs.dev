@@ -174,20 +174,25 @@ const labelEvery = Math.max(1, Math.ceil(points.length / MAX_LABELS));
     r: 6;
   }
 
-  /* The line draws itself as the chart scrolls into view. */
+  /* The line draws itself once the section is on stage. */
   @media (prefers-reduced-motion: no-preference) {
-    @supports (animation-timeline: view()) {
-      .area-line {
-        animation: area-draw linear both;
-        animation-timeline: view();
-        animation-range: entry 10% cover 45%;
-      }
+    .area-line {
+      transition: stroke-dashoffset 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.35s;
     }
-  }
 
-  @keyframes area-draw {
-    from {
+    .area-fill {
+      transition: opacity 0.8s ease 0.9s;
+    }
+
+    :global(.story-frame[data-active="false"]) .area-line {
       stroke-dashoffset: 1;
+      transition-duration: 0.4s;
+      transition-delay: 0s;
+    }
+
+    :global(.story-frame[data-active="false"]) .area-fill {
+      opacity: 0;
+      transition-delay: 0s;
     }
   }
 </style>

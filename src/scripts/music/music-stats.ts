@@ -1,6 +1,6 @@
 import type { MusicStats, RangeStats } from "@/lib/music";
 
-import { animateNumber, describeMinutes } from "./dom";
+import { animateNumber, formatDate, reveal } from "./dom";
 import { renderTrack } from "./track";
 import {
   getCurrentColumns,
@@ -15,10 +15,14 @@ import {
 
 /**
  * Enhances the server-rendered music stats: every view is re-rendered from
- * the embedded data whenever another time range is picked.
+ * the embedded data whenever another time range is picked, and a day picked
+ * in the calendar is fetched on demand.
  */
 class MusicStatsElement extends HTMLElement {
   #stats: MusicStats | undefined;
+  #range: RangeStats | undefined;
+  #days = new Map<string, Promise<RangeStats>>();
+  #request = 0;
 
   connectedCallback() {
     const data = this.querySelector(".ms-data")?.textContent;
@@ -27,41 +31,145 @@ class MusicStatsElement extends HTMLElement {
 
     this.addEventListener("change", (event) => {
       const input = event.target as HTMLInputElement;
-      if (input.name === "music-range") this.#show(input.value);
+      if (input.name === "music-range") this.#pick(input.value);
     });
+    for (const toggle of this.querySelectorAll<HTMLButtonElement>(
+      ".ms-range-toggle"
+    )) {
+      toggle.addEventListener("click", () => {
+        const group = toggle.closest<HTMLElement>(".ms-range-group");
+        if (group) this.#openGroup(group.dataset.group);
+      });
+    }
+    this.querySelector(".ms-range-day-close")?.addEventListener("click", () =>
+      this.#pick(this.#range?.id ?? this.dataset.defaultRange ?? "all")
+    );
 
     this.classList.add("is-enhanced");
-    this.#show(this.dataset.defaultRange ?? "all");
-
-    const highlights = this.querySelector(".ms-highlights");
-    if (highlights) renderHighlights(highlights, this.#stats);
+    this.#pick(this.dataset.defaultRange ?? "all", { isFirst: true });
 
     const recent = this.querySelector<HTMLElement>(".ms-recent");
     const { did, nowPlaying, pds } = this.dataset;
     if (recent && did && pds) renderTrack(recent, { did, nowPlaying, pds });
   }
 
-  #show(id: string) {
+  /** Shows one of the precomputed ranges. */
+  #pick(id: string, { isFirst = false } = {}) {
     const stats = this.#stats;
     const range = stats?.ranges.find((candidate) => candidate.id === id);
     if (!stats || !range) return;
 
-    this.#renderNumbers(range);
-    this.#render(".ms-artists", (element) => renderArtists(element, range));
-    this.#render(".ms-tracks", (element) => renderTracks(element, range));
-    this.#render(".ms-currents", (element) =>
-      renderCurrents(element as HTMLElement, getCurrentColumns(stats, range))
+    this.#request++;
+    this.#range = range;
+    this.removeAttribute("data-loading");
+    this.removeAttribute("aria-busy");
+    const input = this.querySelector<HTMLInputElement>(
+      `input[name="music-range"][value="${id}"]`
     );
-    this.#render(".ms-clock", (element) => renderClock(element, range));
-    this.#render(".ms-weekdays", (element) => renderWeekdays(element, range));
+    if (input) input.checked = true;
+    this.#setDay(undefined);
+    this.#openGroup(/^\d+$/.test(id) ? "year" : "relative");
+
+    this.#renderRange(range, { isFirst });
     this.#render(".ms-calendar", (element) =>
       renderCalendar(
         element,
         this.querySelector(".ms-calendar-caption"),
         stats,
-        range
+        range,
+        { onPick: (date) => void this.#pickDay(date) }
       )
     );
+    if (!isFirst) reveal(this.querySelector(".ms-calendar"), 5);
+  }
+
+  /** Fetches and shows a single day, keeping the calendar where it is. */
+  async #pickDay(date: string) {
+    const request = ++this.#request;
+    for (const input of this.querySelectorAll<HTMLInputElement>(
+      'input[name="music-range"]'
+    )) {
+      input.checked = false;
+    }
+    this.#setDay(date);
+    this.#announce(`Loading the plays of ${formatDate(date)}.`);
+    this.toggleAttribute("data-loading", true);
+    this.setAttribute("aria-busy", "true");
+
+    let day: RangeStats | undefined;
+    try {
+      day = await this.#fetchDay(date);
+    } catch {
+      day = undefined;
+    }
+    if (request !== this.#request) return;
+
+    this.removeAttribute("data-loading");
+    this.removeAttribute("aria-busy");
+    if (!day) {
+      this.#announce(`The plays of ${formatDate(date)} couldn't be loaded.`);
+      if (this.#range) this.#pick(this.#range.id);
+      return;
+    }
+
+    this.#keepInPlace(".ms-calendar", () => this.#renderRange(day));
+    this.#announce(
+      `Showing ${formatDate(date)}: ${day.plays} ${day.plays === 1 ? "play" : "plays"}.`
+    );
+  }
+
+  #fetchDay(date: string): Promise<RangeStats> {
+    let day = this.#days.get(date);
+    if (!day) {
+      day = fetch(`/api/music/${date}`).then((response) => {
+        if (!response.ok) throw new Error(String(response.status));
+        return response.json() as Promise<RangeStats>;
+      });
+      day.catch(() => this.#days.delete(date));
+      this.#days.set(date, day);
+    }
+    return day;
+  }
+
+  #renderRange(range: RangeStats, { isFirst = false } = {}) {
+    const stats = this.#stats;
+    if (!stats) return;
+    const isDay = /^\d{4}-\d{2}-\d{2}$/.test(range.id);
+
+    this.#renderNumbers(range);
+    this.#render(".ms-artists", (element) => renderArtists(element, range));
+    this.#render(".ms-tracks", (element) => renderTracks(element, range));
+
+    // A single day has no months to follow artists through.
+    const currents = this.querySelector<HTMLElement>(".ms-currents-section");
+    if (currents) currents.hidden = isDay;
+    if (!isDay) {
+      this.#render(".ms-currents", (element) =>
+        renderCurrents(element as HTMLElement, getCurrentColumns(stats, range))
+      );
+    }
+
+    this.#render(".ms-clock", (element) => renderClock(element, range));
+    const weekdays = this.querySelector<HTMLElement>(".ms-weekdays");
+    if (weekdays) {
+      weekdays.hidden = isDay;
+      if (!isDay) renderWeekdays(weekdays, range);
+    }
+    this.#render(".ms-highlights", (element) =>
+      renderHighlights(element, range)
+    );
+
+    if (isFirst) return;
+    // Everything that changed fades in together, section by section.
+    [
+      ".ms-artists",
+      ".ms-tracks",
+      ".ms-currents",
+      ".ms-rhythm-grid",
+      ".ms-highlights",
+    ].forEach((selector, index) => {
+      reveal(this.querySelector(selector), index);
+    });
   }
 
   #renderNumbers(range: RangeStats) {
@@ -69,14 +177,69 @@ class MusicStatsElement extends HTMLElement {
       const element = this.querySelector(`[data-stat="${key}"]`);
       if (element) animateNumber(element, range[key]);
     }
-
-    const hint = this.querySelector('[data-stat="minutes-hint"]');
-    if (hint) hint.textContent = describeMinutes(range.minutes);
   }
 
   #render(selector: string, render: (element: Element) => void) {
     const element = this.querySelector(selector);
     if (element) render(element);
+  }
+
+  /** Expands one group of ranges and folds the other into a single button. */
+  #openGroup(name: string | undefined) {
+    for (const group of this.querySelectorAll<HTMLElement>(".ms-range-group")) {
+      const isOpen = group.dataset.group === name;
+      group.classList.toggle("is-open", isOpen);
+      const toggle = group.querySelector<HTMLButtonElement>(".ms-range-toggle");
+      const options = group.querySelector<HTMLElement>(".ms-range-options");
+      if (!toggle || !options) continue;
+
+      toggle.setAttribute("aria-expanded", String(isOpen));
+      options.inert = !isOpen;
+      // A folded group still shows its range when that's the one picked.
+      const checked = group.querySelector<HTMLInputElement>("input:checked");
+      const label = isOpen
+        ? undefined
+        : checked?.nextElementSibling?.textContent;
+      toggle.textContent = label ?? toggle.dataset.label ?? "";
+      toggle.classList.toggle("is-picked", Boolean(label));
+    }
+  }
+
+  #setDay(date: string | undefined) {
+    const day = this.querySelector<HTMLElement>(".ms-range-day");
+    const label = this.querySelector(".ms-range-day-label");
+    if (day && label) {
+      day.hidden = !date;
+      if (date) {
+        label.textContent = formatDate(date);
+        this.#openGroup(undefined);
+      }
+    }
+    for (const cell of this.querySelectorAll(".ms-day")) {
+      cell.classList.toggle(
+        "is-selected",
+        cell.getAttribute("data-date") === date
+      );
+    }
+  }
+
+  #announce(message: string) {
+    const status = this.querySelector("[data-status]");
+    if (status) status.textContent = message;
+  }
+
+  /**
+   * Re-renders without moving the element the reader is looking at, even when
+   * the sections above it change height.
+   */
+  #keepInPlace(selector: string, update: () => void) {
+    const anchor = this.querySelector(selector);
+    const before = anchor?.getBoundingClientRect().top;
+    update();
+    const after = anchor?.getBoundingClientRect().top;
+    if (before !== undefined && after !== undefined && before !== after) {
+      window.scrollBy({ behavior: "instant", top: after - before });
+    }
   }
 }
 
