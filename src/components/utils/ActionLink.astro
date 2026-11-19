@@ -13,7 +13,7 @@ const isExternal =
   external ?? (/^(https?:)?\/\//i.test(href) || href.startsWith("mailto:"));
 ---
 
-<a href={href} class="action-link">
+<a href={href} class="action-link button">
   {text}
   {isExternal ? (
     <ExternalIcon class="ext-icon" />
@@ -23,64 +23,3 @@ const isExternal =
     </span>
   )}
 </a>
-
-<style>
-  .action-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 16px;
-    font-size: 0.85rem;
-    color: var(--text);
-    background: var(--badge-bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-pill);
-    text-decoration: none;
-    transition:
-      translate 0.2s ease,
-      box-shadow 0.2s ease,
-      background 0.2s ease,
-      border-color 0.2s ease;
-  }
-
-  .action-link:hover {
-    box-shadow: var(--lift-shadow);
-    background: var(--card-bg);
-    border-color: var(--text-muted);
-  }
-
-  .arrow,
-  .ext-icon {
-    display: inline-block;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .action-link:hover .arrow {
-    transform: translateX(4px);
-  }
-
-  .action-link:hover .ext-icon {
-    transform: translate(2px, -2px);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .action-link,
-    .arrow,
-    .ext-icon {
-      transition: none;
-    }
-    .action-link:hover {
-      translate: none;
-    }
-    .action-link:hover .arrow,
-    .action-link:hover .ext-icon {
-      transform: none;
-    }
-  }
-
-  @media (max-width: 280px) {
-    .action-link {
-      padding: 6px 12px;
-    }
-  }
-</style>

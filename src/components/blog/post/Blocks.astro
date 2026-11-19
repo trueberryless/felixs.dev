@@ -5,6 +5,7 @@ import { toSegments, type Footnote, type LeafletBlock } from "@/lib/leaflet";
 import { escapeHtml, isSafeUrl, segmentsToHtml } from "@/lib/leaflet-html";
 import BskyEmbed, { type EmbeddedPost } from "./BskyEmbed.astro";
 import PostImage from "./PostImage.astro";
+import ExternalIcon from "@/components/utils/ExternalIcon.astro";
 
 interface Props {
   avatars: Map<string, string>;
@@ -130,7 +131,7 @@ const slug = (text: unknown) =>
           <figcaption class="post-code-bar">
             <span class="post-code-language">{name}</span>
             <button
-              class="post-copy"
+              class="post-copy button is-small"
               type="button"
               data-copy
               aria-label={`Copy the ${name} code`}
@@ -191,9 +192,9 @@ const slug = (text: unknown) =>
     case "pub.leaflet.blocks.button":
       return isSafeUrl(block.url) ? (
         <p class="post-button-row">
-          <a class="post-button" href={block.url}>
+          <a class="post-button button" href={block.url}>
             {String(block.text ?? block.url)}
-            <span aria-hidden="true">↗&#xFE0E;</span>
+            <ExternalIcon />
           </a>
         </p>
       ) : null;
