@@ -15,6 +15,8 @@ const SAMPLES = 320;
 
 interface TrackPlay {
   artist: string;
+  /** How many times in a row it played. */
+  count: number;
   at: number;
   key: string;
   title: string;
@@ -52,23 +54,19 @@ export function renderTrack(
   const stems = svg("g", { class: "tr-stems" });
   const dots = svg("g", { class: "tr-dots" });
   const pulse = svg("circle", { class: "tr-pulse", r: DOT });
-  const ends = {
-    earlier: svg("text", { class: "tr-end" }, [
-      document.createTextNode("earlier"),
-    ]),
-    now: svg("text", { class: "tr-end" }, [document.createTextNode("now")]),
-  };
   const lines = svg("svg", { "aria-hidden": "true", class: "tr-svg" }, [
     line,
     stems,
     dots,
     pulse,
-    ends.earlier,
-    ends.now,
   ]);
   const list = html("ol", { class: "tr-items" });
   const board = html("div", { class: "tr" }, [lines, list]);
-  container.replaceChildren(board);
+  const ends = html("div", { "aria-hidden": "true", class: "tr-ends" }, [
+    html("span", { text: "earlier" }),
+    html("span", { text: "now" }),
+  ]);
+  container.replaceChildren(board, ends);
 
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
   const items = new Map<string, Item>();
@@ -139,20 +137,6 @@ export function renderTrack(
       (sample) =>
         Math.abs(sample.x - cx) < reach && Math.abs(sample.y - cy) < reach
     );
-  };
-
-  // The end labels sit on the side of the track without a cover.
-  const placeEnd = (
-    label: SVGTextElement,
-    x: number,
-    play: TrackPlay | undefined
-  ) => {
-    const item = play ? items.get(play.key) : undefined;
-    const point = pointAt(x);
-    const side = item ? -item.side : 1;
-    label.setAttribute("x", String(x));
-    label.setAttribute("y", (point.y + side * 20 + 4).toFixed(1));
-    label.setAttribute("text-anchor", x > width / 2 ? "end" : "start");
   };
 
   function render(now: number, snap = false) {
@@ -246,9 +230,6 @@ export function renderTrack(
       item.dot.style.opacity = opacity;
     }
 
-    placeEnd(ends.now, width - 4, order[0]);
-    placeEnd(ends.earlier, 4, order.at(-1));
-
     if (isLive) {
       // A light runs along the track from now to earlier, every few seconds.
       const progress = reduced.matches ? 0 : (now / 6000) % 1;
@@ -291,7 +272,16 @@ export function renderTrack(
     // before them, and every song keeps its side for good.
     let newest = order[0] ? items.get(order[0].key) : undefined;
     for (const play of next.toReversed()) {
-      if (items.has(play.key)) continue;
+      const existing = items.get(play.key);
+      if (existing) {
+        if (existing.play.count !== play.count) {
+          const fresh = createItem(play, existing.side);
+          existing.element.replaceChildren(...fresh.element.childNodes);
+          existing.card = fresh.card;
+        }
+        existing.play = play;
+        continue;
+      }
       const item = createItem(play, newest ? (-newest.side as 1 | -1) : -1);
       item.position = -0.15;
       items.set(play.key, item);
@@ -344,7 +334,7 @@ export function renderTrack(
 }
 
 function createItem(play: TrackPlay, side: 1 | -1): Item {
-  const label = `${play.title} by ${play.artist}`;
+  const label = `${play.title} by ${play.artist}${play.count > 1 ? `, ${play.count} times in a row` : ""}`;
   const id = /open\.spotify\.com\/track\/([A-Za-z0-9]{22})/.exec(
     play.url ?? ""
   )?.[1];
@@ -362,14 +352,32 @@ function createItem(play: TrackPlay, side: 1 | -1): Item {
   const card = html("span", { class: "tr-card" }, [
     html("span", { class: "tr-title", text: play.title }),
     html("span", { class: "tr-artist", text: play.artist }),
+    play.count > 1 &&
+      html("span", {
+        class: "tr-repeat",
+        text: `${play.count} times in a row`,
+      }),
     html("span", { class: "tr-time" }),
   ]);
+  const badge =
+    play.count > 1
+      ? html("span", {
+          "aria-hidden": "true",
+          class: "tr-count",
+          text: `×${play.count}`,
+        })
+      : undefined;
   const content = play.url
     ? html("a", { "aria-label": label, class: "tr-link", href: play.url }, [
         image,
+        badge,
         card,
       ])
-    : html("span", { "aria-label": label, class: "tr-link" }, [image, card]);
+    : html("span", { "aria-label": label, class: "tr-link" }, [
+        image,
+        badge,
+        card,
+      ]);
 
   return {
     card,
@@ -418,7 +426,8 @@ async function fetchPlays(pds: string, did: string): Promise<TrackPlay[]> {
   const url = new URL("/xrpc/com.atproto.repo.listRecords", pds);
   url.searchParams.set("repo", did);
   url.searchParams.set("collection", "fm.teal.feed.play");
-  url.searchParams.set("limit", String(PLAY_LIMIT));
+  // Enough to fill the track even when a song played many times in a row.
+  url.searchParams.set("limit", "60");
 
   try {
     const response = await fetch(url);
@@ -436,15 +445,35 @@ async function fetchPlays(pds: string, did: string): Promise<TrackPlay[]> {
       }[];
     };
 
-    return records.map(({ uri, value }) => ({
-      artist:
-        value.artists?.map((artist) => artist.artistName).join(", ") ||
-        "Unknown artist",
-      at: Date.parse(value.playedTime),
-      key: uri,
-      title: value.trackName,
-      url: value.originUri,
-    }));
+    // A song played several times in a row becomes one stop on the track.
+    const plays: TrackPlay[] = [];
+    for (const { uri, value } of records) {
+      const artist =
+        value.artists?.map((entry) => entry.artistName).join(", ") ||
+        "Unknown artist";
+      const previous = plays.at(-1);
+      const same =
+        previous &&
+        (value.originUri
+          ? previous.url === value.originUri
+          : previous.title === value.trackName && previous.artist === artist);
+      // The group is known by its first play, so it stays the same stop
+      // when the song plays once more.
+      if (same) {
+        previous.count++;
+        previous.key = uri;
+        continue;
+      }
+      plays.push({
+        artist,
+        at: Date.parse(value.playedTime),
+        count: 1,
+        key: uri,
+        title: value.trackName,
+        url: value.originUri,
+      });
+    }
+    return plays.slice(0, PLAY_LIMIT);
   } catch {
     return [];
   }

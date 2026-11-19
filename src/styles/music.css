@@ -178,7 +178,7 @@
 }
 
 .ms-range-toggle {
-  display: none;
+  overflow: hidden;
   border: 0;
   background: none;
   color: var(--text-muted);
@@ -208,17 +208,14 @@
   outline-offset: 2px;
 }
 
-.ms.is-enhanced .ms-range-group:not(.is-open) .ms-range-toggle {
-  display: block;
+.ms-range-toggle[hidden],
+.ms-range-options[hidden] {
+  display: none;
 }
 
-/* Opening and folding animate the width of the options. */
+/* The script folds and unfolds the options by their width. */
 .ms-range-options {
-  display: grid;
-  grid-template-columns: 1fr;
-  transition:
-    grid-template-columns 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.3s ease;
+  overflow: hidden;
 }
 
 .ms-range-inner {
@@ -226,11 +223,6 @@
   gap: 2px;
   min-width: 0;
   overflow: hidden;
-}
-
-.ms.is-enhanced .ms-range-group:not(.is-open) .ms-range-options {
-  grid-template-columns: 0fr;
-  opacity: 0;
 }
 
 .ms-range {
@@ -1006,16 +998,6 @@ a.ms-recent-track:hover {
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   background: var(--card-bg);
-  transition:
-    translate 0.25s ease,
-    box-shadow 0.25s ease;
-}
-
-@media (hover: hover) {
-  .ms-highlight:hover {
-    translate: 0 -3px;
-    box-shadow: var(--lift-shadow);
-  }
 }
 
 .ms-highlight-value {
@@ -1068,16 +1050,37 @@ a.ms-recent-track:hover {
   stroke-width: 2.5;
 }
 
-.tr-end {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  fill: var(--text-muted);
-  transition: y 0.6s ease;
-}
-
 .tr-items {
   list-style: none;
+}
+
+.tr-ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* A song on repeat shows how many times it played. */
+.tr-count {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  z-index: 1;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--card-bg);
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tr-repeat {
+  color: var(--text);
 }
 
 .tr-item {
@@ -1189,11 +1192,12 @@ a.ms-recent-track:hover {
   fill: var(--accent);
   filter: drop-shadow(0 0 6px var(--accent))
     drop-shadow(0 0 14px var(--accent-glow));
-  visibility: hidden;
+  opacity: 0;
+  transition: opacity 1.2s ease;
 }
 
 .tr.is-live .tr-pulse {
-  visibility: visible;
+  opacity: 1;
 }
 
 @media (max-width: 600px) {
