@@ -70,7 +70,16 @@ export function renderTrack(
       const byTime = (nowMs - play.at) / span;
       const progress = Math.min(1, byRank * 0.55 + byTime * 0.45);
       const x = NEWEST_AT - progress * (NEWEST_AT - OLDEST_AT);
-      const distance = getLengthAtX(line, x * board.clientWidth);
+      // Covers stay whole on screen, however narrow the track gets.
+      const cover =
+        parseFloat(getComputedStyle(board).getPropertyValue("--tr-cover")) ||
+        64;
+      const margin = cover / 2 + 4;
+      const clampedX = Math.min(
+        Math.max(x * board.clientWidth, margin),
+        board.clientWidth - margin
+      );
+      const distance = getLengthAtX(line, clampedX);
 
       if (isFirst) item.style.transition = "none";
       item.style.setProperty("--distance", `${distance.toFixed(1)}px`);
@@ -84,7 +93,8 @@ export function renderTrack(
 
   const refresh = async () => {
     // Fewer songs on narrow screens, so covers never pile up.
-    const limit = board.clientWidth < 600 ? 6 : PLAY_LIMIT;
+    const limit =
+      board.clientWidth < 300 ? 4 : board.clientWidth < 600 ? 6 : PLAY_LIMIT;
     const next = (await fetchPlays(options.pds, options.did)).slice(0, limit);
     if (next.length === 0) return;
 
