@@ -255,6 +255,22 @@ import { scrobblerEndpoint, tealProfileUrl } from "@/lib/const";
       --cover-size: 80px;
 
       gap: 14px;
+      padding: 14px;
+    }
+
+    .details {
+      height: auto;
+      min-height: var(--cover-size);
+      gap: 4px;
+    }
+
+    .track {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
   }
 

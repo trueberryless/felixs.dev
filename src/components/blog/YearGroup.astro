@@ -9,7 +9,10 @@ interface Props {
 const { year, posts } = Astro.props;
 ---
 
-<section class="year-group">
+<section class="year-group" aria-labelledby={`year-${year}`}>
+  <h2 id={`year-${year}`} class="sr-only">
+    {year}
+  </h2>
   <div class="year-track" aria-hidden="true">
     <div class="year-depth">
       <div class="year-watermark">{year}</div>

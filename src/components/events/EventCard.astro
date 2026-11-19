@@ -233,9 +233,12 @@ const extraCount =
     color: var(--text);
     margin: 0 0 12px 0;
     letter-spacing: 0.02em;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
     overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
   }
 
   .event-location {

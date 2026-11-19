@@ -154,7 +154,7 @@ const prints = await Promise.all(
 ---
 
 <section class="hero-viewport" id="hero-section">
-  <div class="hexagon-space">
+  <div class="hexagon-space" aria-hidden="true">
     {hexagons.map((hex, index) => (
       <div
         class="hex-layer parallax"
@@ -434,7 +434,7 @@ const prints = await Promise.all(
     line-height: 1.05;
     text-align: center;
     margin: 0;
-    padding: 40px 60px;
+    padding: 40px clamp(16px, 6vw, 60px);
     color: var(--text);
   }
 

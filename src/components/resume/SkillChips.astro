@@ -26,7 +26,7 @@ for (const items of groups.values()) {
   const items = groups.get(key)!;
   return (
     <div class="skill-group">
-      <h4 class="skill-group-title">{key}</h4>
+      <h3 class="skill-group-title">{key}</h3>
       <div class="skill-chips">
         {items.map((s) => (
           <span class="skill-chip">{s.name}</span>

@@ -52,12 +52,16 @@ const pathname = Astro.url.pathname;
       <div class="menu-pill">
         <div class="pill-bg"></div>
         <div class="menu-toggle-wrapper">
-          <button class="menu-toggle" aria-label="Toggle Menu">
+          <button
+            class="menu-toggle"
+            aria-expanded="false"
+            aria-controls="main-navigation"
+          >
             Menu
           </button>
         </div>
 
-        <nav aria-label="Main Navigation" class="nav-menu">
+        <nav id="main-navigation" aria-label="Main Navigation" class="nav-menu">
           <div class="nav-menu-content">
             <ul class="nav-links">
               {links.map((link, i) => {
@@ -149,6 +153,7 @@ const pathname = Astro.url.pathname;
   let themeText: Element | null | undefined = null;
   let toast: HTMLElement | null = null;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const compactMenu = window.matchMedia("(max-width: 600px)");
 
   const SCROLL_THRESHOLD_DIVISOR = 1.8;
 
@@ -179,25 +184,35 @@ const pathname = Astro.url.pathname;
     }
   };
 
+  // The collapsed menu is only hidden visually, so its links are also taken
+  // out of the tab order and the accessibility tree until it opens.
+  const syncMenuState = () => {
+    const isOpen = headerInner?.classList.contains("is-open") ?? false;
+    button?.setAttribute("aria-expanded", String(isOpen));
+    document
+      .getElementById("main-navigation")
+      ?.toggleAttribute("inert", compactMenu.matches && !isOpen);
+  };
+
   const onMenuToggleClick = (event: Event) => {
     event.stopPropagation();
 
     if (headerInner?.classList.contains("is-open")) {
-      headerInner.classList.remove("is-open");
-      headerInner.classList.add("is-closing");
-      setTimeout(() => {
-        headerInner?.classList.remove("is-closing");
-      }, 500);
-    } else {
-      headerInner?.classList.remove("is-closing");
-      headerInner?.classList.add("is-open");
+      closeMenu();
+      return;
     }
+
+    headerInner?.classList.remove("is-closing");
+    headerInner?.classList.add("is-open");
+    syncMenuState();
   };
 
-  const closeMenu = () => {
+  const closeMenu = ({ restoreFocus = false } = {}) => {
     if (!headerInner?.classList.contains("is-open")) return;
     headerInner.classList.remove("is-open");
     headerInner.classList.add("is-closing");
+    syncMenuState();
+    if (restoreFocus) (button as HTMLElement | null)?.focus();
     setTimeout(() => {
       headerInner?.classList.remove("is-closing");
     }, 500);
@@ -211,7 +226,7 @@ const pathname = Astro.url.pathname;
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeMenu();
+    if (event.key === "Escape") closeMenu({ restoreFocus: true });
   });
 
   window.addEventListener("resize", () => {
@@ -220,6 +235,8 @@ const pathname = Astro.url.pathname;
       headerInner?.classList.remove("is-closing");
     }
   });
+
+  compactMenu.addEventListener("change", syncMenuState);
 
   const checkScroll = () => {
     const threshold = window.innerHeight / SCROLL_THRESHOLD_DIVISOR;
@@ -395,6 +412,7 @@ const pathname = Astro.url.pathname;
     themeToggle?.addEventListener("pointerenter", prepareNextTheme);
     themeToggle?.addEventListener("focus", prepareNextTheme);
     syncThemeText();
+    syncMenuState();
 
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
@@ -594,6 +612,15 @@ const pathname = Astro.url.pathname;
     display: block;
   }
 
+  .logo::before,
+  .menu-toggle::before,
+  .nav-links a::before,
+  .theme-toggle::before {
+    content: "";
+    position: absolute;
+    inset: -10px -8px;
+  }
+
   .logo {
     font-weight: 700;
     font-size: 0.95rem;
@@ -726,6 +753,7 @@ const pathname = Astro.url.pathname;
       transform 0.2s ease;
     white-space: nowrap;
     text-decoration: none;
+    position: relative;
   }
 
   .nav-links a:hover,
@@ -769,6 +797,7 @@ const pathname = Astro.url.pathname;
     cursor: pointer;
     color: var(--text-muted);
     display: inline-flex;
+    position: relative;
     align-items: center;
     justify-content: center;
     padding: 0;
