@@ -18,8 +18,12 @@ const LOGOS: LogoPrint[] = [
   { mode: "alpha", name: "astro", pitch: 0.12, yaw: -0.16 },
   // The cat is the dark part of the badge.
   { mode: "dark", name: "catppuccin", pitch: 0.1, yaw: 0.14 },
-  // The letter and its bar stand out from the tile's navy.
-  { crop: 0.2, mode: "bright", name: "emdash-cms", pitch: -0.1, yaw: -0.14 },
+  // The dot and the star stand out from the tile's pink.
+  { crop: 0.12, mode: "bright", name: "bombshell", pitch: -0.1, yaw: -0.14 },
+  // The two halves of the circle stand out from the black tile.
+  { crop: 0.14, mode: "bright", name: "diglot", pitch: 0.1, yaw: -0.1 },
+  { mode: "alpha", name: "forges", pitch: -0.06, yaw: 0.12 },
+  { mode: "alpha", name: "nuxt", pitch: 0.1, yaw: -0.08 },
   { mode: "alpha", name: "npmx", pitch: 0.08, yaw: 0.16 },
   { mode: "alpha", name: "starlight", pitch: -0.12, yaw: -0.12 },
 ];
