@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { countByMonth, getFootprint, getMonthlySeries, parseResumeDate } from '../../src/lib/stories'
+import { countByMonth, getMonthlySeries, getSocialActivity, parseResumeDate } from '../../src/lib/stories'
 
 describe('getMonthlySeries', () => {
   test('returns every month up to now, including quiet ones', () => {
@@ -23,25 +23,32 @@ describe('countByMonth', () => {
   })
 })
 
-describe('getFootprint', () => {
-  test('groups collections into apps by their namespace', () => {
-    const footprint = getFootprint(
-      new Map([
-        ['fm.teal.feed.play', 100],
-        ['fm.teal.actor.status', 1],
-        ['app.bsky.feed.like', 40],
-        ['chat.bsky.actor.declaration', 1],
-        ['buzz.bookhive.book', 30],
-      ]),
-      { did: 'did:plc:abc', limit: 10 }
-    )
-
-    expect(footprint.map(({ label, value }) => [label, value])).toEqual([
-      ['teal.fm', 101],
-      ['Bluesky', 41],
-      ['bookhive.buzz', 30],
+describe('getSocialActivity', () => {
+  test('counts posts, replies and quotes separately', () => {
+    const records = new Map([
+      [
+        'app.bsky.feed.post',
+        [
+          { value: { text: 'hi' } },
+          { value: { reply: { root: {} }, text: 'yes' } },
+          { value: { embed: { $type: 'app.bsky.embed.record' }, text: 'this' } },
+          { value: { embed: { $type: 'app.bsky.embed.images' }, text: 'pic' } },
+        ],
+      ],
+      ['app.bsky.feed.like', [{ value: {} }, { value: {} }, { value: {} }]],
+      ['sh.tangled.feed.star', [{ value: {} }]],
+      ['org.tangled.feed.star', [{ value: {} }]],
     ])
-    expect(footprint[0]?.title).toBe('teal.fm: 101 records in 2 collections')
+
+    expect(Object.fromEntries(getSocialActivity(records).map(({ label, value }) => [label, value]))).toEqual({
+      Follows: 0,
+      Likes: 3,
+      Posts: 2,
+      Quotes: 1,
+      Replies: 1,
+      Reposts: 0,
+      Stars: 2,
+    })
   })
 })
 

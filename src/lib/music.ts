@@ -67,7 +67,7 @@ export interface MusicStats {
   generatedAt: string;
   highlights: {
     busiestDay: { date: string; plays: number } | undefined;
-    firstPlay: { artist: string; at: string; track: string } | undefined;
+    weekObsession: { artist: string; plays: number; track: string } | undefined;
     longestStreak: { days: number; from: string; to: string } | undefined;
     topRepeat:
       | { artist: string; date: string; plays: number; track: string }
@@ -170,7 +170,7 @@ export function computeMusicStats(
   return {
     daily: computeDaily(plays, nowMs, toLocal),
     generatedAt: new Date(nowMs).toISOString(),
-    highlights: computeHighlights(plays, toLocal),
+    highlights: computeHighlights(plays, nowMs, toLocal),
     months: computeMonths(plays, fallbackDurationS, toLocal),
     ranges,
   };
@@ -325,9 +325,14 @@ function computeMonths(
 
 function computeHighlights(
   plays: Play[],
+  nowMs: number,
   toLocal: LocalTime
 ): MusicStats["highlights"] {
-  const first = plays[0];
+  const weekStart = nowMs - 7 * DAY_MS;
+  const perWeekTrack = new Map<
+    string,
+    { artist: string; plays: number; track: string }
+  >();
   const perDay = new Map<string, number>();
   const perDayTrack = new Map<
     string,
@@ -347,6 +352,17 @@ function computeHighlights(
     };
     entry.plays++;
     perDayTrack.set(key, entry);
+
+    if (play.at >= weekStart) {
+      const weekKey = play.url ?? play.track;
+      const week = perWeekTrack.get(weekKey) ?? {
+        artist: play.artists[0] ?? "",
+        plays: 0,
+        track: play.track,
+      };
+      week.plays++;
+      perWeekTrack.set(weekKey, week);
+    }
   }
 
   let busiestDay: { date: string; plays: number } | undefined;
@@ -362,15 +378,11 @@ function computeHighlights(
 
   return {
     busiestDay,
-    firstPlay: first
-      ? {
-          artist: first.artists[0] ?? "",
-          at: new Date(first.at).toISOString(),
-          track: first.track,
-        }
-      : undefined,
     longestStreak: getLongestStreak([...perDay.keys()].toSorted()),
     topRepeat,
+    weekObsession: [...perWeekTrack.values()]
+      .filter((entry) => entry.plays > 1)
+      .toSorted((a, b) => b.plays - a.plays)[0],
   };
 }
 

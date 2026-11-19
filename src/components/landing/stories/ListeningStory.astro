@@ -19,14 +19,11 @@ const series = getMonthlySeries(
   nowMs,
   24
 );
-const firstYear = plays.length
-  ? new Date(Math.min(...plays.map((play) => play.at))).getUTCFullYear()
-  : undefined;
 
-const yearStart = Date.UTC(new Date(nowMs).getUTCFullYear(), 0, 1);
+const recentStart = nowMs - 90 * 24 * 60 * 60 * 1000;
 const artistCounts = new Map<string, number>();
 for (const play of plays) {
-  if (play.at < yearStart) continue;
+  if (play.at < recentStart) continue;
   for (const artist of play.artists) {
     artistCounts.set(artist, (artistCounts.get(artist) ?? 0) + 1);
   }
@@ -38,20 +35,20 @@ const topArtists = [...artistCounts]
 const listFormat = new Intl.ListFormat("en", { type: "conjunction" });
 ---
 
-<Story kicker="Listening" href="/music" linkText="Explore my music">
+<Story kicker="Listening" href="/music" linkText="Dig into my music">
   <Fragment slot="title">
     {plays.length > 0 ? (
       <>
-        <em>{plays.length.toLocaleString("en-US")}</em> plays since {firstYear}
+        <em>{plays.length.toLocaleString("en-US")}</em> plays and counting
       </>
     ) : (
-      "Always listening"
+      "Always something playing"
     )}
   </Fragment>
   <p slot="text">
-    Every song I play on Spotify becomes a record on my AT Protocol repository.
+    Unusual taste, I know.
     {topArtists.length > 0 &&
-      ` This year it's mostly ${listFormat.format(topArtists)}.`}
+      ` Lately it's mostly ${listFormat.format(topArtists)}.`}
   </p>
   <div slot="visual" class="listening-visual">
     <NowPlaying bare />
@@ -68,6 +65,6 @@ const listFormat = new Intl.ListFormat("en", { type: "conjunction" });
   .listening-visual {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 28px;
   }
 </style>

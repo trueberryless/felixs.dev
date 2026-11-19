@@ -18,7 +18,7 @@ test.describe('home page', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Read the blog' })).toBeVisible()
     // Streams in once the repository export is downloaded.
-    await expect(page.getByRole('link', { name: 'Explore my music' })).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByRole('link', { name: 'Dig into my music' })).toBeVisible({ timeout: 30_000 })
   })
 
   test('has the canonical url and the Open Graph image', async ({ page }) => {
@@ -62,7 +62,9 @@ test.describe('accessibility', () => {
   for (const path of ['/', '/blog', '/blog/3mpvwzmluok2z', '/books', '/music', '/events', '/projects', '/resume', '/404']) {
     for (const colorScheme of ['dark', 'light'] as const) {
       test(`${path} has no violations in ${colorScheme} mode`, async ({ page }) => {
-        await page.emulateMedia({ colorScheme })
+        // Sections fade through each other while scrolling, which axe would
+        // catch half way. Reduced motion shows every section as it settles.
+        await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' })
         await page.goto(path)
         await page.waitForLoadState('networkidle')
 
@@ -97,6 +99,13 @@ for (const width of [320, 200, 136]) {
           return [...document.querySelectorAll('header *, main *, footer *')]
             .filter((element) => !element.closest('[aria-hidden="true"], .sr-only'))
             .filter((element) => getComputedStyle(element).visibility !== 'hidden')
+            // Rows that scroll sideways on purpose, like the range picker.
+            .filter((element) => {
+              for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+                if (['auto', 'scroll'].includes(getComputedStyle(parent).overflowX)) return false
+              }
+              return true
+            })
             // Wide charts scroll inside their own container on purpose.
             .filter((element) => !element.closest('[role="region"][tabindex="0"]'))
             .filter((element) => {
@@ -146,10 +155,16 @@ test.describe('mobile menu', () => {
 })
 
 test.describe('live visitors', () => {
+  test('stays out of the hero', async ({ page }) => {
+    await page.goto('/')
+
+    await expect(page.locator('live-visitors')).toHaveClass(/is-tucked/)
+  })
+
   // Other tests run in parallel against the same server, so they may count too.
   test('counts every open tab', async ({ browser }) => {
     const first = await browser.newPage()
-    await first.goto('/')
+    await first.goto('/books')
     await expect(first.locator('live-visitors').getByRole('status')).toHaveText(/visit/)
 
     const second = await browser.newPage()

@@ -17,7 +17,7 @@ const bubbles = orgs.map((org) => ({
 }));
 ---
 
-<Story kicker="Building" href="/projects" linkText="See the projects" reverse>
+<Story kicker="Building" href="/projects" linkText="See the projects">
   <Fragment slot="title">
     {total > 0 ? (
       <>
@@ -29,7 +29,7 @@ const bubbles = orgs.map((org) => ({
   </Fragment>
   <p slot="text">
     {orgs.length > 0
-      ? `Spread across ${orgs.length} organisations I care about. The bigger the bubble, the more of my code lives there.`
+      ? `Spread across ${orgs.length} organisations I care about.`
       : "I help maintain npmx and the all-contributors ecosystem, and spend a lot of time in the Astro and Starlight repositories."}
   </p>
   <div slot="visual">

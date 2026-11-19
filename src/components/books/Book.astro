@@ -8,9 +8,19 @@ interface Props {
   rotation: string;
   hiveId: string;
   thickness: number;
+  /** Shows only the book, without its title and author underneath. */
+  compact?: boolean;
 }
 
-const { title, authors, coverUrl, rotation, hiveId, thickness } = Astro.props;
+const {
+  title,
+  authors,
+  coverUrl,
+  rotation,
+  hiveId,
+  thickness,
+  compact = false,
+} = Astro.props;
 ---
 
 <a
@@ -32,10 +42,14 @@ const { title, authors, coverUrl, rotation, hiveId, thickness } = Astro.props;
       </div>
     </div>
   </div>
-  <div class="book-meta">
-    <h2 class="title">{title}</h2>
-    <p class="author">{authors}</p>
-  </div>
+  {compact ? (
+    <span class="sr-only">{`${title} by ${authors}`}</span>
+  ) : (
+    <div class="book-meta">
+      <h2 class="title">{title}</h2>
+      <p class="author">{authors}</p>
+    </div>
+  )}
 </a>
 
 <style>

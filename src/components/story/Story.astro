@@ -3,57 +3,62 @@ interface Props {
   href?: string;
   kicker: string;
   linkText?: string;
-  /** Puts the visual on the left instead of the right. */
-  reverse?: boolean;
 }
 
-const { href, kicker, linkText, reverse = false } = Astro.props;
+const { href, kicker, linkText } = Astro.props;
 const isExternal = href ? /^https?:\/\//.test(href) : false;
 ---
 
-<section class:list={["story", { "is-reverse": reverse }]}>
-  <div class="story-copy">
-    <span class="story-kicker">{kicker}</span>
-    <h2 class="story-title">
-      <slot name="title" />
-    </h2>
-    <div class="story-text">
-      <slot name="text" />
-    </div>
-    {href && linkText && (
-      <a class="story-link" href={href}>
-        <span>{linkText}</span>
-        <span class="story-arrow" aria-hidden="true">
-          {isExternal ? "\u2197\uFE0E" : "\u2192"}
+<div class="story-frame">
+  <section class="story">
+    <div class="story-copy">
+      <span class="story-kicker">{kicker}</span>
+      <h2 class="story-title">
+        <span class="story-title-text">
+          <slot name="title" />
         </span>
-      </a>
-    )}
-  </div>
-  <div class="story-visual">
-    <slot name="visual" />
-  </div>
-</section>
+      </h2>
+      <div class="story-text">
+        <slot name="text" />
+      </div>
+      {href && linkText && (
+        <a class="story-link" href={href}>
+          <span>{linkText}</span>
+          <span class="story-arrow" aria-hidden="true">
+            {isExternal ? "↗︎" : "→"}
+          </span>
+        </a>
+      )}
+    </div>
+    <div class="story-visual">
+      <slot name="visual" />
+    </div>
+  </section>
+</div>
 
 <style>
   .story {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     align-items: center;
-    gap: clamp(28px, 5vw, 64px);
-    min-height: min(78svh, 760px);
-    padding-block: clamp(48px, 10vh, 120px);
+    gap: clamp(28px, 5vw, 72px);
+    padding-block: clamp(48px, 10vh, 112px);
   }
 
   @media (min-width: 860px) {
     .story {
-      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+      min-height: min(78svh, 760px);
     }
 
-    .story.is-reverse {
-      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    /* Copy and visual swap sides from one section to the next. Counting the
+       rendered frames keeps the rhythm right when a section has nothing to
+       show and renders nothing. */
+    :global(.story-frame:nth-child(even of .story-frame)) .story {
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
     }
 
-    .story.is-reverse .story-copy {
+    :global(.story-frame:nth-child(even of .story-frame)) .story-copy {
       order: 2;
     }
   }
@@ -61,7 +66,7 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
   .story-copy {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 18px;
   }
 
   .story-kicker {
@@ -84,25 +89,34 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
 
   .story-title {
     font-size: clamp(1.9rem, 4.4vw, 3.1rem);
-    line-height: 1.08;
+    line-height: 1.12;
     letter-spacing: -0.02em;
     color: var(--text);
     overflow-wrap: anywhere;
   }
 
-  .story-title :global(em) {
-    font-style: normal;
+  /* The theme's gradient runs through every line of the heading. */
+  .story-title-text {
     background-image: var(--text-gradient);
-    background-size: 200% 100%;
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  .story-title :global(em) {
+    font-style: normal;
   }
 
   .story-text {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     color: var(--text-muted);
-    font-size: 1.02rem;
-    max-width: 46ch;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    max-width: 44ch;
   }
 
   .story-link {
@@ -141,42 +155,87 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
     min-width: 0;
   }
 
-  /* Each section drifts and sharpens into place as it scrolls in, and drifts
-     on and blurs as it scrolls out. The copy and the visual move at different
-     speeds, which gives the page depth. No opacity, so text never loses
-     contrast mid-way. */
-  @media (prefers-reduced-motion: no-preference) {
+  /* On wide screens every section pins itself to the middle of the screen,
+     holds for a while and then hands over to the next one: it rises in and
+     sharpens, stays put while you scroll, and drifts up and fades as the next
+     section arrives. So a section never sits half cut off at the edge. The
+     first section doesn't fade in and the last one doesn't fade out. */
+  @media (min-width: 860px) and (prefers-reduced-motion: no-preference) {
     @supports (animation-timeline: view()) {
+      .story-frame {
+        height: 170svh;
+        view-timeline: --story block;
+      }
+
+      .story {
+        position: sticky;
+        top: 0;
+        height: 100svh;
+        min-height: 0;
+        padding-block: 96px 48px;
+      }
+
       .story-copy,
       .story-visual {
         animation:
           story-in linear both,
           story-out linear both;
-        animation-timeline: view(), view();
+        animation-timeline: --story, --story;
         animation-range:
-          entry 0% cover 35%,
-          exit 25% exit 100%;
+          entry 35% entry 100%,
+          exit 0% exit 45%;
       }
 
       .story-visual {
-        --story-shift: 72px;
+        --story-shift: 90px;
+      }
+
+      :global(.story-frame:nth-child(1 of .story-frame)) .story-copy,
+      :global(.story-frame:nth-child(1 of .story-frame)) .story-visual {
+        animation-name: none, story-out;
+      }
+
+      :global(.story-frame:nth-last-child(1 of .story-frame)) .story-copy,
+      :global(.story-frame:nth-last-child(1 of .story-frame)) .story-visual {
+        animation-name: story-in, none;
+      }
+    }
+  }
+
+  /* Narrow screens scroll normally, the sections only drift into place. */
+  @media (max-width: 859px) and (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .story-copy,
+      .story-visual {
+        animation: story-rise linear both;
+        animation-timeline: view();
+        animation-range: entry 0% cover 30%;
       }
     }
   }
 
   @keyframes story-in {
     from {
-      translate: 0 var(--story-shift, 40px);
-      scale: 0.96;
+      opacity: 0;
+      translate: 0 var(--story-shift, 56px);
+      scale: 0.97;
       filter: blur(10px);
     }
   }
 
   @keyframes story-out {
     to {
-      translate: 0 calc(var(--story-shift, 40px) * -0.6);
+      opacity: 0;
+      translate: 0 calc(var(--story-shift, 56px) * -0.7);
       scale: 0.98;
       filter: blur(8px);
+    }
+  }
+
+  @keyframes story-rise {
+    from {
+      translate: 0 32px;
+      filter: blur(6px);
     }
   }
 </style>

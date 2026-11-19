@@ -75,44 +75,62 @@ export function countByMonth<T>(
   return counts;
 }
 
-// Lexicon namespaces are reversed domains, so `fm.teal.feed.play` belongs to
-// teal.fm. A few apps publish under a different domain than they live on.
-const APP_NAMES: Record<string, string> = {
-  "app.bsky": "Bluesky",
-  "chat.bsky": "Bluesky",
-  "fm.teal": "teal.fm",
-  "org.tangled": "Tangled",
-  "sh.tangled": "Tangled",
-};
+export interface Activity {
+  /** How the heading describes doing this most, e.g. "liking things". */
+  doing: string;
+  label: string;
+  value: number;
+}
+
+const ACTIVITIES = [
+  { doing: "liking things", label: "Likes" },
+  { doing: "posting", label: "Posts" },
+  { doing: "replying", label: "Replies" },
+  { doing: "quoting", label: "Quotes" },
+  { doing: "reposting", label: "Reposts" },
+  { doing: "following people", label: "Follows" },
+  { doing: "starring repos", label: "Stars" },
+] as const;
 
 /**
- * Groups record counts per collection into one bubble per app.
+ * Counts what I do on the open social web: likes, posts, replies, quotes and
+ * reposts on Bluesky, follows, and stars on Tangled.
  */
-export function getFootprint(
-  collections: Map<string, number>,
-  options: { did: string; limit: number }
-): Bubble[] {
-  const apps = new Map<string, { collections: number; records: number }>();
+export function getSocialActivity(
+  records: Map<string, { value: unknown }[]>
+): Activity[] {
+  const count = (...collections: string[]) =>
+    collections.reduce(
+      (total, collection) => total + (records.get(collection)?.length ?? 0),
+      0
+    );
 
-  for (const [collection, count] of collections) {
-    const namespace = collection.split(".").slice(0, 2).join(".");
-    const app =
-      APP_NAMES[namespace] ?? namespace.split(".").toReversed().join(".");
-    const entry = apps.get(app) ?? { collections: 0, records: 0 };
-    entry.collections++;
-    entry.records += count;
-    apps.set(app, entry);
+  let posts = 0;
+  let replies = 0;
+  let quotes = 0;
+  for (const { value } of records.get("app.bsky.feed.post") ?? []) {
+    const post = value as { embed?: { $type?: string }; reply?: unknown };
+    if (post.reply) replies++;
+    else if (/embed\.record(WithMedia)?$/.test(post.embed?.$type ?? ""))
+      quotes++;
+    else posts++;
   }
 
-  return [...apps]
-    .toSorted((a, b) => b[1].records - a[1].records)
-    .slice(0, options.limit)
-    .map(([app, entry]) => ({
-      href: `https://pdsls.dev/at://${options.did}`,
-      label: app,
-      title: `${app}: ${entry.records.toLocaleString("en-US")} records in ${entry.collections} ${entry.collections === 1 ? "collection" : "collections"}`,
-      value: entry.records,
-    }));
+  const values: Record<(typeof ACTIVITIES)[number]["label"], number> = {
+    Follows: count("app.bsky.graph.follow"),
+    Likes: count("app.bsky.feed.like"),
+    Posts: posts,
+    Quotes: quotes,
+    Replies: replies,
+    Reposts: count("app.bsky.feed.repost"),
+    Stars: count("sh.tangled.feed.star", "org.tangled.feed.star"),
+  };
+
+  return ACTIVITIES.map(({ doing, label }) => ({
+    doing,
+    label,
+    value: values[label],
+  }));
 }
 
 /**

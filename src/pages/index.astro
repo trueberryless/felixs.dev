@@ -2,11 +2,10 @@
 import Hero from "@/components/landing/Hero.astro";
 import Intro from "@/components/landing/Intro.astro";
 import BuildingStory from "@/components/landing/stories/BuildingStory.astro";
-import FootprintStory from "@/components/landing/stories/FootprintStory.astro";
 import ListeningStory from "@/components/landing/stories/ListeningStory.astro";
 import MeetingStory from "@/components/landing/stories/MeetingStory.astro";
 import ReadingStory from "@/components/landing/stories/ReadingStory.astro";
-import TalkingStory from "@/components/landing/stories/TalkingStory.astro";
+import SocialStory from "@/components/landing/stories/SocialStory.astro";
 import WorkingStory from "@/components/landing/stories/WorkingStory.astro";
 import WritingStory from "@/components/landing/stories/WritingStory.astro";
 import StorySkeleton from "@/components/story/StorySkeleton.astro";
@@ -22,28 +21,23 @@ export const prerender = true;
     <Intro />
 
     <div class="stories">
-      <ListeningStory server:defer>
-        <StorySkeleton slot="fallback" />
-      </ListeningStory>
       <WritingStory server:defer>
         <StorySkeleton slot="fallback" />
       </WritingStory>
+      <BuildingStory />
       <ReadingStory server:defer>
         <StorySkeleton slot="fallback" />
       </ReadingStory>
-      <BuildingStory />
-      <TalkingStory server:defer>
+      <ListeningStory server:defer>
         <StorySkeleton slot="fallback" />
-      </TalkingStory>
+      </ListeningStory>
       <WorkingStory server:defer>
         <StorySkeleton slot="fallback" />
       </WorkingStory>
-      <MeetingStory server:defer>
+      <MeetingStory server:defer />
+      <SocialStory server:defer>
         <StorySkeleton slot="fallback" />
-      </MeetingStory>
-      <FootprintStory server:defer>
-        <StorySkeleton slot="fallback" />
-      </FootprintStory>
+      </SocialStory>
     </div>
   </div>
 </Layout>
