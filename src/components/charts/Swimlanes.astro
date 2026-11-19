@@ -47,10 +47,12 @@ const month = new Intl.DateTimeFormat("en-US", {
 >
   <div class="lanes-inner" style={`--width: ${width}px`}>
     {lanes.map((lane, row) => (
-      <div class="lane" style={`--row: ${row}`}>
-        <a
+      <div class="lane" data-org={lane.key} style={`--row: ${row}`}>
+        <button
+          type="button"
           class="lane-label"
-          href={lane.url}
+          data-org={lane.key}
+          aria-pressed="false"
           aria-label={`${lane.name}: ${lane.count} merged pull requests, from ${month.format(lane.first)} to ${month.format(lane.last)}`}
         >
           {lane.avatar && (
@@ -64,7 +66,7 @@ const month = new Intl.DateTimeFormat("en-US", {
           )}
           <span class="lane-name">{lane.name}</span>
           <span class="lane-count">{lane.count}</span>
-        </a>
+        </button>
         <svg
           class="lane-track"
           viewBox={`0 0 ${width} ${HEIGHT}`}
@@ -91,6 +93,7 @@ const month = new Intl.DateTimeFormat("en-US", {
           {lane.times.map((time, index) => (
             <circle
               class="lane-dot"
+              data-month={new Date(time).toISOString().slice(0, 7)}
               cx={x(time).toFixed(1)}
               cy={(MIDDLE + jitter(index)).toFixed(1)}
               r="3.5"
@@ -170,10 +173,39 @@ const month = new Intl.DateTimeFormat("en-US", {
     width: var(--label);
     min-height: 44px;
     padding: 0 12px 0 14px;
+    border: 0;
     background: var(--card-bg);
     color: var(--text);
+    font: inherit;
     font-size: 0.88rem;
-    text-decoration: none;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .lane-label[aria-pressed="true"] {
+    background: color-mix(in oklch, var(--accent) 16%, var(--card-bg));
+  }
+
+  .lane-label[aria-pressed="true"] .lane-name {
+    font-weight: 600;
+  }
+
+  /* While an organisation or month is picked, everything else steps back. */
+  .lane,
+  .lane-dot {
+    transition: opacity 0.35s ease;
+  }
+
+  .lanes[data-org] .lane:not(.is-picked):not(.lane-axis) {
+    opacity: 0.35;
+  }
+
+  .lanes[data-month] .lane-dot:not(.is-picked) {
+    opacity: 0.18;
+  }
+
+  .lanes[data-month] .lane-dot.is-picked {
+    fill: var(--accent);
   }
 
   .lane-label img {
@@ -194,13 +226,13 @@ const month = new Intl.DateTimeFormat("en-US", {
     font-variant-numeric: tabular-nums;
   }
 
-  a.lane-label:hover .lane-name,
-  a.lane-label:focus-visible .lane-name {
+  .lane-label:hover .lane-name,
+  .lane-label:focus-visible .lane-name {
     text-decoration: underline;
     text-underline-offset: 3px;
   }
 
-  a.lane-label:focus-visible {
+  .lane-label:focus-visible {
     outline: 2px solid var(--text);
     outline-offset: -2px;
   }
@@ -228,7 +260,7 @@ const month = new Intl.DateTimeFormat("en-US", {
     transform-origin: center;
   }
 
-  .lane:has(a.lane-label:hover) .lane-dot {
+  .lane:has(.lane-label:hover) .lane-dot {
     fill: var(--accent);
   }
 

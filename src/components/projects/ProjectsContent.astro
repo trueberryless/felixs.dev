@@ -26,21 +26,47 @@ const lanes = getLanes(orgs);
 const totals = getTotals(orgs);
 const months = getMonthlyCounts(orgs, nowMs);
 const numberFormat = new Intl.NumberFormat("en-US");
+const pullRequests = orgs
+  .flatMap((org) =>
+    org.pullRequests.map((pr) => ({
+      m: pr.mergedAt,
+      o: org.owner,
+      r: pr.repo.split("/")[1] ?? pr.repo,
+      t: pr.title,
+      u: pr.url,
+    }))
+  )
+  .toSorted((a, b) => b.m.localeCompare(a.m));
+const activeMonths = new Set(pullRequests.map((pr) => pr.m.slice(0, 7))).size;
 const numbers = [
-  { label: "merged pull requests", value: totals.pullRequests },
-  { label: "repositories", value: totals.repositories },
-  { label: "organisations", value: totals.organisations },
   {
-    label: "years of open source",
-    value: totals.firstYear
-      ? new Date(nowMs).getUTCFullYear() - totals.firstYear + 1
-      : 0,
+    key: "pullRequests",
+    label: "merged pull requests",
+    value: totals.pullRequests,
   },
+  { key: "repositories", label: "repositories", value: totals.repositories },
+  {
+    key: "organisations",
+    label: "organisations",
+    value: totals.organisations,
+  },
+  { key: "months", label: "months with merges", value: activeMonths },
 ];
+// `<` is escaped so a title can never close the script element.
+const explorerData = JSON.stringify({
+  names: Object.fromEntries(orgs.map((org) => [org.owner, org.name])),
+  pullRequests,
+}).replaceAll("<", "\\u003c");
+const dayFormat = new Intl.DateTimeFormat("en-US", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+  year: "numeric",
+});
 const bubbles = orgs
   .filter((org) => org.contributions > 0)
   .map((org) => ({
-    href: org.url,
+    key: org.owner,
     label: org.name,
     title: `${org.name}: ${org.contributions} merged pull requests`,
     value: org.contributions,
@@ -48,12 +74,13 @@ const bubbles = orgs
 ---
 
 {data ? (
-  <div class="projects">
+  <projects-explorer class="projects">
+    <script type="application/json" class="pe-data" set:html={explorerData} />
     {totals.pullRequests > 0 && (
       <ul class="projects-numbers">
         {numbers.map((number, index) => (
           <li class="projects-number" style={`--i: ${index}`}>
-            <span class="projects-number-value">
+            <span class="projects-number-value" data-stat={number.key}>
               {numberFormat.format(number.value)}
             </span>
             <span class="projects-number-label">{number.label}</span>
@@ -62,11 +89,22 @@ const bubbles = orgs
       </ul>
     )}
 
+    {pullRequests.length > 0 && (
+      <div class="pe-bar" role="status">
+        <p class="pe-summary" data-summary>
+          Everything so far. Pick an organisation or a month to look closer.
+        </p>
+        <button type="button" class="button is-small" data-clear hidden>
+          Show everything
+        </button>
+      </div>
+    )}
+
     {lanes.length > 0 && (
       <Section title="Over time">
         <p class="projects-lede">
           Every dot is a merged pull request, one lane per organisation, in the
-          order I found them.
+          order I found them. Pick one to see only its work.
         </p>
         <Swimlanes
           label="Merged pull requests over time, one lane per organisation"
@@ -97,6 +135,29 @@ const bubbles = orgs
       </Section>
     )}
 
+    {pullRequests.length > 0 && (
+      <Section title="Pull requests">
+        <ol class="pe-list" data-list>
+          {pullRequests.slice(0, 12).map((pr) => (
+            <li class="pe-item">
+              <a class="pe-title" href={pr.u}>
+                {pr.t}
+              </a>
+              <span class="pe-meta">
+                {orgs.find((org) => org.owner === pr.o)?.name} · {pr.r} ·{" "}
+                {dayFormat.format(Date.parse(pr.m))}
+              </span>
+            </li>
+          ))}
+        </ol>
+        <p class="pe-more" data-more>
+          {pullRequests.length > 12
+            ? `And ${numberFormat.format(pullRequests.length - 12)} more.`
+            : ""}
+        </p>
+      </Section>
+    )}
+
     {orgs.length > 0 && (
       <Section title="Contributions">
         <div class="projects-grid">
@@ -124,7 +185,7 @@ const bubbles = orgs
         </div>
       </Section>
     )}
-  </div>
+  </projects-explorer>
 ) : (
   <Fallback
     description="I couldn't reach GitHub right now. You can browse my repositories directly on GitHub."
@@ -133,7 +194,92 @@ const bubbles = orgs
   />
 )}
 
+<script>
+  import "@/scripts/projects-explorer";
+</script>
+
 <style>
+  .projects {
+    display: block;
+  }
+
+  /* What is picked, in words, stays in view while you explore. */
+  .pe-bar {
+    position: sticky;
+    top: 76px;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin-bottom: 32px;
+    padding: 10px 10px 10px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--header-bg);
+    -webkit-backdrop-filter: blur(17px) saturate(180%);
+    backdrop-filter: blur(17px) saturate(180%);
+    box-shadow: 0 8px 30px var(--header-shadow);
+  }
+
+  .pe-summary {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .pe-list {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pe-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pe-title {
+    color: var(--text);
+    font-weight: 600;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+
+  .pe-title:hover,
+  .pe-title:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .pe-meta,
+  .pe-more {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  .pe-more {
+    margin-top: 12px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .pe-item {
+      animation: projects-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--i, 0) * 35ms);
+    }
+  }
+
+  @media (max-width: 280px) {
+    .pe-bar {
+      position: static;
+      border-radius: var(--radius-card);
+    }
+  }
+
   .projects-numbers {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));

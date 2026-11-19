@@ -10,6 +10,8 @@ interface Org {
 
 export interface Lane {
   avatar: string | undefined;
+  /** The organisation, for picking it on the projects page. */
+  key: string;
   count: number;
   first: number;
   last: number;
@@ -41,6 +43,7 @@ export function getLanes(orgs: Org[]): Lane[] {
       return {
         avatar: org.avatar,
         count: times.length,
+        key: org.owner,
         first: times[0] ?? 0,
         last: times.at(-1) ?? 0,
         name: org.name,

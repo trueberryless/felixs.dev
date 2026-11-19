@@ -351,6 +351,10 @@ ul {
   scale: 1;
 }
 
+.button[hidden] {
+  display: none;
+}
+
 .button:focus-visible {
   outline: 2px solid var(--text);
   outline-offset: 3px;

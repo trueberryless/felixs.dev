@@ -67,11 +67,12 @@ const fitLabel = (text: string, r: number) => {
 };
 
 const circles = root.leaves().map((leaf, index) => {
-  const { href, label: name, title, value } = leaf.data as Bubble;
+  const { href, key, label: name, title, value } = leaf.data as Bubble;
   const fitted = fitLabel(name, leaf.r);
   return {
     href,
     index,
+    key,
     label: fitted,
     r: leaf.r,
     showValue: Boolean(fitted) && leaf.r > 34,
@@ -82,7 +83,7 @@ const circles = root.leaves().map((leaf, index) => {
   };
 });
 // Charts with links are a group of links, not a single image.
-const hasLinks = bubbles.some((bubble) => bubble.href);
+const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
 ---
 
 <div class="bubble-wrap" data-bubbles>
@@ -140,6 +141,19 @@ const hasLinks = bubbles.some((bubble) => bubble.href);
         >
           {content}
         </a>
+      ) : circle.key ? (
+        <g
+          class="bubble-group is-toggle"
+          role="button"
+          tabindex="0"
+          aria-pressed="false"
+          aria-label={circle.title}
+          data-key={circle.key}
+          data-tip={circle.title}
+          style={`--i: ${circle.index}`}
+        >
+          {content}
+        </g>
       ) : (
         <g
           class="bubble-group"
@@ -212,8 +226,26 @@ const hasLinks = bubbles.some((bubble) => bubble.href);
     transition: opacity 0.35s ease;
   }
 
-  a.bubble-group {
+  a.bubble-group,
+  .bubble-group.is-toggle {
     cursor: pointer;
+  }
+
+  /* A picked bubble keeps its ring, the others step back. */
+  .bubble-chart:has([aria-pressed="true"])
+    .bubble-group:not([aria-pressed="true"]) {
+    opacity: 0.4;
+  }
+
+  .bubble-group[aria-pressed="true"] .bubble {
+    fill: color-mix(in oklch, var(--accent) 88%, transparent);
+    stroke: var(--text);
+    stroke-width: 2;
+  }
+
+  .bubble-group.is-toggle:focus-visible .bubble {
+    stroke: var(--text);
+    stroke-width: 2.5;
   }
 
   .bubble {

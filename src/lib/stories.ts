@@ -8,6 +8,8 @@ export interface SeriesPoint {
 
 export interface Bubble {
   href?: string | undefined;
+  /** Makes the bubble a toggle button that selects this key. */
+  key?: string | undefined;
   label: string;
   title: string;
   value: number;
