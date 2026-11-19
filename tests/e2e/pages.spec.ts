@@ -130,3 +130,20 @@ test.describe('mobile menu', () => {
     await expect(toggle).toBeFocused()
   })
 })
+
+test.describe('live visitors', () => {
+  // Other tests run in parallel against the same server, so they may count too.
+  test('counts every open tab', async ({ browser }) => {
+    const first = await browser.newPage()
+    await first.goto('/')
+    await expect(first.locator('live-visitors').getByRole('status')).toHaveText(/visit/)
+
+    const second = await browser.newPage()
+    await second.goto('/blog')
+
+    await expect(second.locator('live-visitors').getByRole('status')).toHaveText(/^([2-9]|\d{2,}) people/)
+
+    await first.close()
+    await second.close()
+  })
+})
