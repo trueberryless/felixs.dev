@@ -3,7 +3,7 @@ import CareerTimeline from "@/components/charts/CareerTimeline.astro";
 import Story from "@/components/story/Story.astro";
 import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
 import { fetchResume } from "@/lib/data";
-import { getCareerRows, parseResumeDate } from "@/lib/stories";
+import { getCareerRows, parseResumeDate, tellCareer } from "@/lib/stories";
 
 const resume = await fetchResume().catch(() => null);
 applyCache(Astro.response, resume ? longLivedCache : degradedCache);
@@ -39,9 +39,9 @@ const firstJob = (resume?.positions ?? [])
   <div slot="visual">
     {rows.length > 0 && (
       <CareerTimeline
-        rows={rows}
+        rows={tellCareer(rows, nowMs)}
         nowMs={nowMs}
-        label="My work and education over time"
+        label="My work, education and open source over time"
       />
     )}
   </div>

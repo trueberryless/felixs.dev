@@ -1,4 +1,6 @@
 ---
+import ExternalIcon from "@/components/utils/ExternalIcon.astro";
+
 interface Props {
   href?: string;
   kicker: string;
@@ -22,11 +24,9 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
         <slot name="text" />
       </div>
       {href && linkText && (
-        <a class="story-link" href={href}>
+        <a class="story-link button" href={href}>
           <span>{linkText}</span>
-          <span class="story-arrow" aria-hidden="true">
-            {isExternal ? "↗︎" : "→"}
-          </span>
+          {isExternal ? <ExternalIcon /> : <span aria-hidden="true">→</span>}
         </a>
       )}
     </div>
@@ -121,33 +121,7 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
 
   .story-link {
     align-self: flex-start;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
     margin-top: 6px;
-    padding: 8px 18px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-pill);
-    background: var(--badge-bg);
-    color: var(--text);
-    font-size: 0.9rem;
-    transition:
-      translate 0.25s ease,
-      box-shadow 0.25s ease,
-      border-color 0.25s ease;
-  }
-
-  .story-link:hover {
-    box-shadow: var(--lift-shadow);
-    border-color: var(--text-muted);
-  }
-
-  .story-arrow {
-    transition: translate 0.25s ease;
-  }
-
-  .story-link:hover .story-arrow {
-    translate: 3px 0;
   }
 
   .story-visual {
@@ -181,8 +155,8 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
       transition-delay: calc(0.18s + var(--k, 0) * 70ms);
     }
 
-    :global(.story-frame[data-active="false"]) .story-copy > :global(*),
-    :global(.story-frame[data-active="false"]) .story-visual {
+    :global(.story-frame:not([data-active="true"])) .story-copy > :global(*),
+    :global(.story-frame:not([data-active="true"])) .story-visual {
       opacity: 0;
       translate: 0 1.5rem;
       filter: blur(6px);
@@ -193,10 +167,10 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
       transition-delay: calc(var(--k, 0) * 30ms);
     }
 
-    :global(.story-frame[data-active="false"][data-side="before"])
+    :global(.story-frame:not([data-active="true"])[data-side="before"])
       .story-copy
       > :global(*),
-    :global(.story-frame[data-active="false"][data-side="before"])
+    :global(.story-frame:not([data-active="true"])[data-side="before"])
       .story-visual {
       translate: 0 -1.5rem;
     }

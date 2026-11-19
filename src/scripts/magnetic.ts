@@ -3,19 +3,12 @@
 // helps to hit them and replaces the little jump they used to make on hover.
 //
 // Only standalone controls take part, never links inside running text, cards
-// or big charts: pill links and buttons, icon links and the dots of the
-// writing timeline. It only runs with a fine pointer that can hover, and
+// or big charts: every `.button`, the footer links and icons and the dots of
+// the writing timeline. It only runs with a fine pointer that can hover, and
 // never with reduced motion.
 
 const SELECTOR = [
-  ".story-link",
-  ".action-link",
-  ".back-link",
-  ".post-button",
-  ".post-back",
-  ".post-original",
-  ".post-copy",
-  ".ms-nav",
+  ".button",
   ".posts-link",
   ".text-links a",
   ".icon-links a",
@@ -168,6 +161,29 @@ document.documentElement.addEventListener("pointerleave", () => {
   pointer = undefined;
   wake();
 });
+// Buttons fill with a circle that grows from where the pointer came in and
+// shrinks back to where it left.
+function fill(event: PointerEvent, isEntering: boolean) {
+  if (!supported.matches) return;
+  const button = (event.target as Element | null)?.closest<HTMLElement>(
+    ".button"
+  );
+  if (!button || button.contains(event.relatedTarget as Node | null)) return;
+  if ((button as HTMLButtonElement).disabled) return;
+  const box = button.getBoundingClientRect();
+  const x = event.clientX - box.left;
+  const y = event.clientY - box.top;
+  // Big enough to cover the whole button from this point.
+  const size =
+    2 * Math.hypot(Math.max(x, box.width - x), Math.max(y, box.height - y));
+  button.style.setProperty("--fill-x", `${x}px`);
+  button.style.setProperty("--fill-y", `${y}px`);
+  button.style.setProperty("--fill-size", `${Math.ceil(size)}px`);
+  button.classList.toggle("is-filled", isEntering);
+}
+document.addEventListener("pointerover", (event) => fill(event, true));
+document.addEventListener("pointerout", (event) => fill(event, false));
+
 // Content moves under a resting pointer while scrolling.
 window.addEventListener("scroll", wake, { passive: true });
 supported.addEventListener("change", collect);
@@ -177,7 +193,7 @@ let pending = 0;
 new MutationObserver(() => {
   clearTimeout(pending);
   pending = window.setTimeout(collect, 200);
-}).observe(document.body, { childList: true, subtree: true });
+}).observe(document.documentElement, { childList: true, subtree: true });
 // Switching themes starts or stops the floating in space.
 new MutationObserver(collect).observe(document.documentElement, {
   attributeFilter: ["class"],

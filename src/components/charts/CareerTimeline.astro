@@ -131,6 +131,9 @@ const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
 <div class="career-legend" aria-hidden="true">
   <span class="career-key is-work">Work</span>
   <span class="career-key is-education">Education</span>
+  {rows.some((row) => row.kind === "open-source") && (
+    <span class="career-key is-open-source">Open source</span>
+  )}
 </div>
 
 <script>
@@ -185,6 +188,16 @@ const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
   .career-key.is-work::before {
     fill: color-mix(in oklch, var(--accent) 60%, transparent);
     background: color-mix(in oklch, var(--accent) 60%, transparent);
+  }
+
+  .is-open-source .career-bar,
+  .career-key.is-open-source::before {
+    fill: color-mix(in oklch, var(--accent) 22%, transparent);
+    background: color-mix(in oklch, var(--accent) 22%, transparent);
+    stroke: var(--accent);
+    stroke-dasharray: 4 3;
+    outline: 1px dashed var(--accent);
+    outline-offset: -1px;
   }
 
   .is-education :is(.career-bar, .career-marker),
@@ -256,12 +269,12 @@ const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
         calc(0.3s + var(--row) * 90ms), calc(0.3s + var(--row) * 90ms), 0s;
     }
 
-    :global(.story-frame[data-active="false"]) .career-bar {
+    :global(.story-frame:not([data-active="true"])) .career-bar {
       scale: 0 1;
       transition-delay: 0s;
     }
 
-    :global(.story-frame[data-active="false"])
+    :global(.story-frame:not([data-active="true"]))
       :is(.career-marker, .career-label) {
       opacity: 0;
       transition-delay: 0s;
