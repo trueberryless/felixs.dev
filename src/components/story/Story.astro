@@ -181,8 +181,8 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
       transition-delay: calc(0.18s + var(--k, 0) * 70ms);
     }
 
-    :global(.story-frame[data-active="false"]) .story-copy > :global(*),
-    :global(.story-frame[data-active="false"]) .story-visual {
+    :global(.story-frame:not([data-active="true"])) .story-copy > :global(*),
+    :global(.story-frame:not([data-active="true"])) .story-visual {
       opacity: 0;
       translate: 0 1.5rem;
       filter: blur(6px);
@@ -193,10 +193,10 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
       transition-delay: calc(var(--k, 0) * 30ms);
     }
 
-    :global(.story-frame[data-active="false"][data-side="before"])
+    :global(.story-frame:not([data-active="true"])[data-side="before"])
       .story-copy
       > :global(*),
-    :global(.story-frame[data-active="false"][data-side="before"])
+    :global(.story-frame:not([data-active="true"])[data-side="before"])
       .story-visual {
       translate: 0 -1.5rem;
     }

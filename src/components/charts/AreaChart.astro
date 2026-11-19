@@ -184,13 +184,13 @@ const labelEvery = Math.max(1, Math.ceil(points.length / MAX_LABELS));
       transition: opacity 0.8s ease 0.9s;
     }
 
-    :global(.story-frame[data-active="false"]) .area-line {
+    :global(.story-frame:not([data-active="true"])) .area-line {
       stroke-dashoffset: 1;
       transition-duration: 0.4s;
       transition-delay: 0s;
     }
 
-    :global(.story-frame[data-active="false"]) .area-fill {
+    :global(.story-frame:not([data-active="true"])) .area-fill {
       opacity: 0;
       transition-delay: 0s;
     }

@@ -48,6 +48,22 @@ class MusicStatsElement extends HTMLElement {
     this.classList.add("is-enhanced");
     this.#pick(this.dataset.defaultRange ?? "all", { isFirst: true });
 
+    // Warm up the latest day with plays in the background, which also
+    // prepares the rest of its month on the server.
+    const { counts, start } = this.#stats.daily;
+    const lastIndex = counts.findLastIndex((count) => count > 0);
+    if (lastIndex !== -1) {
+      const date = new Date(
+        Date.parse(`${start}T00:00:00Z`) + lastIndex * 86_400_000
+      )
+        .toISOString()
+        .slice(0, 10);
+      const warm = () => void this.#fetchDay(date).catch(() => undefined);
+      if ("requestIdleCallback" in window)
+        requestIdleCallback(warm, { timeout: 4000 });
+      else setTimeout(warm, 2000);
+    }
+
     const recent = this.querySelector<HTMLElement>(".ms-recent");
     const { did, nowPlaying, pds } = this.dataset;
     if (recent && did && pds) renderTrack(recent, { did, nowPlaying, pds });
@@ -68,7 +84,9 @@ class MusicStatsElement extends HTMLElement {
     );
     if (input) input.checked = true;
     this.#setDay(undefined);
-    this.#openGroup(/^\d+$/.test(id) ? "year" : "relative");
+    this.#openGroup(/^\d+$/.test(id) ? "year" : "relative", {
+      animate: !isFirst,
+    });
 
     this.#renderRange(range, { isFirst });
     this.#render(".ms-calendar", (element) =>
@@ -77,7 +95,10 @@ class MusicStatsElement extends HTMLElement {
         this.querySelector(".ms-calendar-caption"),
         stats,
         range,
-        { onPick: (date) => void this.#pickDay(date) }
+        {
+          onIntent: (date) => void this.#fetchDay(date).catch(() => undefined),
+          onPick: (date) => void this.#pickDay(date),
+        }
       )
     );
     if (!isFirst) reveal(this.querySelector(".ms-calendar"), 5);
@@ -191,13 +212,14 @@ class MusicStatsElement extends HTMLElement {
   }
 
   /** Expands one group of ranges and folds the other into a single button. */
-  #openGroup(name: string | undefined) {
+  #openGroup(name: string | undefined, { animate = true } = {}) {
     for (const group of this.querySelectorAll<HTMLElement>(".ms-range-group")) {
       const isOpen = group.dataset.group === name;
-      group.classList.toggle("is-open", isOpen);
       const toggle = group.querySelector<HTMLButtonElement>(".ms-range-toggle");
       const options = group.querySelector<HTMLElement>(".ms-range-options");
       if (!toggle || !options) continue;
+      const wasOpen = group.classList.contains("is-open") && !options.hidden;
+      group.classList.toggle("is-open", isOpen);
 
       toggle.setAttribute("aria-expanded", String(isOpen));
       options.inert = !isOpen;
@@ -208,6 +230,13 @@ class MusicStatsElement extends HTMLElement {
         : checked?.nextElementSibling?.textContent;
       toggle.textContent = label ?? toggle.dataset.label ?? "";
       toggle.classList.toggle("is-picked", Boolean(label));
+
+      if (isOpen === wasOpen && toggle.hidden === isOpen) continue;
+      // The options and the button that stands in for them trade places:
+      // one folds away while the other unfolds, both at the same pace.
+      const move = animate && !reducedMotion();
+      setShown(options, isOpen, move);
+      setShown(toggle, !isOpen, move);
     }
   }
 
@@ -247,6 +276,53 @@ class MusicStatsElement extends HTMLElement {
       window.scrollBy({ behavior: "instant", top: after - before });
     }
   }
+}
+
+const FOLD_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+const FOLD_MS = 420;
+const folds = new WeakMap<Element, Animation>();
+
+function reducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** Shows or hides an element by unfolding or folding its width. */
+function setShown(element: HTMLElement, shown: boolean, animate: boolean) {
+  folds.get(element)?.cancel();
+  if (!animate) {
+    element.hidden = !shown;
+    return;
+  }
+
+  if (shown) {
+    element.hidden = false;
+    const width = element.scrollWidth;
+    folds.set(
+      element,
+      element.animate(
+        [
+          { opacity: 0, width: "0px" },
+          { opacity: 1, width: `${width}px` },
+        ],
+        { duration: FOLD_MS, easing: FOLD_EASING }
+      )
+    );
+    return;
+  }
+
+  const width = element.offsetWidth;
+  const fold = element.animate(
+    [
+      { opacity: 1, width: `${width}px` },
+      { opacity: 0, width: "0px" },
+    ],
+    { duration: FOLD_MS * 0.85, easing: FOLD_EASING, fill: "forwards" }
+  );
+  folds.set(element, fold);
+  fold.onfinish = () => {
+    element.hidden = true;
+    fold.cancel();
+  };
 }
 
 if (!customElements.get("music-stats")) {

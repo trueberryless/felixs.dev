@@ -441,7 +441,7 @@ function computeHighlights(plays: Play[], toLocal: LocalTime): RangeHighlights {
 export function computeDayStats(
   _plays: Play[],
   date: string,
-  options: { timeZone?: string } = {}
+  options: { fallbackDurationS?: number; timeZone?: string } = {}
 ): RangeStats {
   const toLocal = createLocalTime(options.timeZone ?? MUSIC_TIME_ZONE);
   const plays = _plays
@@ -449,7 +449,7 @@ export function computeDayStats(
     .toSorted((a, b) => a.at - b.at);
 
   return computeRange(plays, {
-    fallbackDurationS: getMedianDuration(_plays),
+    fallbackDurationS: options.fallbackDurationS ?? getMedianDuration(_plays),
     from: Number.NEGATIVE_INFINITY,
     id: date,
     label: new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", {
@@ -492,7 +492,7 @@ function getYears(plays: Play[], toLocal: LocalTime) {
   return [...years].toSorted((a, b) => a - b);
 }
 
-function getMedianDuration(plays: Play[]) {
+export function getMedianDuration(plays: Play[]) {
   const durations = plays
     .map((play) => play.durationS)
     .filter(
