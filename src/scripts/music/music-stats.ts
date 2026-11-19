@@ -1,6 +1,7 @@
 import type { MusicStats, RangeStats } from "@/lib/music";
 
 import { animateNumber, describeMinutes } from "./dom";
+import { renderTrack } from "./track";
 import {
   getCurrentColumns,
   renderArtists,
@@ -8,7 +9,6 @@ import {
   renderClock,
   renderCurrents,
   renderHighlights,
-  renderRecent,
   renderTracks,
   renderWeekdays,
 } from "./views";
@@ -36,9 +36,9 @@ class MusicStatsElement extends HTMLElement {
     const highlights = this.querySelector(".ms-highlights");
     if (highlights) renderHighlights(highlights, this.#stats);
 
-    const recent = this.querySelector(".ms-recent");
-    const { did, pds } = this.dataset;
-    if (recent && did && pds) void renderRecent(recent, pds, did);
+    const recent = this.querySelector<HTMLElement>(".ms-recent");
+    const { did, nowPlaying, pds } = this.dataset;
+    if (recent && did && pds) renderTrack(recent, { did, nowPlaying, pds });
   }
 
   #show(id: string) {

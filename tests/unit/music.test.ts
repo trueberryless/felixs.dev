@@ -69,7 +69,7 @@ describe('computeMusicStats', () => {
     expect(stats.highlights.longestStreak).toEqual({ days: 3, from: '2026-11-17', to: '2026-11-19' })
     expect(stats.highlights.busiestDay).toEqual({ date: '2026-11-18', plays: 2 })
     expect(stats.highlights.topRepeat).toMatchObject({ plays: 2, track: 'b' })
-    expect(stats.highlights.firstPlay).toMatchObject({ artist: 'Alpha', track: 'a' })
+    expect(stats.highlights.weekObsession).toMatchObject({ artist: 'Beta', plays: 3, track: 'b' })
   })
 
   test('keeps a daily history and the top artists per month', () => {

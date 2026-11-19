@@ -8,7 +8,7 @@ import {
   type MusicStats,
   type Play,
 } from "@/lib/music";
-import { actorDid, pdsEndpoint } from "@/lib/const";
+import { actorDid, pdsEndpoint, scrobblerEndpoint } from "@/lib/const";
 import { getRepoRecords } from "@/lib/repo";
 
 let stats: MusicStats | null = null;
@@ -43,8 +43,10 @@ const numberFormat = new Intl.NumberFormat("en-US");
     data-default-range={defaultRange.id}
     data-did={actorDid}
     data-pds={pdsEndpoint}
+    data-now-playing={`${scrobblerEndpoint}/api/now-playing`}
   >
     <script type="application/json" class="ms-data" set:html={json} />
+    <div class="ms-ranges-band" aria-hidden="true" />
     <fieldset class="ms-ranges">
       <legend class="sr-only">Time range</legend>
       <div class="ms-range-group">
@@ -177,14 +179,17 @@ const numberFormat = new Intl.NumberFormat("en-US");
         <h2 id="ms-recent-title" class="ms-title">
           Recently played
         </h2>
-        <p class="ms-subtitle">Live from my AT Protocol repository.</p>
+        <p class="ms-subtitle">
+          Every new song joins the track on the right and drifts along as time
+          goes by.
+        </p>
       </div>
-      <ol class="ms-recent" />
+      <div class="ms-recent" />
     </section>
   </music-stats>
 ) : (
   <Fallback
-    description="My listening history lives on AT Protocol through teal.fm and isn't reachable right now. You can browse it directly on teal.fm."
+    description="My listening stats aren't reachable right now. You can browse my plays directly on teal.fm."
     fallbackHref="https://teal.fm/profile/felixs.dev"
     fallbackLabel="Browse my plays on teal.fm"
   />
