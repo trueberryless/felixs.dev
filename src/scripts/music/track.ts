@@ -215,7 +215,11 @@ export function renderTrack(
         ? needed
         : item.extra + (needed - item.extra) * Math.min(1, dt * 6);
       const distance = base + item.extra;
-      const cx = point.x + nx * distance;
+      // Covers stay whole on screen, however narrow the board gets.
+      const cx = Math.min(
+        Math.max(point.x + nx * distance, half),
+        width - half
+      );
       const cy = point.y + ny * distance;
 
       const opacity = Math.min(
