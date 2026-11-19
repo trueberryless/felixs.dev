@@ -36,6 +36,9 @@ const bubbles = orgs.map((org) => ({
     {bubbles.length > 0 && (
       <BubbleChart
         bubbles={bubbles}
+        height={360}
+        scale="sqrt"
+        width={420}
         label={`Merged pull requests per organisation, ${total} in total`}
       />
     )}
