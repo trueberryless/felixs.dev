@@ -51,7 +51,6 @@
 @media (hover: hover) {
   .post-back:hover {
     color: var(--text);
-    translate: -3px 0;
   }
 }
 
@@ -582,7 +581,6 @@ h4.post-heading {
 
 @media (hover: hover) {
   .post-button:hover {
-    translate: 0 -2px;
     box-shadow: var(--lift-shadow);
   }
 }
