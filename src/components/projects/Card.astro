@@ -30,8 +30,10 @@ const { avatar, name, description, repos, url, stars, contributions } =
             loading="lazy"
           />
         )}
-        <span class="card-title-text">{name}</span>
-        <ExternalIcon size={14} class="card-external" />
+        <span class="card-title-text">
+          {name}
+          <ExternalIcon size={13} class="card-external" />
+        </span>
       </h3>
       <div class="card-metrics">
         {stars !== undefined && (
@@ -92,6 +94,7 @@ const { avatar, name, description, repos, url, stars, contributions } =
 <style>
   .card-avatar {
     flex-shrink: 0;
+    margin-top: 0.05em;
     border-radius: 6px;
   }
 
@@ -155,11 +158,13 @@ const { avatar, name, description, repos, url, stars, contributions } =
     }
   }
 
+  /* Long names wrap under themselves: the avatar and the numbers stay level
+     with the first line. */
   .card-header {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px 16px;
   }
 
@@ -173,13 +178,20 @@ const { avatar, name, description, repos, url, stars, contributions } =
     min-width: 0;
     font-family: inherit;
     letter-spacing: 0.01em;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.4;
   }
 
   .card-title-text {
-    display: inline-block;
+    display: inline;
+    min-width: 0;
+  }
+
+  .card-title-text :global(.card-external) {
+    margin-left: 0.3em;
+    vertical-align: 0.05em;
   }
 
   .card-external {
@@ -197,6 +209,7 @@ const { avatar, name, description, repos, url, stars, contributions } =
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    min-height: 1.47rem;
     gap: 4px 16px;
     min-width: 0;
   }
