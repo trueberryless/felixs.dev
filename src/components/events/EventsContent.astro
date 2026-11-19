@@ -1,7 +1,9 @@
 ---
 import EventCard from "@/components/events/EventCard.astro";
 import Fallback from "@/components/utils/Fallback.astro";
+import Section from "@/components/utils/Section.astro";
 import { fetchEvents } from "@/lib/data";
+import { getPeopleMet, getPlaces } from "@/lib/events";
 import { applyCache, dailyCache, degradedCache } from "@/lib/cache";
 
 const events = await fetchEvents().catch(() => null);
@@ -23,24 +25,96 @@ const upcoming = processed
   .filter((e) => !e.isPast)
   .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
 const past = processed.filter((e) => e.isPast);
+
+const people = getPeopleMet(events ?? [], now);
+const places = getPlaces(events ?? []);
+const numbers = [
+  { label: past.length === 1 ? "event" : "events", value: past.length },
+  { label: "people met", value: people.length },
+  { label: places.length === 1 ? "place" : "places", value: places.length },
+  { label: "coming up", value: upcoming.length },
+];
+const mostMet = people[0]?.count ?? 1;
 ---
 
 {hasData ? (
-  <div class="timeline-container">
-    {upcoming.map((event) => (
-      <EventCard event={event} />
-    ))}
+  <>
+    <ul class="events-numbers">
+      {numbers.map((number, index) => (
+        <li class="events-number" style={`--i: ${index}`}>
+          <span class="events-number-value">{number.value}</span>
+          <span class="events-number-label">{number.label}</span>
+        </li>
+      ))}
+    </ul>
 
-    {upcoming.length > 0 && past.length > 0 && (
-      <div class="today-divider">
-        <span class="today-text">Today</span>
-      </div>
+    {people.length > 0 && (
+      <Section title="People I met">
+        <p class="events-lede">
+          Everyone who went to the same events as me. The more often we met, the
+          bigger they are.
+        </p>
+        <ul class="people">
+          {people.map((person, index) => (
+            <li
+              style={`--size: ${32 + Math.round((person.count / mostMet) * 32)}px; --i: ${Math.min(index, 40)}`}
+            >
+              <a
+                class="person"
+                href={`https://bsky.app/profile/${person.handle}`}
+                aria-label={`${person.name || person.handle}, met at ${person.count} ${person.count === 1 ? "event" : "events"}`}
+                title={`${person.name || person.handle} · ${person.count} ${person.count === 1 ? "event" : "events"}`}
+              >
+                {person.avatar ? (
+                  <img
+                    src={person.avatar}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <span class="person-initial" aria-hidden="true">
+                    {(person.name || person.handle).slice(0, 1).toUpperCase()}
+                  </span>
+                )}
+              </a>
+            </li>
+          ))}
+        </ul>
+        {places.length > 0 && (
+          <p class="places">
+            <span class="places-label">Where:</span>
+            {places.map((place) => (
+              <span class="place">
+                {place.name}
+                {place.count > 1 && (
+                  <span class="place-count">{place.count}</span>
+                )}
+              </span>
+            ))}
+          </p>
+        )}
+      </Section>
     )}
 
-    {past.map((event) => (
-      <EventCard event={event} />
-    ))}
-  </div>
+    <Section title="Every event">
+      <div class="timeline-container">
+        {upcoming.map((event) => (
+          <EventCard event={event} />
+        ))}
+
+        {upcoming.length > 0 && past.length > 0 && (
+          <div class="today-divider">
+            <span class="today-text">Today</span>
+          </div>
+        )}
+
+        {past.map((event) => (
+          <EventCard event={event} />
+        ))}
+      </div>
+    </Section>
+  </>
 ) : (
   <Fallback
     description="My RSVPs live on ATproto and aren't reachable right now. You can view them directly on atmo.rsvp."
@@ -50,6 +124,134 @@ const past = processed.filter((e) => e.isPast);
 )}
 
 <style>
+  .events-numbers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+    gap: 16px;
+    margin-bottom: 56px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .events-number {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 20px clamp(14px, 4vw, 22px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--card-bg);
+  }
+
+  .events-number-value {
+    font-family: var(--font-family-heading);
+    font-size: clamp(1.8rem, 6vw, 2.6rem);
+    line-height: 1.1;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .events-number-label,
+  .events-lede {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .events-lede {
+    margin-bottom: 20px;
+    font-size: 1rem;
+  }
+
+  /* A wall of faces, the people I met most often the biggest. */
+  .people {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .person {
+    display: grid;
+    place-items: center;
+    width: var(--size);
+    height: var(--size);
+    overflow: hidden;
+    border: 2px solid var(--card-bg);
+    border-radius: 50%;
+    background: var(--badge-bg);
+    color: var(--text);
+    text-decoration: none;
+    box-shadow: 0 0 0 1px var(--border);
+    transition: box-shadow 0.25s ease;
+  }
+
+  .person img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .person:hover,
+  .person:focus-visible {
+    box-shadow: 0 0 0 2px var(--accent);
+    outline: none;
+  }
+
+  .places {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    margin-top: 24px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .place {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--badge-bg);
+    color: var(--text);
+  }
+
+  .place-count {
+    color: var(--text-muted);
+    font-size: 0.8em;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .events-number {
+      animation: events-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--i) * 70ms);
+    }
+
+    .people li {
+      animation: events-pop 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(0.2s + var(--i) * 25ms);
+    }
+  }
+
+  @keyframes events-rise {
+    from {
+      opacity: 0;
+      translate: 0 12px;
+      filter: blur(6px);
+    }
+  }
+
+  @keyframes events-pop {
+    from {
+      opacity: 0;
+      scale: 0.6;
+    }
+  }
+
   .timeline-container {
     position: relative;
     display: flex;
