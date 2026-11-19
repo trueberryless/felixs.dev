@@ -1,0 +1,555 @@
+---
+const MAX_SATELLITES = 12;
+---
+
+<live-visitors
+  class="live-visitors"
+  transition:persist="live-visitors"
+  data-max-satellites={MAX_SATELLITES}
+  hidden
+>
+  <div class="lv-pill">
+    <span class="lv-beacon" aria-hidden="true">
+      <span class="lv-dot"></span>
+      <span class="lv-planet"></span>
+      <span class="lv-orbits"></span>
+    </span>
+    <span class="lv-count" aria-hidden="true"></span>
+    <span class="lv-label" aria-hidden="true">
+      <span class="lv-label-inner"></span>
+    </span>
+  </div>
+  <span class="sr-only lv-status" role="status"></span>
+</live-visitors>
+
+<script>
+  const HEARTBEAT_MS = 15_000;
+  const ENDPOINT = "/api/presence";
+  const INTRO_MS = 3200;
+
+  class LiveVisitorsElement extends HTMLElement {
+    #id = getVisitorId();
+    #count = 0;
+    #satellites: HTMLElement[] = [];
+    #isConnected = false;
+
+    connectedCallback() {
+      // `transition:persist` moves the element between pages, which calls
+      // this again. Only the first connection starts the heartbeat.
+      if (this.#isConnected) return;
+      this.#isConnected = true;
+
+      void this.#beat();
+      setInterval(() => {
+        if (document.visibilityState === "visible") void this.#beat();
+      }, HEARTBEAT_MS);
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") void this.#beat();
+        else this.#leave();
+      });
+      window.addEventListener("pagehide", () => this.#leave());
+
+      // The label speaks the theme's language, so it follows theme changes.
+      new MutationObserver(() => {
+        if (this.#count) this.#renderLabel(this.#count);
+      }).observe(document.documentElement, {
+        attributeFilter: ["class"],
+        attributes: true,
+      });
+    }
+
+    async #beat() {
+      try {
+        const response = await fetch(ENDPOINT, {
+          body: JSON.stringify({ id: this.#id }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+        if (!response.ok) return;
+
+        const { count } = (await response.json()) as { count: number };
+        // The heartbeat only reports the other tabs once its own write lands,
+        // so there is always at least this visitor.
+        this.#render(Math.max(count, 1));
+      } catch {
+        // Offline or blocked: keep showing the last known count.
+      }
+    }
+
+    #leave() {
+      const body = new Blob([JSON.stringify({ id: this.#id, leave: true })], {
+        type: "application/json",
+      });
+      navigator.sendBeacon?.(ENDPOINT, body);
+    }
+
+    #render(count: number) {
+      const previous = this.#count;
+      if (count === previous) return;
+      this.#count = count;
+
+      const isFirst = this.hidden === true;
+      this.hidden = false;
+      this.#renderDigits(count, isFirst);
+      this.#renderLabel(count);
+      this.#renderSatellites(count, isFirst);
+
+      if (isFirst) {
+        this.classList.add("is-intro");
+        setTimeout(() => this.classList.remove("is-intro"), INTRO_MS);
+      } else if (count > previous) {
+        this.#celebrate(count - previous);
+      }
+    }
+
+    // Each digit is a column of 0 to 9 that slides to its value, like an
+    // odometer.
+    #renderDigits(count: number, isFirst: boolean) {
+      const container = this.querySelector(".lv-count");
+      if (!container) return;
+
+      const digits = String(count).split("");
+      while (container.children.length > digits.length) {
+        container.firstElementChild?.remove();
+      }
+      while (container.children.length < digits.length) {
+        const column = document.createElement("span");
+        column.className = "lv-digit";
+        const strip = document.createElement("span");
+        strip.className = "lv-strip";
+        for (let value = 0; value <= 9; value++) {
+          const cell = document.createElement("span");
+          cell.textContent = String(value);
+          strip.append(cell);
+        }
+        column.append(strip);
+        container.prepend(column);
+      }
+
+      digits.forEach((digit, index) => {
+        const strip = container.children[index]?.firstElementChild as
+          HTMLElement | undefined;
+        if (!strip) return;
+        if (isFirst) strip.style.transition = "none";
+        strip.style.setProperty("--digit", digit);
+        if (isFirst) requestAnimationFrame(() => (strip.style.transition = ""));
+      });
+    }
+
+    #renderLabel(count: number) {
+      const isSpace = document.documentElement.classList.contains("space");
+      const label =
+        count === 1
+          ? isSpace
+            ? "just you in orbit"
+            : "just you right now"
+          : isSpace
+            ? "explorers in orbit"
+            : "people here right now";
+
+      const inner = this.querySelector(".lv-label-inner");
+      if (inner) inner.textContent = label;
+
+      const status = this.querySelector(".lv-status");
+      if (status) {
+        status.textContent =
+          count === 1
+            ? "You are the only visitor right now."
+            : `${count} people are visiting this site right now.`;
+      }
+    }
+
+    // Every visitor gets a satellite around the planet in the space theme.
+    // New ones launch from the surface, leaving ones drift away.
+    #renderSatellites(count: number, isFirst: boolean) {
+      const orbits = this.querySelector(".lv-orbits");
+      if (!orbits) return;
+
+      const max = Number(this.dataset.maxSatellites);
+      const target = Math.min(count, max);
+
+      while (this.#satellites.length > target) {
+        const satellite = this.#satellites.pop();
+        satellite?.classList.add("is-leaving");
+        setTimeout(() => satellite?.remove(), 900);
+      }
+
+      while (this.#satellites.length < target) {
+        const index = this.#satellites.length;
+        const satellite = document.createElement("i");
+        satellite.className = isFirst
+          ? "lv-satellite"
+          : "lv-satellite is-launching";
+        satellite.style.setProperty("--radius", `${11 + (index % 4) * 3}px`);
+        satellite.style.setProperty("--duration", `${4 + ((index * 7) % 5)}s`);
+        satellite.style.setProperty("--start", `${(index * 137.5) % 360}deg`);
+        satellite.style.setProperty("--tilt", `${(index % 3) * 22 - 22}deg`);
+        orbits.append(satellite);
+        this.#satellites.push(satellite);
+      }
+    }
+
+    #celebrate(joined: number) {
+      const bubble = document.createElement("span");
+      bubble.className = "lv-bubble";
+      bubble.setAttribute("aria-hidden", "true");
+      bubble.textContent = `+${joined}`;
+      this.querySelector(".lv-pill")?.append(bubble);
+      bubble.addEventListener("animationend", () => bubble.remove());
+
+      this.classList.remove("is-pinged");
+      void this.offsetWidth;
+      this.classList.add("is-pinged");
+    }
+  }
+
+  function getVisitorId() {
+    const KEY = "visitor-id";
+    try {
+      const existing = sessionStorage.getItem(KEY);
+      if (existing) return existing;
+
+      const id = crypto.randomUUID();
+      sessionStorage.setItem(KEY, id);
+      return id;
+    } catch {
+      return crypto.randomUUID();
+    }
+  }
+
+  if (!customElements.get("live-visitors")) {
+    customElements.define("live-visitors", LiveVisitorsElement);
+  }
+</script>
+
+<style>
+  .live-visitors {
+    --lv-height: 34px;
+    --lv-green: oklch(0.72 0.17 150);
+
+    position: fixed;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+    z-index: 900;
+    display: block;
+    font-size: 0.85rem;
+    animation: lv-arrive 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .live-visitors[hidden] {
+    display: none;
+  }
+
+  .lv-pill {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: var(--lv-height);
+    padding: 0 14px 0 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--header-bg);
+    -webkit-backdrop-filter: blur(17px) saturate(180%);
+    backdrop-filter: blur(17px) saturate(180%);
+    box-shadow: 0 8px 30px var(--header-shadow);
+    color: var(--text);
+    cursor: default;
+    transition:
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  .live-visitors:hover .lv-pill,
+  .live-visitors.is-intro .lv-pill {
+    border-color: color-mix(in oklch, var(--lv-green) 55%, var(--border));
+    box-shadow:
+      0 8px 30px var(--header-shadow),
+      0 0 0 4px color-mix(in oklch, var(--lv-green) 14%, transparent);
+  }
+
+  /* The live dot, with a ring that keeps breathing out. */
+  .lv-beacon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 10px;
+    height: 10px;
+  }
+
+  .lv-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--lv-green);
+    box-shadow: 0 0 8px var(--lv-green);
+  }
+
+  .lv-dot::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: 50%;
+    border: 1.5px solid var(--lv-green);
+    animation: lv-breathe 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+
+  .lv-planet,
+  .lv-orbits {
+    display: none;
+  }
+
+  .lv-count {
+    display: inline-flex;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .lv-count :global(.lv-digit) {
+    display: inline-block;
+    height: 1em;
+    overflow: hidden;
+  }
+
+  .lv-count :global(.lv-strip) {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+    transform: translateY(calc(var(--digit, 0) * -1em));
+    transition: transform 0.9s cubic-bezier(0.34, 1.3, 0.64, 1);
+  }
+
+  /* The label slides out on hover, and once when the pill first appears. */
+  .lv-label {
+    display: grid;
+    grid-template-columns: 0fr;
+    margin-left: -8px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    transition:
+      grid-template-columns 0.55s cubic-bezier(0.65, 0, 0.05, 1),
+      margin-left 0.55s cubic-bezier(0.65, 0, 0.05, 1);
+  }
+
+  .lv-label-inner {
+    overflow: hidden;
+    min-width: 0;
+    filter: blur(4px);
+    transition: filter 0.35s ease;
+  }
+
+  .live-visitors:hover .lv-label,
+  .live-visitors.is-intro .lv-label {
+    grid-template-columns: 1fr;
+    margin-left: 0;
+  }
+
+  .live-visitors:hover .lv-label-inner,
+  .live-visitors.is-intro .lv-label-inner {
+    filter: blur(0);
+    transition-delay: 0.15s;
+  }
+
+  .lv-pill :global(.lv-bubble) {
+    position: absolute;
+    right: 12px;
+    bottom: 100%;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--lv-green);
+    pointer-events: none;
+    animation: lv-float 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .live-visitors.is-pinged .lv-pill {
+    animation: lv-ping 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Space: the dot becomes a ringed planet, circled by one satellite per
+     visitor. */
+  :global(:root.space) .live-visitors {
+    --lv-green: oklch(0.84 0.13 195);
+    --lv-height: 40px;
+  }
+
+  :global(:root.space) .lv-pill {
+    gap: 12px;
+    padding-left: 10px;
+    border-color: oklch(0.86 0.09 300 / 0.35);
+    box-shadow:
+      0 10px 34px -8px oklch(0.55 0.22 300 / 0.55),
+      inset 0 0 18px oklch(0.6 0.2 300 / 0.18);
+  }
+
+  :global(:root.space) .lv-beacon {
+    width: 26px;
+    height: 26px;
+  }
+
+  :global(:root.space) .lv-dot {
+    display: none;
+  }
+
+  :global(:root.space) .lv-beacon {
+    transition: scale 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  :global(:root.space) .live-visitors:hover .lv-beacon,
+  :global(:root.space) .live-visitors.is-intro .lv-beacon {
+    scale: 1.35;
+  }
+
+  :global(:root.space) .lv-planet {
+    display: block;
+    position: relative;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at 32% 30%,
+      oklch(0.95 0.06 200),
+      oklch(0.7 0.16 250) 45%,
+      oklch(0.42 0.18 300)
+    );
+    box-shadow:
+      0 0 10px oklch(0.75 0.15 220 / 0.8),
+      0 0 22px oklch(0.6 0.2 300 / 0.5);
+  }
+
+  :global(:root.space) .lv-planet::after {
+    content: "";
+    position: absolute;
+    inset: 3px -6px;
+    border-radius: 50%;
+    border: 1px solid oklch(0.9 0.08 80 / 0.7);
+    transform: rotate(-18deg);
+  }
+
+  :global(:root.space) .lv-orbits {
+    display: block;
+    position: absolute;
+    inset: 0;
+  }
+
+  .lv-orbits :global(.lv-satellite) {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    transform: rotate(var(--tilt)) scaleY(0.55);
+  }
+
+  .lv-orbits :global(.lv-satellite)::before {
+    content: "";
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    margin: -1.5px;
+    border-radius: 50%;
+    background: oklch(0.97 0.03 200);
+    box-shadow: 0 0 6px oklch(0.85 0.13 195);
+    transform: rotate(var(--start)) translateX(var(--radius));
+    animation: lv-orbit var(--duration) linear infinite;
+  }
+
+  .lv-orbits :global(.lv-satellite.is-launching)::before {
+    animation:
+      lv-launch 1.1s cubic-bezier(0.22, 1, 0.36, 1),
+      lv-orbit var(--duration) linear 1.1s infinite;
+  }
+
+  .lv-orbits :global(.lv-satellite.is-leaving)::before {
+    animation: lv-drift 0.9s ease-in forwards;
+  }
+
+  @keyframes lv-arrive {
+    from {
+      transform: translateY(calc(100% + 24px)) scale(0.9);
+    }
+  }
+
+  @keyframes lv-breathe {
+    0% {
+      opacity: 0.9;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(2.8);
+    }
+  }
+
+  @keyframes lv-float {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.8);
+    }
+    25% {
+      opacity: 1;
+      transform: translateY(-4px) scale(1.1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-22px) scale(1);
+    }
+  }
+
+  @keyframes lv-ping {
+    40% {
+      transform: scale(1.08);
+    }
+  }
+
+  @keyframes lv-orbit {
+    from {
+      transform: rotate(var(--start)) translateX(var(--radius));
+    }
+    to {
+      transform: rotate(calc(var(--start) + 360deg)) translateX(var(--radius));
+    }
+  }
+
+  @keyframes lv-launch {
+    from {
+      opacity: 0;
+      transform: rotate(var(--start)) translateX(0) scale(2);
+    }
+  }
+
+  @keyframes lv-drift {
+    to {
+      opacity: 0;
+      transform: rotate(var(--start)) translateX(calc(var(--radius) * 3));
+    }
+  }
+
+  @media (max-width: 280px) {
+    .live-visitors {
+      right: 8px;
+      bottom: 8px;
+    }
+
+    .lv-label {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .live-visitors,
+    .lv-dot::after,
+    .lv-pill :global(.lv-bubble),
+    .live-visitors.is-pinged .lv-pill,
+    .lv-orbits :global(.lv-satellite)::before {
+      animation: none !important;
+    }
+
+    .lv-count :global(.lv-strip),
+    .lv-label,
+    .lv-label-inner {
+      transition: none;
+    }
+  }
+</style>
