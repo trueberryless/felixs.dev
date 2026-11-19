@@ -506,7 +506,10 @@ export function renderCalendar(
   caption: Element | null,
   stats: MusicStats,
   range: RangeStats,
-  { onPick }: { onPick: (date: string) => void }
+  {
+    onIntent,
+    onPick,
+  }: { onIntent?: (date: string) => void; onPick: (date: string) => void }
 ) {
   const isYear = /^\d+$/.test(range.id);
   const end = isYear
@@ -624,7 +627,7 @@ export function renderCalendar(
     },
     [...monthLabels, ...cells]
   );
-  enableDayPicking(calendar, cells, onPick);
+  enableDayPicking(calendar, cells, onPick, onIntent);
 
   container.replaceChildren(
     html(
@@ -654,8 +657,26 @@ export function renderCalendar(
 function enableDayPicking(
   calendar: SVGSVGElement,
   cells: SVGRectElement[],
-  onPick: (date: string) => void
+  onPick: (date: string) => void,
+  onIntent?: (date: string) => void
 ) {
+  // Resting on a day for a moment loads it ahead of the click.
+  let intent = 0;
+  const prepare = (cell: Element | null) => {
+    clearTimeout(intent);
+    const date = cell?.getAttribute("data-date");
+    if (!date || !onIntent || cell?.getAttribute("aria-disabled") === "true")
+      return;
+    intent = window.setTimeout(() => onIntent(date), 140);
+  };
+  calendar.addEventListener("pointerover", (event) => {
+    prepare((event.target as Element).closest(".ms-day"));
+  });
+  calendar.addEventListener("pointerleave", () => clearTimeout(intent));
+  calendar.addEventListener("focusin", (event) => {
+    prepare((event.target as Element).closest(".ms-day"));
+  });
+
   const start =
     cells.findLast((cell) => cell.getAttribute("aria-disabled") !== "true") ??
     cells.at(-1);
