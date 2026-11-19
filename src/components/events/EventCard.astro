@@ -218,7 +218,7 @@ const extraCount =
     justify-content: center;
     flex: 1;
     min-width: 0;
-    padding: 24px;
+    padding: clamp(14px, 6vw, 24px);
   }
 
   .event-time {
@@ -233,9 +233,12 @@ const extraCount =
     color: var(--text);
     margin: 0 0 12px 0;
     letter-spacing: 0.02em;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
     overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
   }
 
   .event-location {
@@ -339,6 +342,35 @@ const extraCount =
       border-left: none;
       border-bottom: 1px solid var(--border);
       order: -1;
+    }
+  }
+
+  @media (max-width: 280px) {
+    .timeline-date {
+      flex-wrap: wrap;
+      column-gap: 8px;
+    }
+
+    .event-name {
+      font-size: 1.2rem;
+      -webkit-line-clamp: 4;
+      line-clamp: 4;
+    }
+
+    .event-location {
+      align-items: flex-start;
+      white-space: normal;
+    }
+
+    .event-location span {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .card-footer,
+    .avatar-stack {
+      flex-wrap: wrap;
+      row-gap: 4px;
     }
   }
 </style>

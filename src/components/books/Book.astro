@@ -33,7 +33,7 @@ const { title, authors, coverUrl, rotation, hiveId, thickness } = Astro.props;
     </div>
   </div>
   <div class="book-meta">
-    <h3 class="title">{title}</h3>
+    <h2 class="title">{title}</h2>
     <p class="author">{authors}</p>
   </div>
 </a>
@@ -48,7 +48,6 @@ const { title, authors, coverUrl, rotation, hiveId, thickness } = Astro.props;
     text-align: center;
     text-decoration: none;
     color: inherit;
-    outline: none;
   }
 
   .book-scene {
@@ -174,7 +173,6 @@ const { title, authors, coverUrl, rotation, hiveId, thickness } = Astro.props;
   .author {
     font-size: 0.85rem;
     color: var(--text-muted);
-    opacity: 0.7;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -193,6 +191,13 @@ const { title, authors, coverUrl, rotation, hiveId, thickness } = Astro.props;
 
     :global(.dark) .book-item:hover .back-cover {
       box-shadow: -4px 8px 15px rgba(0, 0, 0, 0.5);
+    }
+  }
+
+  /* The 3D book has a fixed size, so it is scaled down as a whole. */
+  @media (max-width: 200px) {
+    .book-scene {
+      zoom: 0.7;
     }
   }
 </style>

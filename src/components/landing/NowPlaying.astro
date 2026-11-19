@@ -255,6 +255,42 @@ import { scrobblerEndpoint, tealProfileUrl } from "@/lib/const";
       --cover-size: 80px;
 
       gap: 14px;
+      padding: 14px;
+    }
+
+    .details {
+      height: auto;
+      min-height: var(--cover-size);
+      gap: 4px;
+    }
+
+    .track {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  /* On a watch, the cover goes on top like in a music player. */
+  @media (max-width: 280px) {
+    .now-playing-card {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .cover {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1;
+    }
+
+    .details {
+      min-height: 0;
     }
   }
 

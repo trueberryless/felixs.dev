@@ -215,4 +215,39 @@ const summary = books ? buildReadingSummary(books) : null;
     color: var(--text-muted);
     flex-shrink: 0;
   }
+
+  @media (max-width: 480px) {
+    .book-link {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 4px 12px;
+    }
+
+    .book-link .item-main {
+      grid-column: 1;
+    }
+
+    .book-meta {
+      display: contents;
+    }
+
+    .book-meta .item-meta {
+      grid-row: 2;
+      grid-column: 1;
+      justify-self: start;
+      text-align: left;
+    }
+
+    .book-meta :global(.row-icon) {
+      grid-row: 1 / span 2;
+      grid-column: 2;
+      align-self: center;
+    }
+  }
+
+  @media (max-width: 280px) {
+    .book-link .item-main {
+      white-space: normal;
+    }
+  }
 </style>

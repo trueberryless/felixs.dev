@@ -4,7 +4,7 @@ import LayoutMinimal from "@/layouts/LayoutMinimal.astro";
 
 <LayoutMinimal title="404 - Page Not Found">
   <section class="not-found-viewport">
-    <div class="hexagon-space">
+    <div class="hexagon-space" aria-hidden="true">
       <div
         class="hex"
         style="top: 15%; left: 20%; --size: 250px; z-index: 1;"
@@ -188,6 +188,27 @@ import LayoutMinimal from "@/layouts/LayoutMinimal.astro";
   @media (prefers-reduced-transparency: reduce) {
     .back-link {
       background: var(--bg-subtle);
+    }
+  }
+
+  @media (max-width: 280px) {
+    .content-wrapper-404 {
+      max-width: 100%;
+      padding: 0 12px;
+      text-align: center;
+    }
+
+    .error-code {
+      font-size: 30vw;
+      padding: 0;
+    }
+
+    .error-text {
+      font-size: 1.15rem;
+    }
+
+    .back-link {
+      padding: 0.6rem 1rem;
     }
   }
 </style>

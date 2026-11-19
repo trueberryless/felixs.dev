@@ -16,10 +16,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
+    flex-wrap: wrap;
+    padding: 16px clamp(12px, 5vw, 20px);
     border-bottom: 1px solid var(--border);
     font-size: 0.95rem;
-    gap: 16px;
+    gap: 4px 16px;
   }
 
   :global(.list-item:last-child) {
@@ -37,7 +38,8 @@
 
   :global(.item-main) {
     font-weight: 600;
-    flex: 1;
+    flex: 1 1 10ch;
+    min-width: 0;
   }
 
   :global(.item-meta) {

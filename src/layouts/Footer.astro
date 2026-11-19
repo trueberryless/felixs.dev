@@ -148,17 +148,22 @@ const socialLinks = [
   @media (max-width: 480px) {
     .nav-groups {
       flex-direction: column;
-      gap: 24px;
+      gap: 4px;
     }
   }
 
   .text-links,
   .icon-links {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    gap: 24px;
+    gap: 4px 24px;
     list-style: none;
+  }
+
+  .icon-links {
+    gap: 4px;
   }
 
   .text-links a {
@@ -169,11 +174,13 @@ const socialLinks = [
       color 0.2s ease,
       transform 0.2s ease;
     display: inline-block;
+    padding-block: 10px;
   }
 
   .icon-links a {
     display: flex;
     align-items: center;
+    padding: 12px;
     color: var(--text-muted);
     transition:
       color 0.2s ease,
@@ -195,6 +202,10 @@ const socialLinks = [
 
   .icon-links :global(svg) {
     fill: currentColor;
+  }
+
+  .nav-groups {
+    margin-block: -10px;
   }
 
   .legal {
@@ -230,6 +241,12 @@ const socialLinks = [
     .text-links a:hover,
     .icon-links a:hover {
       transform: none;
+    }
+  }
+
+  @media (max-width: 280px) {
+    footer {
+      padding: 32px 12px;
     }
   }
 </style>
