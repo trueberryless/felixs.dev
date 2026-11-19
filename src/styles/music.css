@@ -1,0 +1,872 @@
+/* The music page is rendered by a client script, so its styles are global. */
+
+.ms {
+  --ms-accent: var(--accent);
+  --ms-line: color-mix(in oklch, var(--text) 22%, transparent);
+  --ms-soft: color-mix(in oklch, var(--text) 7%, transparent);
+
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+  margin-top: 48px;
+}
+
+.ms-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ms-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ms-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.ms-subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.ms-empty {
+  color: var(--text-muted);
+}
+
+.ms:not(.is-enhanced)
+  .ms-section:has(
+    .ms-currents,
+    .ms-clock,
+    .ms-calendar,
+    .ms-highlights,
+    .ms-recent
+  ) {
+  display: none;
+}
+
+.ms-fallback-list {
+  padding-left: 1.4em;
+  display: grid;
+  gap: 4px;
+}
+
+/* Entrance: every re-render fades and drifts in, staggered by `--i`. */
+.ms-enter {
+  animation: ms-enter 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+/* No opacity, so text never has a moment of low contrast. */
+@keyframes ms-enter {
+  from {
+    translate: 0 12px;
+    filter: blur(6px);
+  }
+}
+
+/* Range picker */
+.ms-ranges {
+  position: sticky;
+  top: 84px;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  border: 0;
+  padding: 8px;
+  margin-inline: -8px;
+  border-radius: var(--radius-card);
+  background: color-mix(in oklch, var(--bg) 70%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.ms-range-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--card-bg);
+}
+
+.ms-range {
+  position: relative;
+}
+
+.ms-range input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.ms-range span {
+  display: block;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition:
+    background 0.25s ease,
+    color 0.25s ease;
+}
+
+.ms-range:hover span {
+  color: var(--text);
+}
+
+.ms-range input:checked + span {
+  background: var(--text);
+  color: var(--card-bg);
+}
+
+.ms-range input:focus-visible + span {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* Big numbers */
+.ms-numbers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: 16px;
+}
+
+.ms-number {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 20px clamp(14px, 4vw, 22px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--card-bg);
+}
+
+.ms-number-value {
+  font-family: var(--font-family-heading);
+  font-size: clamp(1.8rem, 6vw, 2.6rem);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.ms-number-label {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.ms-number-hint {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  opacity: 0.8;
+  min-height: 1.2em;
+}
+
+/* Top artists */
+.ms-spotlight {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(12px, 3vw, 28px);
+  padding: clamp(18px, 4vw, 32px);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius-card) + 6px);
+  background:
+    radial-gradient(
+      120% 140% at 0% 0%,
+      color-mix(in oklch, var(--ms-accent) 16%, transparent),
+      transparent 60%
+    ),
+    var(--card-bg);
+  overflow: hidden;
+}
+
+.ms-spotlight-rank {
+  font-family: var(--font-family-heading);
+  font-size: clamp(2.5rem, 9vw, 5rem);
+  line-height: 1;
+  color: color-mix(in oklch, var(--ms-accent) 70%, var(--text));
+}
+
+.ms-spotlight-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ms-spotlight-kicker,
+.ms-highlight-kicker {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ms-spotlight-name {
+  font-family: var(--font-family-heading);
+  font-size: clamp(1.6rem, 6vw, 3rem);
+  line-height: 1.1;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.ms-spotlight-meta {
+  color: var(--text-muted);
+}
+
+.ms-ring {
+  width: clamp(72px, 16vw, 112px);
+  height: auto;
+}
+
+.ms-ring-track,
+.ms-ring-value {
+  fill: none;
+  stroke-width: 8;
+}
+
+.ms-ring-track {
+  stroke: var(--ms-soft);
+}
+
+.ms-ring-value {
+  stroke: var(--ms-accent);
+  stroke-linecap: round;
+  stroke-dasharray: var(--dash);
+  stroke-dashoffset: var(--offset);
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  animation: ms-ring 1.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes ms-ring {
+  from {
+    stroke-dashoffset: var(--dash);
+  }
+}
+
+.ms-ring-label {
+  font-family: var(--font-family-heading);
+  font-size: 22px;
+  fill: var(--text);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.ms-ring-caption {
+  font-size: 9px;
+  fill: var(--text-muted);
+  text-anchor: middle;
+}
+
+.ms-bars {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.ms-bar,
+.ms-track {
+  position: relative;
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  isolation: isolate;
+}
+
+.ms-bar {
+  grid-template-columns: 2.2em minmax(0, 1fr) auto;
+}
+
+.ms-bar::before,
+.ms-track::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--ms-accent) 22%, transparent),
+    color-mix(in oklch, var(--ms-accent) 8%, transparent)
+  );
+  transform-origin: left;
+  transform: scaleX(var(--value));
+  animation: ms-grow 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms + 120ms);
+}
+
+@keyframes ms-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.ms-bar-rank,
+.ms-track-rank {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.ms-bar-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-bar-value,
+.ms-track-plays {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Top tracks */
+.ms-track-list {
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.ms-track {
+  grid-template-columns: 2em minmax(0, 1fr) auto;
+  transition: background 0.2s ease;
+}
+
+.ms-track:hover {
+  background: var(--hover-bg);
+}
+
+.ms-track.is-extra {
+  display: none;
+}
+
+.ms-track-list.is-expanded .ms-track.is-extra {
+  display: grid;
+}
+
+.ms-track-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ms-track-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+a.ms-track-name:hover,
+a.ms-recent-track:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ms-track-artist,
+.ms-recent-artist {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-more {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--badge-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* Currents */
+.ms-currents-scroll {
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius-card) + 4px);
+  background: var(--card-bg);
+}
+
+.ms-currents-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--columns), minmax(168px, 1fr));
+  min-height: calc(var(--rows) * var(--row) + 72px);
+}
+
+.ms-currents-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.ms-current-line {
+  fill: none;
+  stroke: var(--ms-line);
+  stroke-width: 1;
+  transition:
+    stroke 0.25s ease,
+    stroke-width 0.25s ease,
+    opacity 0.25s ease;
+  stroke-dasharray: 600;
+  animation: ms-draw 1.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes ms-draw {
+  from {
+    stroke-dashoffset: 600;
+  }
+}
+
+.ms-current-column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 12px 44px;
+  border-left: 1px solid var(--border);
+  scroll-snap-align: end;
+  transition: background 0.3s ease;
+}
+
+.ms-current-column:first-child {
+  border-left: 0;
+}
+
+.ms-current-column:hover {
+  background: var(--ms-soft);
+}
+
+.ms-current {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--row);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  transition:
+    color 0.25s ease,
+    opacity 0.25s ease;
+}
+
+.ms-current:first-of-type {
+  color: var(--text);
+}
+
+.ms-current-count {
+  flex-shrink: 0;
+  min-width: 2.4em;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  background: var(--card-bg);
+}
+
+.ms-current-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-current-label {
+  position: absolute;
+  left: 12px;
+  bottom: 14px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.ms-currents-board[data-active] .ms-current:not(.is-active) {
+  opacity: 0.35;
+}
+
+.ms-currents-board[data-active] .ms-current-line:not(.is-active) {
+  opacity: 0.25;
+}
+
+.ms-current.is-active {
+  color: var(--text);
+}
+
+.ms-current.is-active .ms-current-count {
+  border-color: var(--ms-accent);
+  color: var(--text);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ms-accent) 22%, transparent);
+}
+
+.ms-current-line.is-active {
+  stroke: var(--ms-accent);
+  stroke-width: 2;
+}
+
+/* Rhythm */
+.ms-rhythm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: 24px;
+  align-items: center;
+}
+
+.ms-clock-svg {
+  display: block;
+  width: min(100%, 320px);
+  margin-inline: auto;
+  overflow: visible;
+}
+
+.ms-clock-face {
+  fill: none;
+  stroke: var(--border);
+  stroke-dasharray: 2 4;
+}
+
+.ms-clock-wedge {
+  fill: color-mix(in oklch, var(--ms-accent) 45%, transparent);
+  transform-origin: 110px 110px;
+  animation: ms-bloom 0.9s cubic-bezier(0.34, 1.3, 0.64, 1) both;
+  animation-delay: calc(var(--i) * 25ms);
+  transition: fill 0.2s ease;
+}
+
+.ms-clock-wedge:hover,
+.ms-clock-wedge.is-peak {
+  fill: var(--ms-accent);
+}
+
+@keyframes ms-bloom {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+
+.ms-clock-hour,
+.ms-clock-caption {
+  font-size: 10px;
+  fill: var(--text-muted);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.ms-clock-peak {
+  font-family: var(--font-family-heading);
+  font-size: 20px;
+  fill: var(--text);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.ms-weekday-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
+  height: 220px;
+}
+
+.ms-weekday {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  height: 100%;
+}
+
+.ms-weekday-bar {
+  width: 100%;
+  max-width: 36px;
+  height: calc(var(--value) * 150px + 4px);
+  border-radius: 8px 8px 4px 4px;
+  background: color-mix(in oklch, var(--ms-accent) 40%, transparent);
+  transform-origin: bottom;
+  animation: ms-rise 0.9s cubic-bezier(0.34, 1.3, 0.64, 1) both;
+  animation-delay: calc(var(--i) * 50ms + 100ms);
+}
+
+.ms-weekday.is-favourite .ms-weekday-bar {
+  background: var(--ms-accent);
+}
+
+@keyframes ms-rise {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+.ms-weekday-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ms-weekday-name {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Calendar */
+.ms-calendar-scroll {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.ms-calendar-svg {
+  display: block;
+  min-width: 640px;
+  width: 100%;
+  height: auto;
+}
+
+.ms-day-month {
+  font-size: 10px;
+  fill: var(--text-muted);
+}
+
+.ms-day,
+.ms-legend-cell {
+  fill: var(--ms-soft);
+  background: var(--ms-soft);
+}
+
+.ms-day {
+  animation: ms-enter 0.6s ease both;
+  animation-delay: calc(var(--i) * 12ms);
+}
+
+.ms-day:hover {
+  stroke: var(--text);
+  stroke-width: 1.5;
+}
+
+.ms [data-level="1"] {
+  fill: color-mix(in oklch, var(--ms-accent) 28%, transparent);
+  background: color-mix(in oklch, var(--ms-accent) 28%, transparent);
+}
+
+.ms [data-level="2"] {
+  fill: color-mix(in oklch, var(--ms-accent) 50%, transparent);
+  background: color-mix(in oklch, var(--ms-accent) 50%, transparent);
+}
+
+.ms [data-level="3"] {
+  fill: color-mix(in oklch, var(--ms-accent) 75%, transparent);
+  background: color-mix(in oklch, var(--ms-accent) 75%, transparent);
+}
+
+.ms [data-level="4"] {
+  fill: var(--ms-accent);
+  background: var(--ms-accent);
+}
+
+.ms-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.ms-legend-cell {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+}
+
+/* Highlights */
+.ms-highlights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: 16px;
+}
+
+.ms-highlight {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px clamp(14px, 4vw, 22px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--card-bg);
+  transition:
+    translate 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.ms-highlight:hover {
+  translate: 0 -3px;
+  box-shadow: var(--lift-shadow);
+}
+
+.ms-highlight-value {
+  font-family: var(--font-family-heading);
+  font-size: 1.6rem;
+  line-height: 1.15;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.ms-highlight-text {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Recently played */
+.ms-recent {
+  list-style: none;
+  display: grid;
+  gap: 2px;
+}
+
+.ms-recent-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  border-bottom: 1px dashed var(--border);
+}
+
+.ms-recent-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ms-accent);
+}
+
+.ms-recent-item:not(:first-child) .ms-recent-dot {
+  background: var(--border);
+}
+
+.ms-recent-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ms-recent-track {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-recent-time {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* Space: everything glows a little. */
+:root.space .ms-spotlight {
+  box-shadow:
+    0 24px 60px -24px oklch(0.6 0.22 300 / 0.6),
+    inset 0 0 40px oklch(0.6 0.2 300 / 0.12);
+}
+
+:root.space .ms-current-line.is-active,
+:root.space .ms-clock-wedge.is-peak,
+:root.space .ms-ring-value {
+  filter: drop-shadow(0 0 6px var(--accent-glow));
+}
+
+:root.space .ms-number-value,
+:root.space .ms-spotlight-name {
+  background-image: var(--text-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@media (max-width: 600px) {
+  .ms-ranges {
+    top: 76px;
+  }
+
+  .ms-spotlight {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .ms-ring {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 280px) {
+  .ms {
+    gap: 48px;
+  }
+
+  .ms-ranges {
+    position: static;
+  }
+
+  .ms-spotlight {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ms-weekday-list {
+    gap: 3px;
+  }
+
+  .ms-weekday-count {
+    display: none;
+  }
+
+  .ms-weekday-name {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.7rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ms *,
+  .ms *::before {
+    animation: none !important;
+    transition: none !important;
+  }
+}

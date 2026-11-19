@@ -2,11 +2,23 @@
 import ActionLink from "@/components/utils/ActionLink.astro";
 import Section from "@/components/utils/Section.astro";
 import { scrobblerEndpoint, tealProfileUrl } from "@/lib/const";
+
+interface Props {
+  actionHref?: string;
+  actionText?: string;
+  title?: string;
+}
+
+const {
+  actionHref = "/music",
+  actionText = "All stats",
+  title = "Listening",
+} = Astro.props;
 ---
 
 <now-playing data-endpoint={`${scrobblerEndpoint}/api/now-playing`} hidden>
-  <Section title="Listening">
-    <ActionLink slot="header-actions" href={tealProfileUrl} text="teal.fm" />
+  <Section title={title}>
+    <ActionLink slot="header-actions" href={actionHref} text={actionText} />
     <a class="now-playing-card" data-link href={tealProfileUrl}>
       <img class="cover" data-cover alt="" width="96" height="96" />
       <div class="details">

@@ -31,6 +31,7 @@
     "@astrojs/netlify": "^8.2.4",
     "@astrojs/node": "^11.1.4",
     "@astrojs/sitemap": "^3.7.3",
+    "@atcute/repo": "^1.1.1",
     "@atproto/lex": "^0.3.13",
     "@lucide/astro": "^1.48.0",
     "@netlify/blobs": "^11.1.9",
