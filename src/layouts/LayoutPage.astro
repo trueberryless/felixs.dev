@@ -5,6 +5,7 @@ import Cosmos from "@/layouts/Cosmos.astro";
 import Header from "@/layouts/Header.astro";
 import Footer from "@/layouts/Footer.astro";
 import Parallax from "@/layouts/Parallax.astro";
+import LiveVisitors from "@/components/utils/LiveVisitors.astro";
 
 interface Props {
   title: string;
@@ -28,6 +29,7 @@ const { title, description } = Astro.props;
     </main>
     <Footer />
     <Parallax />
+    <LiveVisitors />
   </body>
 </html>
 
