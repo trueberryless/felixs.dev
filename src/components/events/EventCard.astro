@@ -11,6 +11,7 @@ const {
   attendees,
   totalAttendees,
   imageUrl,
+  isGoing,
 } = event;
 
 const timeFormatter = new Intl.DateTimeFormat("en-US", {
@@ -60,7 +61,10 @@ const extraCount =
 
   <a href={atmoUrl} class="card-container">
     <div class="card-content">
-      <span class="event-time">{timeDisplay}</span>
+      <span class="event-time">
+        {timeDisplay}
+        {!isGoing && <span class="event-status">Interested</span>}
+      </span>
       <h2 class="event-name">{name}</h2>
 
       {locationText && (
@@ -373,5 +377,12 @@ const extraCount =
       flex-wrap: wrap;
       row-gap: 4px;
     }
+  }
+  .event-status {
+    margin-left: 8px;
+    padding: 1px 8px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-pill);
+    font-size: 0.8em;
   }
 </style>

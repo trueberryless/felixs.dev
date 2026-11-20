@@ -1,6 +1,10 @@
 ---
+import OverviewSkeleton from "@/components/utils/OverviewSkeleton.astro";
+
 const count = 4;
 ---
+
+<OverviewSkeleton people />
 
 <div class="skeleton-timeline">
   {Array.from({ length: count }).map(() => (
