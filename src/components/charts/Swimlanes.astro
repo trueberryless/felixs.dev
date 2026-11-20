@@ -181,12 +181,33 @@ const month = new Intl.DateTimeFormat("en-US", {
     cursor: pointer;
   }
 
-  .lane-label[aria-pressed="true"] {
-    background: color-mix(in oklch, var(--accent) 16%, var(--card-bg));
+  .lane-axis .lane-label {
+    background: transparent;
+  }
+
+  /* A picked organisation reads like the picked month: in the accent colour,
+     with a small dot in front, while the rest steps back. */
+  .lane-name::before {
+    content: "";
+    display: inline-block;
+    width: 0;
+    height: 6px;
+    margin-right: 0;
+    border-radius: 50%;
+    background: var(--accent);
+    vertical-align: middle;
+    transition:
+      width 0.3s ease,
+      margin-right 0.3s ease;
   }
 
   .lane-label[aria-pressed="true"] .lane-name {
-    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .lane-label[aria-pressed="true"] .lane-name::before {
+    width: 6px;
+    margin-right: 8px;
   }
 
   .lane,
