@@ -2,19 +2,28 @@
 import { Image, getImage } from "astro:assets";
 
 import astroLight from "@/assets/logos/light/astro.png";
-import npmxLight from "@/assets/logos/light/npmx.png";
-import starlightLight from "@/assets/logos/light/starlight.png";
+import bombshellLight from "@/assets/logos/light/bombshell.png";
 import catppuccinLight from "@/assets/logos/light/catppuccin.png";
-import emdashLight from "@/assets/logos/light/emdash-cms.png";
+import diglotLight from "@/assets/logos/light/diglot.png";
+import forgesLight from "@/assets/logos/light/forges.png";
+import npmxLight from "@/assets/logos/light/npmx.png";
+import nuxtLight from "@/assets/logos/light/nuxt.png";
+import starlightLight from "@/assets/logos/light/starlight.png";
 import astroDark from "@/assets/logos/dark/astro.png";
-import npmxDark from "@/assets/logos/dark/npmx.png";
-import starlightDark from "@/assets/logos/dark/starlight.png";
+import bombshellDark from "@/assets/logos/dark/bombshell.png";
 import catppuccinDark from "@/assets/logos/dark/catppuccin.png";
-import emdashDark from "@/assets/logos/dark/emdash-cms.png";
+import diglotDark from "@/assets/logos/dark/diglot.png";
+import forgesDark from "@/assets/logos/dark/forges.png";
+import npmxDark from "@/assets/logos/dark/npmx.png";
+import nuxtDark from "@/assets/logos/dark/nuxt.png";
+import starlightDark from "@/assets/logos/dark/starlight.png";
 import astroPrint from "@/assets/logos/planets/astro.png";
+import bombshellPrint from "@/assets/logos/planets/bombshell.png";
 import catppuccinPrint from "@/assets/logos/planets/catppuccin.png";
-import emdashPrint from "@/assets/logos/planets/emdash-cms.png";
+import diglotPrint from "@/assets/logos/planets/diglot.png";
+import forgesPrint from "@/assets/logos/planets/forges.png";
 import npmxPrint from "@/assets/logos/planets/npmx.png";
+import nuxtPrint from "@/assets/logos/planets/nuxt.png";
 import starlightPrint from "@/assets/logos/planets/starlight.png";
 
 interface Props {
@@ -77,7 +86,21 @@ const hexagons = [
   },
 ];
 
+// One logo for every planet of the solar system, from far to near.
 const logos = [
+  {
+    dark: diglotDark,
+    delay: "-2.2s",
+    depth: 0.66,
+    duration: "6.8s",
+    href: "https://diglot.sh",
+    left: "60%",
+    light: diglotLight,
+    name: "diglot",
+    planet: "venus",
+    print: diglotPrint,
+    top: "13%",
+  },
   {
     dark: astroDark,
     delay: "0s",
@@ -92,17 +115,30 @@ const logos = [
     top: "15%",
   },
   {
-    dark: emdashDark,
+    dark: bombshellDark,
     delay: "-4.5s",
     depth: 0.72,
     duration: "7.2s",
-    href: "https://www.emdashcms.com/",
+    href: "https://bomb.sh",
     left: "77%",
-    light: emdashLight,
-    name: "EmDash",
+    light: bombshellLight,
+    name: "bombshell",
     planet: "jupiter",
-    print: emdashPrint,
+    print: bombshellPrint,
     top: "25%",
+  },
+  {
+    dark: forgesDark,
+    delay: "-3.6s",
+    depth: 0.74,
+    duration: "6.4s",
+    href: "https://forges.link",
+    left: "12%",
+    light: forgesLight,
+    name: "forges",
+    planet: "uranus",
+    print: forgesPrint,
+    top: "64%",
   },
   {
     dark: catppuccinDark,
@@ -116,6 +152,19 @@ const logos = [
     planet: "saturn",
     print: catppuccinPrint,
     top: "35%",
+  },
+  {
+    dark: nuxtDark,
+    delay: "-0.8s",
+    depth: 0.77,
+    duration: "5.9s",
+    href: "https://nuxt.com",
+    left: "76%",
+    light: nuxtLight,
+    name: "Nuxt",
+    planet: "earth",
+    print: nuxtPrint,
+    top: "60%",
   },
   {
     dark: npmxDark,
