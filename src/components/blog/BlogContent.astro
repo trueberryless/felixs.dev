@@ -1,9 +1,10 @@
 ---
-import YearGroup from "@/components/blog/YearGroup.astro";
 import Fallback from "@/components/utils/Fallback.astro";
-import { fetchPosts } from "@/lib/data";
-import { groupPostsByYear } from "@/lib/posts";
 import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { fetchPosts } from "@/lib/data";
+import { getDocumentBlocks, getReadingMinutes } from "@/lib/leaflet";
+import { getPostImage } from "@/lib/post-images";
+import { groupPostsByYear, processPost } from "@/lib/posts";
 
 const posts = await fetchPosts().catch(() => null);
 applyCache(Astro.response, posts ? longLivedCache : degradedCache);
@@ -12,14 +13,171 @@ const { years, postsByYear } =
     ? groupPostsByYear(posts)
     : { years: [] as string[], postsByYear: {} };
 const hasData = years.length > 0;
+
+const dateFormat = new Intl.DateTimeFormat("en-US", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+const describe = (post: (typeof postsByYear)[string][number]) => {
+  const record = post.data as typeof post.data & {
+    content?: unknown;
+    coverImage?: unknown;
+    description?: unknown;
+  };
+  const tags = record.tags ?? [];
+  const description =
+    typeof record.description === "string" ? record.description : "";
+  return {
+    cover: getPostImage(record.coverImage)?.thumbnail,
+    date: dateFormat.format(Date.parse(record.publishedAt)),
+    description,
+    minutes: getReadingMinutes(getDocumentBlocks(record.content)),
+    search: [record.title, description, ...tags].join(" ").toLowerCase(),
+    tags,
+    title: record.title || "Untitled post",
+    url: processPost(post).localUrl,
+  };
+};
+
+// Every topic, sized by how often I write about it.
+const topicCounts = new Map<string, number>();
+for (const post of posts ?? []) {
+  for (const tag of new Set(post.data.tags ?? [])) {
+    topicCounts.set(tag, (topicCounts.get(tag) ?? 0) + 1);
+  }
+}
+const topics = [...topicCounts]
+  .toSorted((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  .map(([name, count]) => ({ count, name }));
+const most = topics[0]?.count ?? 1;
+// The most common topics show first, the rest are one click away.
+const TOP_TOPICS = 12;
+const total = posts?.length ?? 0;
 ---
 
 {hasData ? (
-  <div class="blog-container">
-    {years.map((year) => (
-      <YearGroup year={year} posts={postsByYear[year]} />
-    ))}
-  </div>
+  <blog-explorer class="blog">
+    <div class="blog-tools">
+      <label class="blog-search">
+        <span class="sr-only">Search posts</span>
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
+        <input
+          type="search"
+          placeholder={`Search ${total} posts`}
+          autocomplete="off"
+          data-search
+        />
+      </label>
+      {topics.length > 0 && (
+        <div class="blog-topics" role="group" aria-label="Topics">
+          {topics.map((topic, index) => (
+            <button
+              type="button"
+              class="blog-topic"
+              hidden={index >= TOP_TOPICS}
+              data-extra={index >= TOP_TOPICS || undefined}
+              aria-pressed="false"
+              data-topic={topic.name}
+              style={`--weight: ${(topic.count / most).toFixed(2)}`}
+            >
+              {topic.name}
+              <span class="blog-topic-count">{topic.count}</span>
+            </button>
+          ))}
+          {topics.length > TOP_TOPICS && (
+            <button
+              type="button"
+              class="button is-small blog-more"
+              aria-expanded="false"
+              data-more
+            >
+              {topics.length - TOP_TOPICS} more topics
+            </button>
+          )}
+        </div>
+      )}
+      <p class="blog-status" aria-live="polite" data-status>
+        {total} posts, newest first.
+      </p>
+    </div>
+
+    <div class="blog-years">
+      {years.map((year) => (
+        <section class="year-group" aria-labelledby={`year-${year}`} data-year>
+          <h2 id={`year-${year}`} class="sr-only">
+            {year}
+          </h2>
+          <div class="year-track" aria-hidden="true">
+            <div class="year-depth">
+              <div class="year-watermark">{year}</div>
+            </div>
+          </div>
+          <ol class="post-list">
+            {postsByYear[year]!.map((post, index) => {
+              const item = describe(post);
+              return (
+                <li
+                  class="post"
+                  data-search={item.search}
+                  data-topics={item.tags.join("\u001f")}
+                  style={`--i: ${index}`}
+                >
+                  <a class="post-link" href={item.url} data-cover={item.cover}>
+                    <span class="post-title">{item.title}</span>
+                    {item.description && (
+                      <span class="post-description">{item.description}</span>
+                    )}
+                    <span class="post-meta">
+                      <time datetime={post.data.publishedAt}>{item.date}</time>
+                      <span>{item.minutes} min read</span>
+                      {item.tags.length > 0 && (
+                        <span class="post-tags">
+                          {item.tags.map((tag) => (
+                            <span class="post-tag">{tag}</span>
+                          ))}
+                        </span>
+                      )}
+                    </span>
+                  </a>
+                  {item.cover && (
+                    <img
+                      class="post-thumb"
+                      src={item.cover}
+                      alt=""
+                      width="96"
+                      height="64"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      ))}
+    </div>
+
+    <p class="blog-empty" hidden data-empty>
+      Nothing matches yet. Try another word or topic.
+    </p>
+    <div class="blog-preview" aria-hidden="true" data-preview>
+      <img alt="" />
+    </div>
+  </blog-explorer>
 ) : (
   <Fallback
     description="My blog posts live on ATproto and aren't reachable right now. You can read them directly on Leaflet."
@@ -29,10 +187,317 @@ const hasData = years.length > 0;
 )}
 
 <style>
-  .blog-container {
+  .blog {
+    display: block;
+    margin-block: 32px 80px;
+  }
+
+  /* Tools: one search field and a map of every topic, sized by how often I
+     write about it. Picking topics shows the posts about any of them. */
+  .blog-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 72px;
+  }
+
+  .blog-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 420px;
+    padding: 10px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--card-bg);
+    color: var(--text-muted);
+    transition: border-color 0.25s ease;
+  }
+
+  .blog-search:focus-within {
+    border-color: var(--text);
+  }
+
+  .blog-search input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    outline: none;
+  }
+
+  .blog-topics {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 14px;
+  }
+
+  .blog-topic {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    padding: 2px 0;
+    border: 0;
+    border-bottom: 1px solid transparent;
+    background: none;
+    color: color-mix(
+      in oklch,
+      var(--text) calc(78% + var(--weight) * 22%),
+      transparent
+    );
+    font-family: var(--font-family-mono);
+    font-size: calc(0.78rem + var(--weight) * 0.55rem);
+    cursor: pointer;
+    transition:
+      color 0.25s ease,
+      border-color 0.25s ease;
+  }
+
+  .blog-topic:hover,
+  .blog-topic[aria-pressed="true"] {
+    color: var(--text);
+    border-bottom-color: currentColor;
+  }
+
+  .blog-topic[aria-pressed="true"] {
+    color: var(--accent);
+  }
+
+  .blog-topic:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  .blog-topic[hidden] {
+    display: none;
+  }
+
+  .blog-more {
+    align-self: center;
+  }
+
+  .blog-topic-count {
+    font-size: 0.7em;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .blog-status,
+  .blog-empty {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .blog-years {
     display: flex;
     flex-direction: column;
     gap: 80px;
-    margin-block: 80px;
+  }
+
+  .year-group {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .year-group[hidden] {
+    display: none;
+  }
+
+  /* Spans the section, so the space theme's parallax can keep the year
+     inside it. Absolutely positioned, its size never depends on the year,
+     which lets it be a size container. */
+  .year-track {
+    position: absolute;
+    inset: -60px 0 0 -80px;
+    z-index: -1;
+    container-type: size;
+    pointer-events: none;
+  }
+
+  .year-watermark {
+    font-family: var(--font-family-mono);
+    font-size: 14rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--text);
+    opacity: 0.07;
+    user-select: none;
+  }
+
+  .post-list {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    list-style: none;
+  }
+
+  .post {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .post:first-child {
+    border-top: 0;
+  }
+
+  .post[hidden] {
+    display: none;
+  }
+
+  .post-link {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    padding: 22px 0;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .post-title {
+    font-family: var(--font-family-heading);
+    font-size: clamp(1.25rem, 3vw, 1.6rem);
+    line-height: 1.25;
+    color: var(--text);
+    overflow-wrap: anywhere;
+    transition: color 0.25s ease;
+  }
+
+  .post-description {
+    display: -webkit-box;
+    max-width: 64ch;
+    overflow: hidden;
+    color: var(--text-muted);
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 16px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  .post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .post-tag {
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-family-mono);
+    font-size: 0.75rem;
+  }
+
+  .post-link:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 4px;
+    border-radius: 8px;
+  }
+
+  @media (hover: hover) {
+    .post-link:hover .post-title {
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 6px;
+    }
+  }
+
+  /* Phones show the cover next to each post; with a mouse it follows the
+     pointer instead. */
+  .post-thumb {
+    flex-shrink: 0;
+    width: 96px;
+    height: 64px;
+    border-radius: 10px;
+    object-fit: cover;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .post-thumb {
+      display: none;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .post-thumb {
+      display: none;
+    }
+  }
+
+  .blog-preview {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 30;
+    width: 240px;
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    border-radius: 14px;
+    box-shadow: var(--lift-shadow);
+    opacity: 0;
+    scale: 0.85;
+    pointer-events: none;
+    transition:
+      opacity 0.3s ease,
+      scale 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .blog-preview.is-visible {
+    opacity: 1;
+    scale: 1;
+  }
+
+  .blog-preview img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .post {
+      animation: blog-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--i) * 50ms);
+    }
+  }
+
+  @keyframes blog-rise {
+    from {
+      opacity: 0;
+      translate: 0 12px;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .year-watermark {
+      font-size: 8rem;
+    }
+
+    .year-track {
+      inset-inline-start: -16px;
+    }
+  }
+
+  @media (max-width: 280px) {
+    .year-watermark {
+      font-size: 5rem;
+    }
   }
 </style>

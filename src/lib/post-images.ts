@@ -5,6 +5,8 @@ export interface PostImage {
   original: string;
   /** A resized copy from Bluesky's image CDN, or the original for GIFs. */
   src: string;
+  /** A small copy, for previews. */
+  thumbnail: string;
   isAnimated: boolean;
   size: number | undefined;
   /** A tilt between 0.6 and 2 degrees either way, the same on every visit. */
@@ -35,6 +37,7 @@ export function getPostImage(blob: unknown): PostImage | undefined {
     src: isAnimated
       ? original
       : `https://cdn.bsky.app/img/feed_fullsize/plain/${actorDid}/${cid}@webp`,
+    thumbnail: `https://cdn.bsky.app/img/feed_thumbnail/plain/${actorDid}/${cid}@jpeg`,
     tilt: getTilt(cid),
   };
 }
