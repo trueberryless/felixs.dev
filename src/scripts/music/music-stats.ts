@@ -180,14 +180,12 @@ class MusicStatsElement extends HTMLElement {
       renderHighlights(element, range)
     );
 
-    // On the first load the whole page arrives as one wave, block by block.
     if (isFirst) {
       [...this.children]
         .filter((element) => !element.matches("script, [data-status]"))
         .forEach((element, index) => reveal(element, Math.min(index, 6)));
       return;
     }
-    // Later, everything that changed fades in together, section by section.
     [
       ".ms-artists",
       ".ms-tracks",
@@ -232,8 +230,6 @@ class MusicStatsElement extends HTMLElement {
       toggle.classList.toggle("is-picked", Boolean(label));
 
       if (isOpen === wasOpen && toggle.hidden === isOpen) continue;
-      // The options and the button that stands in for them trade places:
-      // one folds away while the other unfolds, both at the same pace.
       const move = animate && !reducedMotion();
       setShown(options, isOpen, move);
       setShown(toggle, !isOpen, move);

@@ -18,7 +18,6 @@ export interface Lane {
   name: string;
   /** Merge times, oldest first. */
   times: number[];
-  url: string;
 }
 
 export interface ProjectTotals {
@@ -48,7 +47,6 @@ export function getLanes(orgs: Org[]): Lane[] {
         last: times.at(-1) ?? 0,
         name: org.name,
         times,
-        url: org.url,
       };
     })
     .filter((lane) => lane.count > 0)

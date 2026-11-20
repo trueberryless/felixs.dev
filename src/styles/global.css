@@ -282,18 +282,6 @@ ul {
   list-style: none;
 }
 
-.page-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.page-head h1 {
-  margin: 0;
-}
-
 /* Buttons: every pill link and button on the site shares this one look.
    On hover a circle in the text colour grows from exactly where the pointer
    came in and shrinks back to where it left, inverting the colours. The

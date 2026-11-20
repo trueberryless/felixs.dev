@@ -13,7 +13,6 @@ const plays = (records?.get(PLAY_COLLECTION) ?? [])
   .filter((play) => play !== undefined);
 applyCache(Astro.response, plays.length > 0 ? longLivedCache : degradedCache);
 
-// Every year since the first play, so the whole history shows.
 const perYear = new Map<number, number>();
 for (const play of plays) {
   const year = new Date(play.at).getUTCFullYear();

@@ -97,7 +97,6 @@ function step(now: number) {
       const gapY = Math.max(top - pointer.y, 0, pointer.y - (top + box.height));
       const distance = Math.hypot(gapX, gapY);
       if (distance < REACH) {
-        // Nearer is stronger, and the pull fades out smoothly at its edge.
         const strength = (1 - distance / REACH) ** 2;
         const limit = Math.min(
           MAX_SHIFT,

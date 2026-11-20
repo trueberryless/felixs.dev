@@ -86,7 +86,6 @@ class BlogExplorer extends HTMLElement {
       }
     };
 
-    // The list rearranges itself smoothly where the browser can.
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     if ("startViewTransition" in document && !reduced.matches) {
       document.startViewTransition(change);
@@ -116,7 +115,6 @@ class BlogExplorer extends HTMLElement {
         x: position.x + dx * PREVIEW_FOLLOW,
         y: position.y + (target.y - position.y) * PREVIEW_FOLLOW,
       };
-      // It leans a little into the direction it moves.
       tilt += (Math.max(-8, Math.min(8, dx * 0.08)) - tilt) * PREVIEW_FOLLOW;
       preview.style.translate = `${position.x.toFixed(1)}px ${position.y.toFixed(1)}px`;
       preview.style.rotate = `${tilt.toFixed(2)}deg`;
@@ -145,7 +143,6 @@ class BlogExplorer extends HTMLElement {
           y: event.clientY + PREVIEW_OFFSET.y,
         };
         if (link !== active) {
-          // A new post: the preview jumps in next to the pointer.
           if (!active) position = { ...target };
           active = link;
           image.src = cover;

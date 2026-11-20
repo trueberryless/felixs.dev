@@ -130,7 +130,6 @@ export function renderTrack(
     return Math.min(1, byRank * 0.55 + byTime * 0.45);
   };
 
-  // Whether a cover centred here would touch the track.
   const touchesTrack = (cx: number, cy: number, half: number) => {
     const reach = half + 6;
     return samples.some(
@@ -177,7 +176,6 @@ export function renderTrack(
 
       const x = newestX + (oldestX - newestX) * item.position;
       const point = pointAt(Math.min(Math.max(x, 0), width));
-      // The normal points to the item's side of the track.
       const flip = Math.sign(point.ny) === item.side ? 1 : -1;
       const nx = point.nx * flip;
       const ny = point.ny * flip;
@@ -231,7 +229,6 @@ export function renderTrack(
     }
 
     if (isLive) {
-      // A light runs along the track from now to earlier, every few seconds.
       const progress = reduced.matches ? 0 : (now / 6000) % 1;
       const eased = 0.5 - Math.cos(progress * Math.PI) / 2;
       const point = pointAt(newestX + (oldestX - newestX) * eased);

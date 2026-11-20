@@ -37,7 +37,6 @@ const DRIFT_SELECTOR = [
   ".fallback",
   ".hex",
   ".honor-card",
-  ".list",
   ".skill-chip",
   ".timeline-row > .card-container",
   ".year-watermark",

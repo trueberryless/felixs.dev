@@ -3,14 +3,14 @@ import PostTimeline from "@/components/charts/PostTimeline.astro";
 import Story from "@/components/story/Story.astro";
 import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
 import { fetchPosts } from "@/lib/data";
-import { processPost } from "@/lib/posts";
+import { getPostPath } from "@/lib/posts";
 
 const posts = await fetchPosts().catch(() => null);
 applyCache(Astro.response, posts ? longLivedCache : degradedCache);
 
 const items = (posts ?? []).map((post) => ({
   date: post.data.publishedAt,
-  href: processPost(post).localUrl,
+  href: getPostPath(post),
   title: post.data.title || "Untitled post",
 }));
 ---
