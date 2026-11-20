@@ -1,6 +1,5 @@
 ---
-import { hierarchy, pack } from "d3-hierarchy";
-
+import { packBubbles } from "@/lib/bubbles";
 import type { Bubble } from "@/lib/stories";
 
 interface Props {
@@ -23,65 +22,15 @@ const {
   width = 420,
 } = Astro.props;
 
-const root = pack<{ children?: Bubble[] } | Bubble>()
-  .size([width, height])
-  .padding(8)(
-  hierarchy<{ children?: Bubble[] } | Bubble>({ children: bubbles })
-    .sum((node) =>
-      "value" in node
-        ? scale === "sqrt"
-          ? Math.sqrt(node.value)
-          : node.value
-        : 0
-    )
-    .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
-);
-
 const compact = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1,
   notation: "compact",
 });
-
-// Labels get the biggest size that fits their bubble, on one line or split
-// over two, and are left out when even the smallest size won't fit. Glyphs
-// are about 0.56em wide on average.
-const MIN_FONT = 9;
-const MAX_FONT = 15;
-const fitLabel = (text: string, r: number) => {
-  const room = r * 1.6;
-  const fit = (lines: string[]) => {
-    const longest = Math.max(...lines.map((line) => line.length));
-    const size = Math.min(
-      MAX_FONT,
-      r / (lines.length + 1.6),
-      room / (longest * 0.56)
-    );
-    return size >= MIN_FONT ? { lines, size } : undefined;
-  };
-  const single = fit([text]);
-  const space = text.lastIndexOf(" ", Math.ceil(text.length / 2) + 2);
-  const split =
-    space > 0 ? fit([text.slice(0, space), text.slice(space + 1)]) : undefined;
-  if (single && (!split || single.size >= split.size * 0.85)) return single;
-  return split ?? single;
-};
-
-const circles = root.leaves().map((leaf, index) => {
-  const { href, key, label: name, title, value } = leaf.data as Bubble;
-  const fitted = fitLabel(name, leaf.r);
-  return {
-    href,
-    index,
-    key,
-    label: fitted,
-    r: leaf.r,
-    showValue: Boolean(fitted) && leaf.r > 34,
-    title,
-    value,
-    x: leaf.x,
-    y: leaf.y,
-  };
-});
+const circles = packBubbles(bubbles, { height, scale, width }).map((circle) =>
+  Object.assign(circle, {
+    showValue: Boolean(circle.lines) && circle.r > 34,
+  })
+);
 // Charts with links are a group of links, not a single image.
 const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
 ---
@@ -90,12 +39,13 @@ const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
   <svg
     class="bubble-chart"
     viewBox={`0 0 ${width} ${height}`}
+    data-scale={scale}
     role={hasLinks ? "group" : "img"}
     aria-label={label}
   >
     {circles.map((circle) => {
-      const lines = circle.label?.lines ?? [];
-      const size = circle.label?.size ?? 0;
+      const lines = circle.lines ?? [];
+      const size = circle.size;
       const lineHeight = size * 1.15;
       const blockHeight =
         lines.length * lineHeight + (circle.showValue ? 13 : 0);
@@ -109,25 +59,27 @@ const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
             r={circle.r}
             style={`--strength: ${Math.max(18, 72 - circle.index * 7)}%; --i: ${circle.index}`}
           />
-          {lines.map((line, index) => (
-            <text
-              class="bubble-label"
-              x={circle.x}
-              y={firstY + index * lineHeight}
-              style={`font-size: ${size.toFixed(1)}px`}
-            >
-              {line}
-            </text>
-          ))}
-          {circle.showValue && (
-            <text
-              class="bubble-value"
-              x={circle.x}
-              y={firstY + lines.length * lineHeight + 2}
-            >
-              {compact.format(circle.value)}
-            </text>
-          )}
+          <g class="bubble-text">
+            {lines.map((line, index) => (
+              <text
+                class="bubble-label"
+                x={circle.x}
+                y={firstY + index * lineHeight}
+                style={`font-size: ${size.toFixed(1)}px`}
+              >
+                {line}
+              </text>
+            ))}
+            {circle.showValue && (
+              <text
+                class="bubble-value"
+                x={circle.x}
+                y={firstY + lines.length * lineHeight + 2}
+              >
+                {compact.format(circle.value)}
+              </text>
+            )}
+          </g>
         </>
       );
 
@@ -257,7 +209,18 @@ const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
       scale 0.5s cubic-bezier(0.16, 1, 0.3, 1),
       fill 0.35s ease,
       stroke 0.35s ease,
-      stroke-width 0.35s ease;
+      stroke-width 0.35s ease,
+      cx 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      cy 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      r 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .bubble-text {
+    transition: opacity 0.25s ease;
+  }
+
+  .bubble-chart.is-moving .bubble-text {
+    opacity: 0;
   }
 
   .bubble-chart:has(.bubble-group:is(:hover, :focus-visible))
@@ -274,19 +237,20 @@ const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
     }
   }
 
-  .bubble-label,
-  .bubble-value {
+  /* Repacked bubbles get their labels from a script, so these styles reach
+     past this component's scope. */
+  .bubble-chart :global(:is(.bubble-label, .bubble-value)) {
     text-anchor: middle;
     dominant-baseline: central;
     pointer-events: none;
   }
 
-  .bubble-label {
+  .bubble-chart :global(.bubble-label) {
     font-weight: 600;
     fill: var(--text);
   }
 
-  .bubble-value {
+  .bubble-chart :global(.bubble-value) {
     font-size: 10px;
     fill: var(--text);
     opacity: 0.8;
@@ -329,8 +293,11 @@ const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
         scale 0.9s cubic-bezier(0.16, 1, 0.3, 1),
         fill 0.35s ease,
         stroke 0.35s ease,
-        stroke-width 0.35s ease;
-      transition-delay: calc(0.3s + var(--i) * 45ms), 0s, 0s, 0s;
+        stroke-width 0.35s ease,
+        cx 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+        cy 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+        r 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+      transition-delay: calc(0.3s + var(--i) * 45ms), 0s, 0s, 0s, 0s, 0s, 0s;
     }
 
     :global(.story-frame:not([data-active="true"])) .bubble {

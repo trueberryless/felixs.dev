@@ -53,7 +53,14 @@ const numbers = [
   { key: "months", label: "months with merges", value: activeMonths },
 ];
 // `<` is escaped so a title can never close the script element.
+const avatarOf = (owner: string) => {
+  const avatar = orgs.find((org) => org.owner === owner)?.avatar;
+  return avatar ? `${avatar}${avatar.includes("?") ? "&" : "?"}s=40` : "";
+};
 const explorerData = JSON.stringify({
+  avatars: Object.fromEntries(
+    orgs.map((org) => [org.owner, avatarOf(org.owner)])
+  ),
   names: Object.fromEntries(orgs.map((org) => [org.owner, org.name])),
   pullRequests,
 }).replaceAll("<", "\\u003c");
@@ -89,19 +96,19 @@ const bubbles = orgs
       </ul>
     )}
 
-    {pullRequests.length > 0 && (
-      <div class="pe-bar" role="status">
-        <p class="pe-summary" data-summary>
-          Everything so far. Pick an organisation or a month to look closer.
-        </p>
-        <button type="button" class="button is-small" data-clear hidden>
-          Show everything
-        </button>
-      </div>
-    )}
+    <p class="sr-only" aria-live="polite" data-summary />
 
     {lanes.length > 0 && (
       <Section title="Over time">
+        <button
+          slot="header-actions"
+          type="button"
+          class="button is-small"
+          data-clear
+          hidden
+        >
+          Show everything
+        </button>
         <p class="projects-lede">
           Every dot is a merged pull request, one lane per organisation, in the
           order I found them. Pick one to see only its work.
@@ -116,6 +123,15 @@ const bubbles = orgs
 
     {months.length > 1 && (
       <Section title="Month by month">
+        <button
+          slot="header-actions"
+          type="button"
+          class="button is-small"
+          data-clear
+          hidden
+        >
+          Show everything
+        </button>
         <div class="projects-split">
           <MonthlyBars
             label="Merged pull requests per month"
@@ -137,16 +153,35 @@ const bubbles = orgs
 
     {pullRequests.length > 0 && (
       <Section title="Pull requests">
+        <button
+          slot="header-actions"
+          type="button"
+          class="button is-small"
+          data-clear
+          hidden
+        >
+          Show everything
+        </button>
         <ol class="pe-list" data-list>
-          {pullRequests.slice(0, 12).map((pr) => (
-            <li class="pe-item">
+          {pullRequests.slice(0, 12).map((pr, index) => (
+            <li class="pe-item" style={`--i: ${index}`}>
+              {avatarOf(pr.o) && (
+                <img
+                  class="pe-avatar"
+                  src={avatarOf(pr.o)}
+                  alt=""
+                  width="20"
+                  height="20"
+                  loading="lazy"
+                />
+              )}
               <a class="pe-title" href={pr.u}>
                 {pr.t}
               </a>
-              <span class="pe-meta">
-                {orgs.find((org) => org.owner === pr.o)?.name} · {pr.r} ·{" "}
+              <span class="pe-repo">{pr.r}</span>
+              <time class="pe-date" datetime={pr.m}>
                 {dayFormat.format(Date.parse(pr.m))}
-              </span>
+              </time>
             </li>
           ))}
         </ol>
@@ -199,30 +234,8 @@ const bubbles = orgs
     display: block;
   }
 
-  .pe-bar {
-    position: sticky;
-    top: 76px;
-    z-index: 5;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px 16px;
-    margin-bottom: 32px;
-    padding: 10px 10px 10px 18px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-pill);
-    background: var(--header-bg);
-    -webkit-backdrop-filter: blur(17px) saturate(180%);
-    backdrop-filter: blur(17px) saturate(180%);
-    box-shadow: 0 8px 30px var(--header-shadow);
-  }
-
-  .pe-summary {
-    color: var(--text-muted);
-    font-size: 0.9rem;
-  }
-
+  /* The script renders these rows too, so their styles reach past this
+     component's scope. */
   .pe-list {
     display: flex;
     flex-direction: column;
@@ -230,48 +243,83 @@ const bubbles = orgs
     list-style: none;
   }
 
-  .pe-item {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border);
+  .projects :global(.pe-item) {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 6px 14px;
+    padding: 14px 4px;
+    border-top: 1px solid var(--border);
   }
 
-  .pe-title {
+  .projects :global(.pe-item:first-child) {
+    border-top: 0;
+  }
+
+  .projects :global(.pe-avatar) {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+  }
+
+  .projects :global(.pe-title) {
+    min-width: 0;
     color: var(--text);
-    font-weight: 600;
     text-decoration: none;
     overflow-wrap: anywhere;
   }
 
-  .pe-title:hover,
-  .pe-title:focus-visible {
+  .projects :global(.pe-title:hover),
+  .projects :global(.pe-title:focus-visible) {
     text-decoration: underline;
     text-underline-offset: 3px;
   }
 
-  .pe-meta,
-  .pe-more {
+  .projects :global(.pe-repo) {
+    padding: 1px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--badge-bg);
+    color: var(--text-muted);
+    font-family: var(--font-family-mono);
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .projects :global(.pe-date) {
     color: var(--text-muted);
     font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 
   .pe-more {
     margin-top: 12px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
   }
 
-  @media (prefers-reduced-motion: no-preference) {
-    .pe-item {
-      animation: projects-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-      animation-delay: calc(var(--i, 0) * 35ms);
+  @media (max-width: 640px) {
+    .projects :global(.pe-item) {
+      grid-template-columns: 20px minmax(0, 1fr);
+    }
+
+    .projects :global(:is(.pe-repo, .pe-date)) {
+      grid-column: 2;
+      justify-self: start;
+      max-width: 100%;
+    }
+
+    .projects :global(.pe-repo) {
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
   }
 
-  @media (max-width: 280px) {
-    .pe-bar {
-      position: static;
-      border-radius: var(--radius-card);
+  @media (prefers-reduced-motion: no-preference) {
+    .projects :global(.pe-item) {
+      animation: projects-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--i, 0) * 35ms);
     }
   }
 

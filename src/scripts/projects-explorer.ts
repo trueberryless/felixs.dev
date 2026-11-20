@@ -1,6 +1,7 @@
 // The projects page as something to explore: picking an organisation (its
 // lane or its bubble) or a month (its bar) narrows every number, chart and
 // the list of pull requests down to it. Picking it again lets go.
+import { packBubbles } from "@/lib/bubbles";
 
 interface PullRequest {
   /** Merge time, `YYYY-MM-DDTHH:mm:ssZ`. */
@@ -14,6 +15,7 @@ interface PullRequest {
 }
 
 interface ExplorerData {
+  avatars: Record<string, string>;
   names: Record<string, string>;
   pullRequests: PullRequest[];
 }
@@ -124,8 +126,9 @@ class ProjectsExplorer extends HTMLElement {
     for (const bubble of this.querySelectorAll<SVGElement>("[data-key]"))
       bubble.setAttribute("aria-pressed", String(bubble.dataset.key === org));
 
+    this.#packBubbles(month);
+
     const summary = this.querySelector<HTMLElement>("[data-summary]");
-    const clear = this.querySelector<HTMLElement>("[data-clear]");
     const parts = [
       org ? data.names[org] : undefined,
       month ? `in ${monthFormat.format(Date.parse(`${month}-01`))}` : undefined,
@@ -133,30 +136,103 @@ class ProjectsExplorer extends HTMLElement {
     if (summary) {
       summary.textContent = parts.length
         ? `${parts.join(" ")}: ${numberFormat.format(picked.length)} merged pull ${picked.length === 1 ? "request" : "requests"}`
-        : "Everything so far. Pick an organisation or a month to look closer.";
+        : "Showing everything.";
     }
-    if (clear) clear.hidden = parts.length === 0;
+    for (const clear of this.querySelectorAll<HTMLElement>("[data-clear]")) {
+      clear.hidden = parts.length === 0;
+    }
     this.#renderList(picked);
   }
+
+  // A month repacks the bubbles to that month only: they glide and grow to
+  // their new places, and their labels come back once they've settled.
+  #packBubbles(month: string | undefined) {
+    const data = this.#data;
+    const chart = this.querySelector<SVGSVGElement>(".bubble-chart");
+    if (!data || !chart) return;
+
+    const counts = new Map<string, number>();
+    for (const pr of data.pullRequests) {
+      if (month && !pr.m.startsWith(month)) continue;
+      counts.set(pr.o, (counts.get(pr.o) ?? 0) + 1);
+    }
+    const [, , width = 300, height = 300] = (
+      chart.getAttribute("viewBox") ?? ""
+    )
+      .split(" ")
+      .map(Number);
+    const packed = new Map(
+      packBubbles(
+        [...counts].map(([key, value]) => ({
+          key,
+          label: data.names[key] ?? key,
+          title: `${data.names[key] ?? key}: ${value} merged pull ${value === 1 ? "request" : "requests"}`,
+          value,
+        })),
+        {
+          height,
+          scale: chart.dataset.scale === "sqrt" ? "sqrt" : "linear",
+          width,
+        }
+      ).map((bubble) => [bubble.key, bubble])
+    );
+
+    chart.classList.add("is-moving");
+    for (const group of chart.querySelectorAll<SVGGElement>("[data-key]")) {
+      const bubble = packed.get(group.dataset.key ?? "");
+      const circle = group.querySelector<SVGCircleElement>(".bubble");
+      if (!circle) continue;
+      circle.style.setProperty("cx", `${bubble?.x ?? width / 2}px`);
+      circle.style.setProperty("cy", `${bubble?.y ?? height / 2}px`);
+      circle.style.setProperty("r", `${bubble?.r ?? 0}px`);
+      group.toggleAttribute("inert", !bubble);
+      if (bubble) {
+        group.dataset.tip = bubble.title;
+        group.setAttribute("aria-label", bubble.title);
+      }
+    }
+
+    clearTimeout(this.#settle);
+    this.#settle = window.setTimeout(() => {
+      for (const group of chart.querySelectorAll<SVGGElement>("[data-key]")) {
+        const bubble = packed.get(group.dataset.key ?? "");
+        const text = group.querySelector(".bubble-text");
+        if (text) text.replaceChildren(...(bubble ? renderLabel(bubble) : []));
+      }
+      chart.classList.remove("is-moving");
+    }, 450);
+  }
+
+  #settle = 0;
 
   #renderList(picked: PullRequest[]) {
     const list = this.querySelector<HTMLElement>("[data-list]");
     const more = this.querySelector<HTMLElement>("[data-more]");
     if (!list || !this.#data) return;
-    const names = this.#data.names;
+    const { avatars } = this.#data;
     list.replaceChildren(
       ...picked.slice(0, LIST_LIMIT).map((pr, index) => {
         const item = document.createElement("li");
         item.className = "pe-item";
         item.style.setProperty("--i", String(index));
+        const avatar = document.createElement("img");
+        avatar.className = "pe-avatar";
+        avatar.alt = "";
+        avatar.width = 20;
+        avatar.height = 20;
+        if (avatars[pr.o]) avatar.src = avatars[pr.o] ?? "";
         const link = document.createElement("a");
         link.href = pr.u;
         link.className = "pe-title";
         link.textContent = pr.t;
-        const meta = document.createElement("span");
-        meta.className = "pe-meta";
-        meta.textContent = `${names[pr.o] ?? pr.o} · ${pr.r} · ${dayFormat.format(Date.parse(pr.m))}`;
-        item.append(link, meta);
+        const repo = document.createElement("span");
+        repo.className = "pe-repo";
+        repo.textContent = pr.r;
+        const date = document.createElement("time");
+        date.className = "pe-date";
+        date.dateTime = pr.m;
+        date.textContent = dayFormat.format(Date.parse(pr.m));
+        item.append(avatar, link, repo, date);
         return item;
       })
     );
@@ -170,6 +246,41 @@ class ProjectsExplorer extends HTMLElement {
             : "";
     }
   }
+}
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+const compact = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 1,
+  notation: "compact",
+});
+
+/** The same label as the server renders, for a repacked bubble. */
+function renderLabel(bubble: ReturnType<typeof packBubbles>[number]) {
+  const lines = bubble.lines ?? [];
+  const showValue = lines.length > 0 && bubble.r > 34;
+  const lineHeight = bubble.size * 1.15;
+  const firstY =
+    bubble.y -
+    (lines.length * lineHeight + (showValue ? 13 : 0)) / 2 +
+    lineHeight / 2;
+  const texts = lines.map((line, index) => {
+    const text = document.createElementNS(SVG_NS, "text");
+    text.setAttribute("class", "bubble-label");
+    text.setAttribute("x", String(bubble.x));
+    text.setAttribute("y", String(firstY + index * lineHeight));
+    text.style.fontSize = `${bubble.size.toFixed(1)}px`;
+    text.textContent = line;
+    return text;
+  });
+  if (showValue) {
+    const value = document.createElementNS(SVG_NS, "text");
+    value.setAttribute("class", "bubble-value");
+    value.setAttribute("x", String(bubble.x));
+    value.setAttribute("y", String(firstY + lines.length * lineHeight + 2));
+    value.textContent = compact.format(bubble.value);
+    texts.push(value);
+  }
+  return texts;
 }
 
 function toggleData(
