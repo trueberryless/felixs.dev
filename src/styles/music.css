@@ -112,16 +112,21 @@
   }
 }
 
+/* The page spaces its parts itself. */
+.ms > ul.number-cards {
+  margin-bottom: 0;
+}
+
 /* Loading a single day: what's about to change steps back, the calendar
    stays sharp so you can keep picking. */
 .ms > .ms-section,
-.ms > .ms-numbers {
+.ms > .number-cards {
   transition:
     opacity 0.3s ease,
     filter 0.3s ease;
 }
 
-.ms[data-loading] > :is(.ms-numbers, .ms-section:not(:has(.ms-calendar))) {
+.ms[data-loading] > :is(.number-cards, .ms-section:not(:has(.ms-calendar))) {
   opacity: 0.4;
   filter: blur(2px) saturate(0.6);
   pointer-events: none;
@@ -316,36 +321,6 @@
 .ms-range-day-close:focus-visible {
   outline: 2px solid var(--text);
   outline-offset: 2px;
-}
-
-/* Big numbers */
-.ms-numbers {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
-  gap: 16px;
-}
-
-.ms-number {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 20px clamp(14px, 4vw, 22px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  background: var(--card-bg);
-}
-
-.ms-number-value {
-  font-family: var(--font-family-heading);
-  font-size: clamp(1.8rem, 6vw, 2.6rem);
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-}
-
-.ms-number-label {
-  color: var(--text-muted);
-  font-size: 0.9rem;
 }
 
 /* Top artists */
@@ -1201,7 +1176,6 @@ a.ms-track-name:hover {
   filter: drop-shadow(0 0 6px var(--accent-glow));
 }
 
-:root.space .ms-number-value,
 :root.space .ms-spotlight-name {
   background-image: var(--text-gradient);
   -webkit-background-clip: text;
