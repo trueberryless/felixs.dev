@@ -1,16 +1,16 @@
 import { describe, expect, test } from 'vitest'
 
-import { applyCache, degradedCache, longLivedCache } from '../../src/lib/cache'
+import { applyCache, degradedCache, dataCache } from '../../src/lib/cache'
 
 describe('applyCache', () => {
-  test('applies the long-lived profile by default', () => {
+  test('applies the data profile by default', () => {
     const response = { headers: new Headers() }
 
     applyCache(response)
 
-    expect(response.headers.get('Cache-Control')).toBe(longLivedCache.browser)
-    expect(response.headers.get('CDN-Cache-Control')).toBe(longLivedCache.cdn)
-    expect(response.headers.get('Netlify-CDN-Cache-Control')).toBe(longLivedCache.cdn)
+    expect(response.headers.get('Cache-Control')).toBe(dataCache.browser)
+    expect(response.headers.get('CDN-Cache-Control')).toBe(dataCache.cdn)
+    expect(response.headers.get('Netlify-CDN-Cache-Control')).toBe(dataCache.cdn)
   })
 
   test('applies the given profile', () => {
@@ -22,8 +22,17 @@ describe('applyCache', () => {
   })
 
   test('caches failures for a shorter time than successes', () => {
-    const maxAge = (profile: typeof longLivedCache) => Number(/stale-while-revalidate=(\d+)/.exec(profile.cdn)?.[1])
+    const maxAge = (profile: typeof dataCache) => Number(/stale-while-revalidate=(\d+)/.exec(profile.cdn)?.[1])
 
-    expect(maxAge(degradedCache)).toBeLessThan(maxAge(longLivedCache))
+    expect(maxAge(degradedCache)).toBeLessThan(maxAge(dataCache))
+  })
+
+  test('keeps data fresh for a day, refreshes it for two weeks and falls back on it for eight', () => {
+    const seconds = (name: string) => Number(new RegExp(`${name}=(\\d+)`).exec(dataCache.cdn)?.[1])
+    const day = 24 * 60 * 60
+
+    expect(seconds('s-maxage')).toBe(day)
+    expect(seconds('stale-while-revalidate')).toBe(14 * day)
+    expect(seconds('stale-if-error')).toBe(56 * day)
   })
 })

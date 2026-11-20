@@ -19,10 +19,10 @@ import {
   parseResumeDate,
   tellCareer,
 } from "@/lib/stories";
-import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { applyCache, dataCache, degradedCache } from "@/lib/cache";
 
 const resume = await fetchResume().catch(() => null);
-applyCache(Astro.response, resume ? longLivedCache : degradedCache);
+applyCache(Astro.response, resume ? dataCache : degradedCache);
 const hasData = Boolean(
   resume &&
   (resume.positions.length > 0 ||

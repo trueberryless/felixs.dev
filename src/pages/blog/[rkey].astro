@@ -4,7 +4,7 @@ import ExternalIcon from "@/components/utils/ExternalIcon.astro";
 import PostImage from "@/components/blog/post/PostImage.astro";
 import type { EmbeddedPost } from "@/components/blog/post/BskyEmbed.astro";
 import LayoutPage from "@/layouts/LayoutPage.astro";
-import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { applyCache, dataCache, degradedCache } from "@/lib/cache";
 import { actorDid, bskyPublicApi, pdsEndpoint } from "@/lib/const";
 import {
   collectFootnotes,
@@ -64,7 +64,7 @@ const [embeds, avatars] = await Promise.all([
   getEmbeds(blocks),
   getAvatars(collectProfiles(getAllSegments(allBlocks))),
 ]);
-if (record) applyCache(Astro.response, longLivedCache);
+if (record) applyCache(Astro.response, dataCache);
 
 const title = record
   ? String(record.title ?? "Untitled post")
