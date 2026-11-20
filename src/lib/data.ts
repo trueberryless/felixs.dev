@@ -554,6 +554,13 @@ export interface Event {
   atmoUrl: string;
   locationText: string;
   attendees: string[];
+  /** Everyone going, with what their profile says about them. */
+  people: {
+    avatar: string | undefined;
+    did: string;
+    handle: string;
+    name: string;
+  }[];
   totalAttendees: number;
   imageUrl: string | null;
 }
@@ -638,6 +645,15 @@ export async function fetchEvents(): Promise<Event[] | null> {
         .filter((a): a is string => Boolean(a))
         .slice(0, 5);
 
+      const people = attendeeDids.map((attendee) => ({
+        avatar: profiles[attendee]?.avatar as string | undefined,
+        did: attendee,
+        handle: String(profiles[attendee]?.handle ?? attendee),
+        name: String(
+          profiles[attendee]?.displayName || profiles[attendee]?.handle || ""
+        ),
+      }));
+
       let imageUrl: string | null = null;
       if (Array.isArray(value.media)) {
         const thumb = value.media.find(
@@ -655,6 +671,7 @@ export async function fetchEvents(): Promise<Event[] | null> {
         atmoUrl,
         locationText,
         attendees,
+        people,
         totalAttendees: attendeeDids.length,
         imageUrl,
       };
