@@ -236,11 +236,13 @@ const hasLinks = bubbles.some((bubble) => bubble.href);
     opacity: 0.4;
   }
 
-  .bubble-group:is(:hover, :focus-visible) .bubble {
-    scale: 1.02;
-    fill: color-mix(in oklch, var(--accent) 88%, transparent);
-    stroke: var(--text);
-    stroke-width: 2;
+  @media (hover: hover) {
+    .bubble-group:is(:hover, :focus-visible) .bubble {
+      scale: 1.02;
+      fill: color-mix(in oklch, var(--accent) 88%, transparent);
+      stroke: var(--text);
+      stroke-width: 2;
+    }
   }
 
   .bubble-label,

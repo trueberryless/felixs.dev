@@ -92,23 +92,29 @@ const [topAuthor, topAuthorBooks = 0] =
       z-index 0s linear 0.45s;
   }
 
-  /* The book you point at lifts and its neighbours make room, so it slides
-     in front of them instead of jumping over them. */
-  .reading-book:hover,
-  .reading-book:focus-within {
-    z-index: 2;
-    translate: 0 -10px;
-    transition:
-      translate 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-      z-index 0s linear 0.08s;
+  @media (hover: hover) {
+    /* The book you point at lifts and its neighbours make room, so it slides
+       in front of them instead of jumping over them. */
+    .reading-book:hover,
+    .reading-book:focus-within {
+      z-index: 2;
+      translate: 0 -10px;
+      transition:
+        translate 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+        z-index 0s linear 0.08s;
+    }
   }
 
-  .reading-book:has(+ .reading-book:is(:hover, :focus-within)) {
-    translate: -22px 0;
+  @media (hover: hover) {
+    .reading-book:has(+ .reading-book:is(:hover, :focus-within)) {
+      translate: -22px 0;
+    }
   }
 
-  .reading-book:is(:hover, :focus-within) + .reading-book {
-    translate: 22px 0;
+  @media (hover: hover) {
+    .reading-book:is(:hover, :focus-within) + .reading-book {
+      translate: 22px 0;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

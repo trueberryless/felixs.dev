@@ -48,9 +48,11 @@
     translate 0.2s ease;
 }
 
-.post-back:hover {
-  color: var(--text);
-  translate: -3px 0;
+@media (hover: hover) {
+  .post-back:hover {
+    color: var(--text);
+    translate: -3px 0;
+  }
 }
 
 .post-title {
@@ -227,10 +229,12 @@ h4.post-heading {
     box-shadow 0.45s ease;
 }
 
-.post-zoom:is(:hover, :focus-visible) img {
-  scale: 1.03;
-  rotate: var(--tilt, 1deg);
-  box-shadow: var(--lift-shadow);
+@media (hover: hover) {
+  .post-zoom:is(:hover, :focus-visible) img {
+    scale: 1.03;
+    rotate: var(--tilt, 1deg);
+    box-shadow: var(--lift-shadow);
+  }
 }
 
 .post-cover {
@@ -279,8 +283,10 @@ h4.post-heading {
   transition: scale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.post-gif:hover .post-gif-play {
-  scale: 1.08;
+@media (hover: hover) {
+  .post-gif:hover .post-gif-play {
+    scale: 1.08;
+  }
 }
 
 .post-gif-text {
@@ -574,9 +580,11 @@ h4.post-heading {
     box-shadow 0.25s ease;
 }
 
-.post-button:hover {
-  translate: 0 -2px;
-  box-shadow: var(--lift-shadow);
+@media (hover: hover) {
+  .post-button:hover {
+    translate: 0 -2px;
+    box-shadow: var(--lift-shadow);
+  }
 }
 
 .post-footnote-ref a {
@@ -647,5 +655,11 @@ h4.post-heading {
   .post-zoom:is(:hover, :focus-visible) img {
     scale: 1;
     rotate: 0deg;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .post-lightbox::backdrop {
+    background: var(--bg-subtle, var(--card-bg));
   }
 }

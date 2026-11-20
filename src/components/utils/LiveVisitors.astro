@@ -432,9 +432,11 @@ const MAX_SATELLITES = 12;
     transition: scale 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  :global(:root.space) .live-visitors:hover .lv-beacon,
-  :global(:root.space) .live-visitors.is-intro .lv-beacon {
-    scale: 1.35;
+  @media (hover: hover) {
+    :global(:root.space) .live-visitors:hover .lv-beacon,
+    :global(:root.space) .live-visitors.is-intro .lv-beacon {
+      scale: 1.35;
+    }
   }
 
   :global(:root.space) .lv-planet {

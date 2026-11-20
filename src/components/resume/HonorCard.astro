@@ -121,8 +121,10 @@ const descParts = desc.split(URL_RE).filter(Boolean);
     transition: transform 0.2s ease;
   }
 
-  .honor-link:hover .honor-link-icon {
-    transform: translate(1px, -1px);
+  @media (hover: hover) {
+    .honor-link:hover .honor-link-icon {
+      transform: translate(1px, -1px);
+    }
   }
 
   .honor-desc {

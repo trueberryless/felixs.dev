@@ -79,9 +79,11 @@ const {
     transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  .book-item:hover .book-3d {
-    transform: translateY(-16px) translateX(8px)
-      rotateZ(calc(var(--rot) + 6deg)) rotateY(-35deg) rotateX(15deg);
+  @media (hover: hover) {
+    .book-item:hover .book-3d {
+      transform: translateY(-16px) translateX(8px)
+        rotateZ(calc(var(--rot) + 6deg)) rotateY(-35deg) rotateX(15deg);
+    }
   }
 
   .cover,

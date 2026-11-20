@@ -151,6 +151,35 @@
   }
 }
 
+/* Less transparency: every glass surface turns solid, wherever it is. */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --header-bg: var(--header-bg-solid);
+  }
+
+  :is(*, ::before, ::after, ::backdrop) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* Less motion: a safety net under every component's own rules. Anything
+   that still animates finishes at once and never loops, and nothing
+   scrolls smoothly. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    scroll-behavior: auto !important;
+  }
+
+  :is(*, ::before, ::after) {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 :root.theme-switching
   :is(*, ::before, ::after):not(
     .easter-egg-toast,

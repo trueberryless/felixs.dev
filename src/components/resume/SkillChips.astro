@@ -70,10 +70,12 @@ for (const items of groups.values()) {
       border-color 0.2s ease;
   }
 
-  .skill-chip:hover {
-    translate: 0 -1px;
-    box-shadow: var(--lift-shadow);
-    border-color: var(--text-muted);
+  @media (hover: hover) {
+    .skill-chip:hover {
+      translate: 0 -1px;
+      box-shadow: var(--lift-shadow);
+      border-color: var(--text-muted);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

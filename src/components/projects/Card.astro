@@ -84,10 +84,12 @@ const { name, description, url, stars, contributions } = Astro.props;
       border-color 0.2s ease;
   }
 
-  .card-link:hover .card-container {
-    transform: translateY(-2px);
-    box-shadow: var(--lift-shadow);
-    border-color: var(--text-muted);
+  @media (hover: hover) {
+    .card-link:hover .card-container {
+      transform: translateY(-2px);
+      box-shadow: var(--lift-shadow);
+      border-color: var(--text-muted);
+    }
   }
 
   .card-header {
@@ -122,8 +124,10 @@ const { name, description, url, stars, contributions } = Astro.props;
     transition: transform 0.2s ease;
   }
 
-  .card-link:hover .card-external {
-    transform: translate(2px, -2px);
+  @media (hover: hover) {
+    .card-link:hover .card-external {
+      transform: translate(2px, -2px);
+    }
   }
 
   .card-metrics {
