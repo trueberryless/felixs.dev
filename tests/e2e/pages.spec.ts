@@ -145,7 +145,8 @@ test.describe('live visitors', () => {
   // Other tests run in parallel against the same server, so they may count too.
   test('counts every open tab', async ({ browser }) => {
     const first = await browser.newPage()
-    await first.goto('/')
+    // The count stays out of the hero, so the home page would hide it.
+    await first.goto('/books')
     await expect(first.locator('live-visitors').getByRole('status')).toHaveText(/visit/)
 
     const second = await browser.newPage()
