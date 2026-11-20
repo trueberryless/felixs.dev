@@ -41,6 +41,22 @@ for (const { heading, path, title } of pages) {
   })
 }
 
+test.describe('landing stage', () => {
+  test.use({ viewport: { height: 800, width: 1280 } })
+
+  // A minifier once folded the timeline into the animation shorthand, which
+  // browsers drop as a whole, so only the built page shows whether it works.
+  test('glides with the scroll timeline', async ({ page }) => {
+    await page.goto('/')
+    const supported = await page.evaluate(() => CSS.supports('animation-timeline: view()'))
+    test.skip(!supported, 'needs scroll timelines')
+
+    const stage = page.locator('.stories-stage')
+    await expect(stage).toHaveCSS('animation-name', 'stage-enter, stage-leave')
+    await expect(stage).toHaveCSS('animation-timeline', '--stories, --stories')
+  })
+})
+
 test('shows the not found page', async ({ page }) => {
   const response = await page.goto('/does-not-exist')
 
