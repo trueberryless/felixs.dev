@@ -131,17 +131,27 @@ const days = [0.6, 0.7, 0.5, 0.8, 1, 0.6, 0.4];
 )}
 
 {part === "highlights" &&
-  ["Longest streak", "Busiest day", "On repeat", "Evergreen"].map((kicker) => (
+  [
+    [
+      "Longest streak",
+      "7 days",
+      "Music every single day from one date to another date.",
+    ],
+    ["Busiest day", "100 plays", "All on a weekday, with a date."],
+    ["On repeat", "25×", "A track name by an artist, on a date in the year."],
+    [
+      "Evergreen",
+      "A track",
+      "By an artist, on a few different days between two months.",
+    ],
+  ].map(([kicker, value, text]) => (
     <article class="ms-highlight" aria-hidden="true">
       <span class="ms-highlight-kicker">{kicker}</span>
       <span class="ms-highlight-value">
-        <span class="bone">12 days</span>
+        <span class="bone">{value}</span>
       </span>
       <p class="ms-highlight-text">
-        <span class="bone is-text">
-          A sentence about this highlight, long enough to wrap onto a second
-          line, with a date.
-        </span>
+        <span class="bone is-text">{text}</span>
       </p>
     </article>
   ))}

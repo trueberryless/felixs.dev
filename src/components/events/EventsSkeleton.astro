@@ -6,8 +6,8 @@ import Section from "@/components/utils/Section.astro";
 
 // The same sections as the page, with bones where the data goes.
 const people = [
-  64, 52, 44, 40, 40, 36, 36, 36, 34, 34, 32, 32, 32, 32, 32, 32, 32, 32, 32,
-  32, 32, 32, 32, 32,
+  64, 50, 46, 46, 46, 46, 41, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
+  37, 37, 37, 37, 37,
 ];
 const places = [
   "Metalab",
@@ -42,14 +42,14 @@ const places = [
   </Section>
 
   <Section title="Every event">
-    <div class="skeleton-places">
-      {places.map((name) => (
-        <FilterChip skeleton count={1}>
-          {name}
-        </FilterChip>
-      ))}
-    </div>
     <div>
+      <div class="skeleton-places">
+        {places.map((name) => (
+          <FilterChip skeleton count={1}>
+            {name}
+          </FilterChip>
+        ))}
+      </div>
       {Array.from({ length: 4 }, () => (
         <EventCard skeleton />
       ))}

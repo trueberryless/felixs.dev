@@ -13,7 +13,7 @@ import Section from "@/components/utils/Section.astro";
 
 // The resume itself, built from the same parts, with bones for the text.
 const description =
-  "A few sentences about what I did there and what I worked on, long enough to run over three lines like the real ones do on a wide screen, and a bit more.";
+  "A few sentences about what I did there and what I worked on, the people I worked with and the things we shipped together over the years A few sentences about what I.";
 ---
 
 <div class="skeleton" aria-hidden="true">
@@ -44,16 +44,25 @@ const description =
     />
     <ol class="skeleton-chapters">
       <ResumeChapter
-        chips={["TypeScript", "Vue", "Azure", "C#"]}
-        description={description}
+        chips={[
+          "C#",
+          ".NET",
+          "Microsoft Azure",
+          "DevOps",
+          "CI/CD",
+          "GitLab Pipelines",
+          "Octopus Deploy",
+        ]}
+        description="A few sentences about what I did there and what I worked on, the people I worked with and the things we shipped together over t."
         end="Jan 2026"
         index={0}
         isCurrent={false}
         kind="work"
-        organisation="A company"
+        meta={["Vienna, Austria", "Full-time", "Hybrid"]}
+        organisation="A company with a long name"
         skeleton
         start="Jan 2024"
-        title="A position title"
+        title="Software developer"
       />
       <ResumeChapter
         description={description}
