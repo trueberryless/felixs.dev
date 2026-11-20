@@ -139,17 +139,16 @@ const dateFormat = new Intl.DateTimeFormat("en-US", {
     }
   }
 
+  /* The dots fade in one after another, and leave together with the rest
+     of the chart. */
   @media (prefers-reduced-motion: no-preference) {
     .posts-link {
-      transition:
-        opacity 0.5s ease,
-        translate 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: opacity 0.5s ease;
       transition-delay: calc(0.3s + var(--row) * 22ms + var(--i) * 30ms);
     }
 
     :global(.story-frame:not([data-active="true"])) .posts-link {
       opacity: 0;
-      translate: -16px 0;
       transition-delay: 0s;
     }
   }
