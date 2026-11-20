@@ -222,6 +222,7 @@ function createScene(): Scene {
       height,
       pointer: view,
       scroll,
+      scrollMax: document.documentElement.scrollHeight - height,
       time: motionTime,
       width,
     });
