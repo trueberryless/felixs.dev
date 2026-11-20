@@ -181,3 +181,41 @@ export function tellCareer(rows: GanttRow[], nowMs: number): GanttRow[] {
     },
   ].toSorted((a, b) => b.start - a.start);
 }
+
+/**
+ * Splits a URL at the end of a text off the text, so it can be shown as a
+ * proper link instead of raw text.
+ */
+export function splitTrailingLink(text: string | null | undefined): {
+  link?: { host: string; url: string };
+  text: string;
+} {
+  const value = (text ?? "").trim();
+  const match = /(https?:\/\/\S+?)[.,;:!?)]*$/.exec(value);
+  if (!match?.[1] || !URL.canParse(match[1])) return { text: value };
+  const url = match[1];
+  return {
+    link: { host: new URL(url).hostname.replace(/^www\./, ""), url },
+    text: value.slice(0, match.index).trim(),
+  };
+}
+
+/**
+ * Skills as bubbles that grow with the number of positions using them.
+ */
+export function getSkillBubbles(
+  skills: { name: string }[],
+  usage: Map<string, number>
+): Bubble[] {
+  return skills.map(({ name }) => {
+    const uses = usage.get(name.toLowerCase()) ?? 0;
+    return {
+      label: name,
+      title:
+        uses > 0
+          ? `${name}: used in ${uses} ${uses === 1 ? "position" : "positions"}`
+          : name,
+      value: (1 + uses * 0.35) ** 2,
+    };
+  });
+}

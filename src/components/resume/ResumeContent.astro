@@ -3,7 +3,7 @@ import Section from "@/components/utils/Section.astro";
 import Fallback from "@/components/utils/Fallback.astro";
 import ResumeChapter from "@/components/resume/ResumeChapter.astro";
 import HonorCard from "@/components/resume/HonorCard.astro";
-import SkillChips from "@/components/resume/SkillChips.astro";
+import SkillBubbles from "@/components/resume/SkillBubbles.astro";
 import {
   BriefcaseBusiness,
   GraduationCap,
@@ -179,18 +179,18 @@ const numbers = [
     {resume!.honors.length > 0 && (
       <Section title="Awards & Honors">
         <Trophy slot="leading" class="section-icon" width={18} height={18} />
-        <div class="honor-grid">
-          {resume!.honors.map((h) => (
-            <HonorCard honor={h} />
+        <ol class="chapters">
+          {resume!.honors.map((honor, index) => (
+            <HonorCard honor={honor} index={index} />
           ))}
-        </div>
+        </ol>
       </Section>
     )}
 
     {resume!.skills.length > 0 && (
       <Section title="Skills">
         <Wrench slot="leading" class="section-icon" width={18} height={18} />
-        <SkillChips skills={resume!.skills} usage={usage} />
+        <SkillBubbles skills={resume!.skills} usage={usage} />
       </Section>
     )}
   </>
@@ -258,17 +258,5 @@ const numbers = [
   .chapters {
     padding: 0;
     list-style: none;
-  }
-
-  .honor-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
-  }
-
-  @media (min-width: 640px) {
-    .honor-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
   }
 </style>
