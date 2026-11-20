@@ -150,6 +150,68 @@ export function parseResumeDate(label: string | null | undefined): number {
   return Date.parse(`1 ${label} UTC`);
 }
 
+interface CareerSource {
+  education: {
+    degree: string | null;
+    endLabel: string | null;
+    fieldOfStudy: string | null;
+    institution: string;
+    isCurrent: boolean;
+    startLabel: string;
+  }[];
+  positions: {
+    company: string;
+    endLabel: string | null;
+    isCurrent: boolean;
+    startLabel: string;
+    title: string;
+  }[];
+}
+
+/** Work and education from the resume as rows of the career timeline. */
+export function getCareerRows(
+  resume: CareerSource | null | undefined,
+  nowMs: number
+): GanttRow[] {
+  return [
+    ...(resume?.positions ?? []).map((position) => ({
+      end: position.isCurrent ? nowMs : parseResumeDate(position.endLabel),
+      isCurrent: position.isCurrent,
+      kind: "work" as const,
+      label: position.company,
+      start: parseResumeDate(position.startLabel),
+      title: `${position.title} at ${position.company}`,
+    })),
+    ...(resume?.education ?? []).map((education) => ({
+      end: education.isCurrent ? nowMs : parseResumeDate(education.endLabel),
+      isCurrent: education.isCurrent,
+      kind: "education" as const,
+      label: education.institution,
+      start: parseResumeDate(education.startLabel),
+      title: [education.degree, education.fieldOfStudy, education.institution]
+        .filter(Boolean)
+        .join(", "),
+    })),
+  ]
+    .filter((row) => !Number.isNaN(row.start) && !Number.isNaN(row.end))
+    .toSorted((a, b) => b.start - a.start);
+}
+
+/** How many positions use each skill, by lowercase name. */
+export function getSkillUsage(
+  positions: { skills: string[] }[]
+): Map<string, number> {
+  const usage = new Map<string, number>();
+  for (const position of positions) {
+    for (const skill of new Set(
+      position.skills.map((name) => name.toLowerCase())
+    )) {
+      usage.set(skill, (usage.get(skill) ?? 0) + 1);
+    }
+  }
+  return usage;
+}
+
 // My first merged pull request, to Starlight.
 const OPEN_SOURCE_SINCE = Date.UTC(2023, 9, 26);
 const SHORT_MS = 92 * 24 * 60 * 60 * 1000;

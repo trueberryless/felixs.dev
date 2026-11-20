@@ -59,3 +59,47 @@ describe('parseResumeDate', () => {
     expect(parseResumeDate(null)).toBeNaN()
   })
 })
+
+describe('resume', () => {
+  test('turns work and education into timeline rows, newest first', async () => {
+    const { getCareerRows } = await import('../../src/lib/stories')
+    const rows = getCareerRows(
+      {
+        education: [{ degree: 'BSc', endLabel: null, fieldOfStudy: 'CS', institution: 'TU Wien', isCurrent: true, startLabel: 'Oct 2025' }],
+        positions: [{ company: 'Fronius', endLabel: null, isCurrent: true, startLabel: 'Jul 2025', title: 'Developer' }],
+      },
+      Date.parse('2026-11-19T00:00:00Z')
+    )
+    expect(rows.map((row) => [row.label, row.kind])).toEqual([
+      ['TU Wien', 'education'],
+      ['Fronius', 'work'],
+    ])
+    expect(rows[0]?.title).toBe('BSc, CS, TU Wien')
+  })
+
+  test('counts how many positions use a skill', async () => {
+    const { getSkillUsage } = await import('../../src/lib/stories')
+    expect(getSkillUsage([{ skills: ['C#', '.NET'] }, { skills: ['c#'] }])).toEqual(
+      new Map([
+        ['c#', 2],
+        ['.net', 1],
+      ])
+    )
+  })
+})
+
+describe('tellCareer', () => {
+  test('drops short stints and adds open source', async () => {
+    const { tellCareer } = await import('../../src/lib/stories')
+    const day = 86_400_000
+    const rows = tellCareer(
+      [
+        { end: Date.UTC(2024, 0, 1), isCurrent: false, kind: 'work', label: 'Long', start: Date.UTC(2023, 0, 1), title: 'Long' },
+        { end: Date.UTC(2023, 7, 1) + 30 * day, isCurrent: false, kind: 'work', label: 'Short', start: Date.UTC(2023, 7, 1), title: 'Short' },
+      ],
+      Date.UTC(2026, 10, 20)
+    )
+    expect(rows.map((row) => row.label)).toEqual(['Open source', 'Long'])
+    expect(rows[0]).toMatchObject({ isCurrent: true, kind: 'open-source' })
+  })
+})

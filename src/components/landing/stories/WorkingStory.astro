@@ -3,34 +3,13 @@ import CareerTimeline from "@/components/charts/CareerTimeline.astro";
 import Story from "@/components/story/Story.astro";
 import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
 import { fetchResume } from "@/lib/data";
-import { parseResumeDate, tellCareer, type GanttRow } from "@/lib/stories";
+import { getCareerRows, parseResumeDate, tellCareer } from "@/lib/stories";
 
 const resume = await fetchResume().catch(() => null);
 applyCache(Astro.response, resume ? longLivedCache : degradedCache);
 
 const nowMs = Date.now();
-const rows: GanttRow[] = [
-  ...(resume?.positions ?? []).map((position) => ({
-    end: position.isCurrent ? nowMs : parseResumeDate(position.endLabel),
-    isCurrent: position.isCurrent,
-    kind: "work" as const,
-    label: position.company,
-    start: parseResumeDate(position.startLabel),
-    title: `${position.title} at ${position.company}`,
-  })),
-  ...(resume?.education ?? []).map((education) => ({
-    end: education.isCurrent ? nowMs : parseResumeDate(education.endLabel),
-    isCurrent: education.isCurrent,
-    kind: "education" as const,
-    label: education.institution,
-    start: parseResumeDate(education.startLabel),
-    title: [education.degree, education.fieldOfStudy, education.institution]
-      .filter(Boolean)
-      .join(", "),
-  })),
-]
-  .filter((row) => !Number.isNaN(row.start) && !Number.isNaN(row.end))
-  .toSorted((a, b) => b.start - a.start);
+const rows = getCareerRows(resume, nowMs);
 
 const job = resume?.positions.find((position) => position.isCurrent);
 const study = resume?.education.find((education) => education.isCurrent);
