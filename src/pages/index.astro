@@ -197,6 +197,11 @@ export const prerender = true;
         animation:
           stage-enter linear both,
           stage-leave linear both;
+      }
+
+      /* Separate on purpose, see the parallax in `Hero.astro`: a minifier
+         would fold these into the shorthand above, which browsers reject. */
+      .stories-stage.stories-stage {
         animation-timeline: --stories, --stories;
         animation-range:
           entry 0% contain 7svh,
