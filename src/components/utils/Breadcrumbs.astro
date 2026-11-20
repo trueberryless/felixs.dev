@@ -6,57 +6,8 @@ const backUrl = isSingleSegment ? "/" : "/" + segments.slice(0, -1).join("/");
 ---
 
 {segments.length > 0 && (
-  <a href={backUrl} class="back-link" aria-label="Go back">
-    <span class="arrow">←</span>
+  <a href={backUrl} class="back-link button" aria-label="Go back">
+    <span aria-hidden="true">←</span>
     Back
   </a>
 )}
-
-<style>
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 16px;
-    font-size: 0.85rem;
-    color: var(--text);
-    background: var(--badge-bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-pill);
-    text-decoration: none;
-    transition:
-      translate 0.2s ease,
-      box-shadow 0.2s ease,
-      background 0.2s ease,
-      border-color 0.2s ease;
-  }
-
-  .back-link:hover {
-    translate: 0 -2px;
-    box-shadow: var(--lift-shadow);
-    background: var(--card-bg);
-    border-color: var(--text-muted);
-  }
-
-  .arrow {
-    display: inline-block;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .back-link:hover .arrow {
-    transform: translateX(-4px);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .back-link,
-    .arrow {
-      transition: none;
-    }
-    .back-link:hover {
-      translate: none;
-    }
-    .back-link:hover .arrow {
-      transform: none;
-    }
-  }
-</style>

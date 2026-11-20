@@ -586,36 +586,6 @@ a.ms-recent-track:hover {
   display: none;
 }
 
-.ms-nav {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: var(--card-bg);
-  color: var(--text);
-  font: inherit;
-  cursor: pointer;
-  transition:
-    background 0.2s ease,
-    opacity 0.2s ease;
-}
-
-.ms-nav:hover:not(:disabled) {
-  background: var(--hover-bg);
-}
-
-.ms-nav:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.ms-nav:focus-visible {
-  outline: 2px solid var(--text);
-  outline-offset: 2px;
-}
-
 .ms-currents-scroll {
   overflow-x: auto;
   scroll-snap-type: x proximity;

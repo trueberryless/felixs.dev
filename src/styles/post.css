@@ -39,22 +39,6 @@
   margin-bottom: 40px;
 }
 
-.post-back {
-  align-self: flex-start;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  transition:
-    color 0.2s ease,
-    translate 0.2s ease;
-}
-
-@media (hover: hover) {
-  .post-back:hover {
-    color: var(--text);
-    translate: -3px 0;
-  }
-}
-
 .post-title {
   font-size: clamp(2rem, 6vw, 3.2rem);
   line-height: 1.1;
@@ -324,6 +308,16 @@ h4.post-heading {
   border-radius: var(--radius-card);
 }
 
+.post-back {
+  align-self: flex-start;
+}
+
+.post-lightbox-close {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+}
+
 /* Lightbox */
 .post-lightbox {
   width: 100vw;
@@ -390,27 +384,6 @@ h4.post-heading {
 .post-lightbox[data-closing] .post-lightbox-caption {
   opacity: 0;
   transition: opacity 0.15s ease;
-}
-
-.post-lightbox-close {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: var(--header-bg-solid);
-  color: var(--text);
-  font-size: 1.4rem;
-  cursor: pointer;
-}
-
-.post-lightbox-close:focus-visible {
-  outline: 2px solid var(--text);
-  outline-offset: 2px;
 }
 
 @keyframes post-fade {
@@ -483,18 +456,8 @@ h4.post-heading {
    without changing its width. */
 .post-copy {
   display: grid;
-  padding: 4px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  background: var(--badge-bg);
-  color: var(--text);
+  place-items: center;
   font-family: var(--font-family-heading);
-  font-size: 0.95rem;
-  line-height: 1.2;
-  cursor: pointer;
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease;
 }
 
 .post-copy > span {
@@ -517,19 +480,6 @@ h4.post-heading {
 .post-copy[data-copied] .post-copy-done {
   opacity: 1;
   translate: 0 0;
-}
-
-.post-copy[data-copied] {
-  border-color: var(--accent);
-}
-
-.post-copy:hover {
-  background: var(--hover-bg);
-}
-
-.post-copy:focus-visible {
-  outline: 2px solid var(--text);
-  outline-offset: 2px;
 }
 
 /* Scrollable code can be reached and scrolled with the keyboard. */
@@ -563,28 +513,6 @@ h4.post-heading {
 
 .post-button-row {
   margin: 0;
-}
-
-.post-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: var(--radius-pill);
-  background: var(--text);
-  color: var(--card-bg) !important;
-  font-weight: 600;
-  text-decoration: none !important;
-  transition:
-    translate 0.25s ease,
-    box-shadow 0.25s ease;
-}
-
-@media (hover: hover) {
-  .post-button:hover {
-    translate: 0 -2px;
-    box-shadow: var(--lift-shadow);
-  }
 }
 
 .post-footnote-ref a {
@@ -623,15 +551,6 @@ h4.post-heading {
   margin-block: 64px 24px;
   padding-top: 24px;
   border-top: 1px solid var(--border);
-}
-
-.post-original {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
-.post-original:hover {
-  color: var(--text);
 }
 
 :root.space .post-title {

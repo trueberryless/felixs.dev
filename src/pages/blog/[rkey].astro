@@ -1,5 +1,6 @@
 ---
 import Blocks from "@/components/blog/post/Blocks.astro";
+import ExternalIcon from "@/components/utils/ExternalIcon.astro";
 import PostImage from "@/components/blog/post/PostImage.astro";
 import type { EmbeddedPost } from "@/components/blog/post/BskyEmbed.astro";
 import LayoutPage from "@/layouts/LayoutPage.astro";
@@ -190,8 +191,8 @@ async function getEmbeds(documentBlocks: unknown[]) {
 
   <article class="post">
     <header class="post-header">
-      <a class="post-back" href="/blog">
-        ← All posts
+      <a class="post-back button" href="/blog">
+        <span aria-hidden="true">←</span> All posts
       </a>
       <h1 class="post-title">{title}</h1>
       {description && <p class="post-lede">{description}</p>}
@@ -254,12 +255,13 @@ async function getEmbeds(documentBlocks: unknown[]) {
     )}
 
     <footer class="post-footer">
-      <a class="post-back" href="/blog">
-        ← All posts
+      <a class="post-back button" href="/blog">
+        <span aria-hidden="true">←</span> All posts
       </a>
       {originalUrl && (
-        <a class="post-original" href={originalUrl}>
-          Read on Leaflet ↗&#xFE0E;
+        <a class="post-original button" href={originalUrl}>
+          Read on Leaflet
+          <ExternalIcon />
         </a>
       )}
     </footer>
@@ -270,7 +272,11 @@ async function getEmbeds(documentBlocks: unknown[]) {
       <img class="post-lightbox-image" alt="" />
       <figcaption class="post-lightbox-caption"></figcaption>
     </figure>
-    <button class="post-lightbox-close" type="button" aria-label="Close">
+    <button
+      class="post-lightbox-close button is-icon"
+      type="button"
+      aria-label="Close"
+    >
       <span aria-hidden="true">×</span>
     </button>
   </dialog>

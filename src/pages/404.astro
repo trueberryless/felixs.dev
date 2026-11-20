@@ -27,7 +27,7 @@ import LayoutMinimal from "@/layouts/LayoutMinimal.astro";
       <div class="error-halo" aria-hidden="true"></div>
       <h1 class="error-code">404</h1>
       <p class="error-text">Page not found</p>
-      <a href="/" class="back-link">
+      <a href="/" class="back-link button">
         Return to Home
       </a>
     </div>
@@ -37,6 +37,9 @@ import LayoutMinimal from "@/layouts/LayoutMinimal.astro";
 <style is:global>
   main {
     padding-top: 0;
+  }
+  .back-link {
+    margin-top: 1rem;
   }
 </style>
 
@@ -159,38 +162,6 @@ import LayoutMinimal from "@/layouts/LayoutMinimal.astro";
     z-index: 2;
   }
 
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.75rem 1.5rem;
-    background: var(--badge-bg);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-pill);
-    font-weight: 500;
-    transition:
-      translate 0.2s ease,
-      box-shadow 0.2s ease,
-      background 0.2s ease,
-      border-color 0.2s ease;
-    margin-top: 1rem;
-    z-index: 2;
-  }
-
-  .back-link:hover {
-    background: var(--card-bg);
-    translate: 0 -2px;
-    box-shadow: var(--lift-shadow);
-    border-color: var(--text-muted);
-  }
-
-  @media (prefers-reduced-transparency: reduce) {
-    .back-link {
-      background: var(--bg-subtle);
-    }
-  }
-
   @media (max-width: 280px) {
     .content-wrapper-404 {
       max-width: 100%;
@@ -205,10 +176,6 @@ import LayoutMinimal from "@/layouts/LayoutMinimal.astro";
 
     .error-text {
       font-size: 1.15rem;
-    }
-
-    .back-link {
-      padding: 0.6rem 1rem;
     }
   }
 </style>
