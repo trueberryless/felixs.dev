@@ -197,7 +197,13 @@ class ProjectsExplorer extends HTMLElement {
       for (const group of chart.querySelectorAll<SVGGElement>("[data-key]")) {
         const bubble = packed.get(group.dataset.key ?? "");
         const text = group.querySelector(".bubble-text");
-        if (text) text.replaceChildren(...(bubble ? renderLabel(bubble) : []));
+        // Spaces between the lines keep them apart as words when read out.
+        const parts = bubble
+          ? renderLabel(bubble).flatMap((part, index) =>
+              index === 0 ? [part] : [document.createTextNode(" "), part]
+            )
+          : [];
+        if (text) text.replaceChildren(...parts);
       }
       chart.classList.remove("is-moving");
     }, 450);

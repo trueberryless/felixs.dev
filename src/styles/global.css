@@ -282,6 +282,23 @@ ul {
   list-style: none;
 }
 
+/* The first stop for keyboard users, hidden until it has focus. */
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 1000;
+  translate: 0 calc(-100% - 24px);
+}
+
+.skip-link:focus-visible {
+  translate: none;
+}
+
+main:focus {
+  outline: none;
+}
+
 /* Skeletons: a bone stands in for content that is still loading. Around
    text it keeps the text's own size, so nothing moves when it arrives. */
 .bone {

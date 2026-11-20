@@ -390,6 +390,12 @@ h4.post-heading {
   animation: post-fade 0.3s ease both;
 }
 
+@media (prefers-reduced-transparency: reduce) {
+  .post-lightbox::backdrop {
+    background: var(--bg-subtle, var(--card-bg));
+  }
+}
+
 .post-lightbox[data-closing]::backdrop {
   animation: post-fade 0.3s ease reverse both;
 }
