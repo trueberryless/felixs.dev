@@ -75,6 +75,13 @@ describe('computeMusicStats', () => {
     expect(range('2024')?.highlights.firstPlay).toMatchObject({ track: 'a' })
   })
 
+  test('counts one song played under two track ids as one track', () => {
+    const relinked = { ...play('2026-11-18T09:00:00Z', 'b', ['Beta', 'Alpha']), url: 'https://open.spotify.com/track/other' }
+    const day = computeDayStats([...plays, relinked], '2026-11-18')
+    expect(day.topTracks[0]).toMatchObject({ name: 'b', plays: 3 })
+    expect(day.highlights.topRepeat).toMatchObject({ plays: 3, track: 'b' })
+  })
+
   test('computes a single day', () => {
     const day = computeDayStats(plays, '2026-11-18')
     expect(day).toMatchObject({ id: '2026-11-18', label: 'Nov 18, 2026', plays: 2 })
