@@ -107,9 +107,7 @@ const total = posts?.length ?? 0;
           )}
         </div>
       )}
-      <p class="blog-status" aria-live="polite" data-status>
-        {total} posts, newest first.
-      </p>
+      <p class="sr-only" aria-live="polite" data-status />
     </div>
 
     <div class="blog-years">
@@ -282,7 +280,6 @@ const total = posts?.length ?? 0;
     font-variant-numeric: tabular-nums;
   }
 
-  .blog-status,
   .blog-empty {
     color: var(--text-muted);
     font-size: 0.9rem;
@@ -512,20 +509,23 @@ const total = posts?.length ?? 0;
     }
   }
 
-  /* Pointing at a post lets the others step back and brings its year
-     forward, unless the post sits right on top of the year. */
+  /* Pointing at a post lets the others step back, and every divider with
+     them, so none frames the post more than the others. */
   @media (hover: hover) and (pointer: fine) {
-    .post,
-    .year-watermark {
+    .post {
+      transition: border-color 0.35s ease;
+    }
+
+    .post-link {
       transition: opacity 0.35s ease;
     }
 
-    .blog-years:has(.post-link:hover) .post:not(:has(.post-link:hover)) {
-      opacity: 0.45;
+    .blog-years:has(.post-link:hover) .post {
+      border-top-color: color-mix(in oklch, var(--border) 45%, transparent);
     }
 
-    .year-group:has(.post:not(:first-child) .post-link:hover) .year-watermark {
-      opacity: 0.16;
+    .blog-years:has(.post-link:hover) .post-link:not(:hover) {
+      opacity: 0.45;
     }
   }
 

@@ -397,16 +397,23 @@ h4.post-heading {
   display: inline-flex;
   align-items: center;
   gap: 0.3em;
-  padding: 0.05em 0.55em 0.05em 0.2em;
+  box-sizing: border-box;
+  /* A fixed height, centred on the text, with margins that take it back out,
+     so a line with a badge is exactly as tall as any other line. */
+  height: 1.6em;
+  margin-block: -0.4em;
+  padding: 0 0.55em 0 0.2em;
   border: 1px solid color-mix(in oklch, var(--accent) 55%, transparent);
   border-radius: var(--radius-pill);
   background: color-mix(in oklch, var(--accent) 14%, transparent);
   color: inherit;
   font-size: 0.92em;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1;
   text-decoration: none;
-  vertical-align: baseline;
+  vertical-align: middle;
+  /* Middle sits on the x-height, a little below the centre of the text. */
+  translate: 0 -0.12em;
   white-space: nowrap;
   transition:
     background 0.2s ease,
@@ -418,8 +425,8 @@ h4.post-heading {
 }
 
 .post-badge img {
-  width: 1.35em;
-  height: 1.35em;
+  width: 1.25em;
+  height: 1.25em;
   border-radius: 50%;
   object-fit: cover;
 }
