@@ -236,6 +236,13 @@ export function renderTrack(
       const point = pointAt(newestX + (oldestX - newestX) * eased);
       pulse.setAttribute("cx", point.x.toFixed(1));
       pulse.setAttribute("cy", point.y.toFixed(1));
+      // Each trip fades and grows in at the start and fades out at the end,
+      // so the jump back to the newest song is never seen.
+      const presence = reduced.matches
+        ? 1
+        : smoothstep(progress / 0.14) * smoothstep((1 - progress) / 0.2);
+      pulse.style.fillOpacity = presence.toFixed(3);
+      pulse.setAttribute("r", (DOT * (0.55 + 0.45 * presence)).toFixed(2));
     }
   }
 
@@ -460,4 +467,9 @@ async function fetchPlays(pds: string, did: string): Promise<TrackPlay[]> {
   } catch {
     return [];
   }
+}
+
+function smoothstep(value: number) {
+  const t = Math.min(1, Math.max(0, value));
+  return t * t * (3 - 2 * t);
 }
