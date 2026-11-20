@@ -1,6 +1,7 @@
 import type { MusicStats, RangeStats } from "@/lib/music";
+import { countTo } from "@/scripts/count-up";
 
-import { animateNumber, formatDate, reveal } from "./dom";
+import { formatDate, reveal } from "./dom";
 import { renderTrack } from "./track";
 import {
   getCurrentColumns,
@@ -182,7 +183,10 @@ class MusicStatsElement extends HTMLElement {
 
     if (isFirst) {
       [...this.children]
-        .filter((element) => !element.matches("script, [data-status]"))
+        // The number cards rise in on their own, like on every page.
+        .filter(
+          (element) => !element.matches("script, [data-status], .number-cards")
+        )
         .forEach((element, index) => reveal(element, Math.min(index, 6)));
       return;
     }
@@ -200,7 +204,7 @@ class MusicStatsElement extends HTMLElement {
   #renderNumbers(range: RangeStats) {
     for (const key of ["minutes", "plays", "artists", "tracks"] as const) {
       const element = this.querySelector(`[data-stat="${key}"]`);
-      if (element) animateNumber(element, range[key]);
+      if (element) countTo(element, range[key]);
     }
   }
 

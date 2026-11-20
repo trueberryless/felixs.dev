@@ -1,4 +1,5 @@
 ---
+import NumberCards from "@/components/utils/NumberCards.astro";
 import BubbleChart from "@/components/charts/BubbleChart.astro";
 import MonthlyBars from "@/components/charts/MonthlyBars.astro";
 import Swimlanes from "@/components/charts/Swimlanes.astro";
@@ -83,18 +84,7 @@ const bubbles = orgs
 {data ? (
   <projects-explorer class="projects">
     <script type="application/json" class="pe-data" set:html={explorerData} />
-    {totals.pullRequests > 0 && (
-      <ul class="projects-numbers">
-        {numbers.map((number, index) => (
-          <li class="projects-number" style={`--i: ${index}`}>
-            <span class="projects-number-value" data-stat={number.key}>
-              {numberFormat.format(number.value)}
-            </span>
-            <span class="projects-number-label">{number.label}</span>
-          </li>
-        ))}
-      </ul>
-    )}
+    {totals.pullRequests > 0 && <NumberCards numbers={numbers} />}
 
     <p class="sr-only" aria-live="polite" data-summary />
 
@@ -323,38 +313,6 @@ const bubbles = orgs
     }
   }
 
-  .projects-numbers {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
-    gap: 16px;
-    margin-bottom: 56px;
-    padding: 0;
-    list-style: none;
-  }
-
-  .projects-number {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 20px clamp(14px, 4vw, 22px);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-card);
-    background: var(--card-bg);
-  }
-
-  .projects-number-value {
-    font-family: var(--font-family-heading);
-    font-size: clamp(1.8rem, 6vw, 2.6rem);
-    line-height: 1.1;
-    color: var(--text);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .projects-number-label {
-    color: var(--text-muted);
-    font-size: 0.9rem;
-  }
-
   .projects-lede {
     margin-bottom: 16px;
     color: var(--text-muted);
@@ -386,10 +344,6 @@ const bubbles = orgs
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .projects-number {
-      animation: projects-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
-      animation-delay: calc(var(--i) * 70ms);
-    }
   }
 
   @keyframes projects-rise {
