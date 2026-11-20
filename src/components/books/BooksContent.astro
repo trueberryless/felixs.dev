@@ -24,7 +24,6 @@ const numbers = [
   },
 ].filter((number) => number.value > 0);
 const busiestYear = Math.max(...perYear.map((year) => year.count), 1);
-// Authors with more than one book are worth a filter.
 const shelfAuthors = authors.filter((author) => author.count > 1);
 ---
 
@@ -101,7 +100,6 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
 )}
 
 <script>
-  // Picking an author shows only their books; picking them again shows all.
   class BooksShelf extends HTMLElement {
     connectedCallback() {
       if (this.dataset.ready !== undefined) return;
@@ -185,7 +183,6 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
     font-size: 0.9rem;
   }
 
-  /* Books per year, as a row of slim columns. */
   .shelf-years {
     margin: 0 0 40px;
   }

@@ -24,59 +24,6 @@ export interface GanttRow {
   title: string;
 }
 
-const MONTH_FORMAT = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  timeZone: "UTC",
-});
-const MONTH_YEAR_FORMAT = new Intl.DateTimeFormat("en-US", {
-  month: "long",
-  timeZone: "UTC",
-  year: "numeric",
-});
-
-/**
- * Returns one point per calendar month for the `count` months up to `nowMs`,
- * filling quiet months with zero.
- */
-export function getMonthlySeries(
-  values: Map<string, number>,
-  nowMs: number,
-  count: number
-): SeriesPoint[] {
-  const now = new Date(nowMs);
-
-  return Array.from({ length: count }, (_, index) => {
-    const date = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (count - 1 - index), 1)
-    );
-    const key = date.toISOString().slice(0, 7);
-    const value = values.get(key) ?? 0;
-
-    return {
-      label: MONTH_FORMAT.format(date),
-      title: `${MONTH_YEAR_FORMAT.format(date)}: ${value.toLocaleString("en-US")}`,
-      value,
-    };
-  });
-}
-
-/**
- * Counts items per `YYYY-MM` month.
- */
-export function countByMonth<T>(
-  items: T[],
-  getDate: (item: T) => string | undefined
-): Map<string, number> {
-  const counts = new Map<string, number>();
-  for (const item of items) {
-    const date = getDate(item);
-    if (!date || Number.isNaN(Date.parse(date))) continue;
-    const key = new Date(date).toISOString().slice(0, 7);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-  return counts;
-}
-
 export interface Activity {
   /** How the heading describes doing this most, e.g. "liking things". */
   doing: string;

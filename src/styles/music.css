@@ -537,14 +537,12 @@
   white-space: nowrap;
 }
 
-a.ms-track-name:hover,
-a.ms-recent-track:hover {
+a.ms-track-name:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-.ms-track-artist,
-.ms-recent-artist {
+.ms-track-artist {
   color: var(--text-muted);
   font-size: 0.88rem;
   overflow: hidden;
@@ -1034,7 +1032,6 @@ a.ms-recent-track:hover {
   color: var(--text-muted);
 }
 
-/* A song on repeat shows how many times it played. */
 .tr-count {
   position: absolute;
   right: -6px;
@@ -1157,7 +1154,6 @@ a.ms-recent-track:hover {
   z-index: 5;
 }
 
-/* While I'm listening, a light runs along the track. */
 .tr-pulse {
   fill: var(--accent);
   filter: drop-shadow(0 0 6px var(--accent))

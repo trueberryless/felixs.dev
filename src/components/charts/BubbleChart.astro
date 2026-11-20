@@ -231,7 +231,6 @@ const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
     cursor: pointer;
   }
 
-  /* A picked bubble keeps its ring, the others step back. */
   .bubble-chart:has([aria-pressed="true"])
     .bubble-group:not([aria-pressed="true"]) {
     opacity: 0.4;
@@ -261,8 +260,6 @@ const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
       stroke-width 0.35s ease;
   }
 
-  /* The bubble you point at brightens and gets a ring, the others step
-     back. Nothing grows into its neighbours. */
   .bubble-chart:has(.bubble-group:is(:hover, :focus-visible))
     .bubble-group:not(:hover, :focus-visible) {
     opacity: 0.4;
@@ -320,7 +317,6 @@ const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
     translate: -50% calc(-100% - 10px);
   }
 
-  /* Bubbles grow out of their centres once the section is on stage. */
   @media (prefers-reduced-motion: no-preference) {
     .bubble-group {
       transition:

@@ -4,7 +4,7 @@ import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
 import { fetchPosts } from "@/lib/data";
 import { getDocumentBlocks, getReadingMinutes } from "@/lib/leaflet";
 import { getPostImage } from "@/lib/post-images";
-import { groupPostsByYear, processPost } from "@/lib/posts";
+import { getPostPath, groupPostsByYear } from "@/lib/posts";
 
 const posts = await fetchPosts().catch(() => null);
 applyCache(Astro.response, posts ? longLivedCache : degradedCache);
@@ -36,11 +36,10 @@ const describe = (post: (typeof postsByYear)[string][number]) => {
     search: [record.title, description, ...tags].join(" ").toLowerCase(),
     tags,
     title: record.title || "Untitled post",
-    url: processPost(post).localUrl,
+    url: getPostPath(post),
   };
 };
 
-// Every topic, sized by how often I write about it.
 const topicCounts = new Map<string, number>();
 for (const post of posts ?? []) {
   for (const tag of new Set(post.data.tags ?? [])) {
@@ -51,7 +50,6 @@ const topics = [...topicCounts]
   .toSorted((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
   .map(([name, count]) => ({ count, name }));
 const most = topics[0]?.count ?? 1;
-// The most common topics show first, the rest are one click away.
 const TOP_TOPICS = 12;
 const total = posts?.length ?? 0;
 ---
@@ -192,8 +190,6 @@ const total = posts?.length ?? 0;
     margin-block: 32px 80px;
   }
 
-  /* Tools: one search field and a map of every topic, sized by how often I
-     write about it. Picking topics shows the posts about any of them. */
   .blog-tools {
     display: flex;
     flex-direction: column;

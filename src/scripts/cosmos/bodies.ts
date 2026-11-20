@@ -12,9 +12,11 @@ export const DEPTH = {
 
 export const POINTER_REACH = 420;
 
-/** How far the planet rises by the end of a long page, as a share of the
+/**
+ * How far the planet rises by the end of a long page, as a share of the
  * viewport. Long pages slow its rise down evenly instead of stopping it, so it
- * keeps moving until the very end. */
+ * keeps moving until the very end.
+ */
 const FULL_PLANET_RISE = 0.9;
 
 /**

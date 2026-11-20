@@ -81,7 +81,6 @@ class ProjectsExplorer extends HTMLElement {
     const inOrg = data.pullRequests.filter((pr) => !org || pr.o === org);
     const picked = inOrg.filter((pr) => !month || pr.m.startsWith(month));
 
-    // Numbers
     const values: Record<string, number> = {
       months: new Set(picked.map((pr) => pr.m.slice(0, 7))).size,
       organisations: new Set(picked.map((pr) => pr.o)).size,
@@ -93,7 +92,6 @@ class ProjectsExplorer extends HTMLElement {
       if (value !== undefined) element.textContent = numberFormat.format(value);
     }
 
-    // Swimlanes
     const lanes = this.querySelector<HTMLElement>(".lanes");
     if (lanes) {
       toggleData(lanes, "org", org);
@@ -126,7 +124,6 @@ class ProjectsExplorer extends HTMLElement {
     for (const bubble of this.querySelectorAll<SVGElement>("[data-key]"))
       bubble.setAttribute("aria-pressed", String(bubble.dataset.key === org));
 
-    // What's picked, in words, and the pull requests themselves.
     const summary = this.querySelector<HTMLElement>("[data-summary]");
     const clear = this.querySelector<HTMLElement>("[data-clear]");
     const parts = [

@@ -158,7 +158,6 @@ export function getCurrentColumns(
     ? getMonthKeys(`${range.id}-12`, 12).filter((key) => key <= currentMonth)
     : getMonthKeys(currentMonth, range.id === "12m" ? 12 : 6);
 
-  // Months without a single play get no column.
   return keys.flatMap((key) => {
     const artists = byMonth.get(key)?.artists.slice(0, CURRENT_ROWS) ?? [];
     if (artists.length === 0) return [];
