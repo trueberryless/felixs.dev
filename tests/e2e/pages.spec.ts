@@ -86,6 +86,13 @@ for (const width of [320, 200, 136]) {
           return [...document.querySelectorAll('header *, main *, footer *')]
             .filter((element) => !element.closest('[aria-hidden="true"], .sr-only'))
             .filter((element) => getComputedStyle(element).visibility !== 'hidden')
+            // Rows that scroll sideways on purpose, like the range picker.
+            .filter((element) => {
+              for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+                if (['auto', 'scroll'].includes(getComputedStyle(parent).overflowX)) return false
+              }
+              return true
+            })
             // Wide charts scroll inside their own container on purpose.
             .filter((element) => !element.closest('[role="region"][tabindex="0"]'))
             .filter((element) => {
