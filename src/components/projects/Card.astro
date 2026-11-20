@@ -2,7 +2,9 @@
 import ExternalIcon from "@/components/utils/ExternalIcon.astro";
 
 interface Props {
+  avatar?: string | undefined;
   name: string;
+  repos?: { count: number; name: string }[];
   description?: string | null;
   language?: string | null;
   url: string;
@@ -10,15 +12,28 @@ interface Props {
   contributions?: number;
 }
 
-const { name, description, url, stars, contributions } = Astro.props;
+const { avatar, name, description, repos, url, stars, contributions } =
+  Astro.props;
 ---
 
 <a href={url} class="card-link">
   <div class="card-container">
     <div class="card-header">
       <h3 class="card-title">
-        <span class="card-title-text">{name}</span>
-        <ExternalIcon size={14} class="card-external" />
+        {avatar && (
+          <img
+            class="card-avatar"
+            src={`${avatar}${avatar.includes("?") ? "&" : "?"}s=64`}
+            alt=""
+            width="24"
+            height="24"
+            loading="lazy"
+          />
+        )}
+        <span class="card-title-text">
+          {name}
+          <ExternalIcon size={13} class="card-external" />
+        </span>
       </h3>
       <div class="card-metrics">
         {stars !== undefined && (
@@ -57,10 +72,62 @@ const { name, description, url, stars, contributions } = Astro.props;
       </div>
     </div>
     {description && <p class="card-description">{description}</p>}
+    {repos && repos.length > 0 && (
+      <p class="card-repos">
+        <span class="sr-only">Mostly in </span>
+        {repos.map((repo) => (
+          <span class="card-repo">
+            {repo.name}
+            <span
+              class="card-repo-count"
+              aria-label={`, ${repo.count} pull requests`}
+            >
+              {repo.count}
+            </span>
+          </span>
+        ))}
+      </p>
+    )}
   </div>
 </a>
 
 <style>
+  .card-avatar {
+    flex-shrink: 0;
+    margin-top: 0.05em;
+    border-radius: 6px;
+  }
+
+  .card-repos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: auto;
+  }
+
+  .card-repo {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 2px 4px 2px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--badge-bg);
+    color: var(--text-muted);
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.75rem;
+    overflow-wrap: anywhere;
+  }
+
+  .card-repo-count {
+    padding: 0 6px;
+    border-radius: var(--radius-pill);
+    background: var(--card-bg);
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
   .card-link {
     display: block;
     text-decoration: none;
@@ -91,11 +158,13 @@ const { name, description, url, stars, contributions } = Astro.props;
     }
   }
 
+  /* Long names wrap under themselves: the avatar and the numbers stay level
+     with the first line. */
   .card-header {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px 16px;
   }
 
@@ -109,13 +178,20 @@ const { name, description, url, stars, contributions } = Astro.props;
     min-width: 0;
     font-family: inherit;
     letter-spacing: 0.01em;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.4;
   }
 
   .card-title-text {
-    display: inline-block;
+    display: inline;
+    min-width: 0;
+  }
+
+  .card-title-text :global(.card-external) {
+    margin-left: 0.3em;
+    vertical-align: 0.05em;
   }
 
   .card-external {
@@ -133,6 +209,7 @@ const { name, description, url, stars, contributions } = Astro.props;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    min-height: 1.47rem;
     gap: 4px 16px;
     min-width: 0;
   }

@@ -179,13 +179,23 @@ interface OwnProject {
   language: string | null;
 }
 
+export interface MergedPullRequest {
+  mergedAt: string;
+  repo: string;
+  title: string;
+  url: string;
+}
+
 interface ContributedOrg {
+  avatar: string | undefined;
   owner: string;
   name: string;
   description: string;
   url: string;
   stars: number;
   contributions: number;
+  /** Every merged pull request the Search API returns, newest first. */
+  pullRequests: MergedPullRequest[];
 }
 
 export interface ProjectsData {
@@ -305,8 +315,24 @@ async function fetchOrg(
       ? `https://${profile.blog}`
       : `https://github.com/${owner}`;
 
+  const pullRequests: MergedPullRequest[] = search.items
+    .map((pr) => ({
+      mergedAt: String(pr.pull_request?.merged_at ?? pr.closed_at ?? ""),
+      repo: String(pr.repository_url ?? "")
+        .split("/")
+        .slice(-2)
+        .join("/"),
+      title: String(pr.title ?? ""),
+      url: String(pr.html_url ?? ""),
+    }))
+    .filter((pr) => pr.mergedAt && pr.repo)
+    .toSorted((a, b) => b.mergedAt.localeCompare(a.mergedAt));
+
   return {
+    avatar:
+      typeof profile?.avatar_url === "string" ? profile.avatar_url : undefined,
     owner,
+    pullRequests,
     name: profile?.name || owner,
     description: description || profile?.bio || "",
     url,
