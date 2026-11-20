@@ -88,9 +88,7 @@ class BlogExplorer extends HTMLElement {
 
     // A view transition would freeze the header's live blur for a moment, so
     // posts that come back simply fade in.
-    const hiddenBefore = new Set([
-      ...this.querySelectorAll<HTMLElement>(".post[hidden]"),
-    ]);
+    const hiddenBefore = this.querySelectorAll<HTMLElement>(".post[hidden]");
     change();
     for (const post of hiddenBefore) {
       if (post.hidden) continue;
