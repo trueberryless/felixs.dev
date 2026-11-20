@@ -9,8 +9,24 @@ const ZOOM_MS = 420;
 export function setUpPost() {
   setUpCopyButtons();
   setUpGifs();
+  setUpImageSkeletons();
   setUpLightbox();
 }
+
+function setUpImageSkeletons() {
+  for (const image of document.querySelectorAll<HTMLImageElement>(
+    ".post-zoom img"
+  )) {
+    if (image.complete) continue;
+    const button = image.parentElement;
+    button?.toggleAttribute("data-loading", true);
+    const done = () => button?.removeAttribute("data-loading");
+    image.addEventListener("load", done, { once: true });
+    image.addEventListener("error", done, { once: true });
+  }
+}
+
+const easeOut = (t: number) => 1 - (1 - t) ** 3;
 
 function announce(message: string) {
   let status = document.querySelector<HTMLElement>("[data-post-status]");
@@ -120,23 +136,34 @@ function setUpLightbox() {
     zoomed.animate(flip(from, to), { duration: ZOOM_MS, easing: ZOOM_EASING });
   };
 
-  const close = async () => {
+  // The image flies back to wherever its spot in the post is right now, so
+  // when scrolling closes it, it follows the page instead of hanging in the
+  // middle of the screen.
+  const flyBack = (target: HTMLImageElement, duration: number) =>
+    new Promise<void>((resolve) => {
+      zoomed.getAnimations().forEach((animation) => animation.finish());
+      const from = zoomed.getBoundingClientRect();
+      const start = performance.now();
+      const step = (now: number) => {
+        const progress = easeOut(Math.min(1, (now - start) / duration));
+        const to = target.getBoundingClientRect();
+        const scaleX = 1 + (to.width / from.width - 1) * progress;
+        const scaleY = 1 + (to.height / from.height - 1) * progress;
+        zoomed.style.transform = `translate(${(to.left - from.left) * progress}px, ${(to.top - from.top) * progress}px) scale(${scaleX}, ${scaleY})`;
+        if (progress < 1) requestAnimationFrame(step);
+        else resolve();
+      };
+      requestAnimationFrame(step);
+    });
+
+  const close = async (duration = ZOOM_MS * 0.8) => {
     if (!dialog.open || isClosing) return;
     isClosing = true;
     dialog.toggleAttribute("data-closing", true);
-    if (source && !reducedMotion()) {
-      const from = source.getBoundingClientRect();
-      const to = zoomed.getBoundingClientRect();
-      await zoomed
-        .animate(flip(from, to).toReversed(), {
-          duration: ZOOM_MS * 0.8,
-          easing: ZOOM_EASING,
-          fill: "forwards",
-        })
-        .finished.catch(() => undefined);
-    }
+    if (source && !reducedMotion()) await flyBack(source, duration);
     if (source) source.style.visibility = "";
     dialog.close();
+    zoomed.style.transform = "";
     zoomed.getAnimations().forEach((animation) => animation.cancel());
     dialog.removeAttribute("data-closing");
     isClosing = false;
@@ -155,6 +182,8 @@ function setUpLightbox() {
     event.preventDefault();
     void close();
   });
-  dialog.addEventListener("wheel", () => void close(), { passive: true });
-  dialog.addEventListener("touchmove", () => void close(), { passive: true });
+  // Scrolling closes it quickly and lets the page move on underneath.
+  const scrollAway = () => void close(ZOOM_MS * 0.5);
+  dialog.addEventListener("wheel", scrollAway, { passive: true });
+  dialog.addEventListener("touchmove", scrollAway, { passive: true });
 }
