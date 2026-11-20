@@ -307,6 +307,12 @@ const bubbles = orgs
     .projects :global(:is(.pe-repo, .pe-date)) {
       grid-column: 2;
       justify-self: start;
+      max-width: 100%;
+    }
+
+    .projects :global(.pe-repo) {
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
   }
 
