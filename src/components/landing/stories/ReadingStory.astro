@@ -8,7 +8,7 @@ const books = await fetchBooks().catch(() => null);
 applyCache(Astro.response, books ? longLivedCache : degradedCache);
 
 const summary = books ? buildReadingSummary(books) : null;
-const shelf = (books ?? []).slice(0, 5);
+const shelf = (books ?? []).slice(0, 4);
 
 const authorCounts = new Map<string, number>();
 for (const book of (books ?? []).slice(0, 12)) {
