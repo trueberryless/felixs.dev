@@ -1,0 +1,289 @@
+---
+import type { GanttRow } from "@/lib/stories";
+
+interface Props {
+  label: string;
+  nowMs: number;
+  rows: GanttRow[];
+  /** How many of the most recent years fit the visible width. */
+  visibleYears?: number;
+}
+
+const { label, nowMs, rows, visibleYears = 4 } = Astro.props;
+
+const YEAR_WIDTH = 110;
+// Every row is a label line over a bar, so a label always sits on its own
+// stint and never next to someone else's.
+const ROW = 60;
+const BAR = 24;
+const LABEL = 18;
+const AXIS = 30;
+const SHORT_MS = 92 * 24 * 60 * 60 * 1000;
+
+const firstYear = new Date(
+  Math.min(...rows.map((row) => row.start), nowMs)
+).getUTCFullYear();
+const lastYear = new Date(nowMs).getUTCFullYear() + 1;
+const from = Date.UTC(firstYear, 0, 1);
+const to = Date.UTC(lastYear, 0, 1);
+const width = (lastYear - firstYear) * YEAR_WIDTH;
+const x = (ms: number) => ((ms - from) / (to - from)) * width;
+const height = rows.length * ROW + AXIS;
+const years = Array.from(
+  { length: lastYear - firstYear },
+  (_, index) => firstYear + index
+);
+const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
+---
+
+<div
+  class="career-scroll"
+  role="region"
+  tabindex="0"
+  aria-label="Career timeline, scrollable"
+  data-career
+>
+  <svg
+    class="career"
+    viewBox={`0 -4 ${width} ${height + 4}`}
+    style={`width: ${(100 / viewportRatio).toFixed(1)}%`}
+    role="img"
+    aria-label={label}
+  >
+    {years.map((year) => (
+      <g>
+        <line
+          class="career-grid"
+          x1={x(Date.UTC(year, 0, 1))}
+          x2={x(Date.UTC(year, 0, 1))}
+          y1="0"
+          y2={rows.length * ROW}
+        />
+        <text class="career-year" x={x(Date.UTC(year, 6, 1))} y={height - 8}>
+          {year}
+        </text>
+      </g>
+    ))}
+    {rows.map((row, index) => {
+      const start = x(row.start);
+      const end = x(row.end);
+      const top = index * ROW + 4;
+      const barY = top + LABEL + 6;
+      const middle = barY + BAR / 2;
+      // Short stints like internships read as a moment, not a cut-off bar.
+      const isShort = row.end - row.start < SHORT_MS;
+      const anchorX = isShort ? (start + end) / 2 : end;
+      const labelWidth =
+        row.label.length * 7.4 + (isShort ? " · internship".length * 6.4 : 0);
+      // Labels end where a stint ends, the side that is always in view,
+      // unless that would push them off the start of the chart. Internships
+      // are a single point, so their label starts there.
+      const alignEnd = !isShort && anchorX - labelWidth > 0;
+
+      return (
+        <g
+          class:list={[
+            "career-row",
+            `is-${row.kind}`,
+            { "is-current": row.isCurrent },
+          ]}
+          style={`--row: ${index}`}
+        >
+          {isShort ? (
+            <rect
+              class="career-marker"
+              x={anchorX - 7}
+              y={middle - 7}
+              width="14"
+              height="14"
+              rx="3"
+              transform={`rotate(45 ${anchorX} ${middle})`}
+            />
+          ) : (
+            <rect
+              class="career-bar"
+              x={start}
+              y={barY}
+              width={Math.max(end - start, 8)}
+              height={BAR}
+              rx={BAR / 2}
+            />
+          )}
+          {row.isCurrent && !isShort && (
+            <circle class="career-now" cx={end - BAR / 2} cy={middle} r="4" />
+          )}
+          <text
+            class="career-label"
+            x={alignEnd ? anchorX : Math.max(isShort ? anchorX - 7 : start, 0)}
+            y={top + LABEL - 4}
+            text-anchor={alignEnd ? "end" : "start"}
+          >
+            {row.label}
+            {isShort && <tspan class="career-note"> · internship</tspan>}
+          </text>
+          <title>{row.title}</title>
+        </g>
+      );
+    })}
+  </svg>
+</div>
+
+<div class="career-legend" aria-hidden="true">
+  <span class="career-key is-work">Work</span>
+  <span class="career-key is-education">Education</span>
+  {rows.some((row) => row.kind === "open-source") && (
+    <span class="career-key is-open-source">Open source</span>
+  )}
+</div>
+
+<script>
+  // Start at the most recent years, older ones are a scroll away.
+  function scrollCareers() {
+    for (const element of document.querySelectorAll<HTMLElement>(
+      "[data-career]:not([data-ready])"
+    )) {
+      element.scrollLeft = element.scrollWidth;
+      element.dataset.ready = "";
+    }
+  }
+  scrollCareers();
+  document.addEventListener("astro:page-load", scrollCareers);
+  new MutationObserver(scrollCareers).observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+</script>
+
+<style>
+  .career-scroll {
+    overflow-x: auto;
+    padding-bottom: 6px;
+    mask-image: linear-gradient(to right, transparent, black 48px);
+    scrollbar-width: thin;
+  }
+
+  .career {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  .career-grid {
+    stroke: var(--border);
+    stroke-dasharray: 2 4;
+  }
+
+  .career-year {
+    font-size: 12px;
+    fill: var(--text-muted);
+    text-anchor: middle;
+  }
+
+  .career-bar {
+    transform-box: fill-box;
+    transform-origin: left;
+  }
+
+  .is-work :is(.career-bar, .career-marker),
+  .career-key.is-work::before {
+    fill: color-mix(in oklch, var(--accent) 60%, transparent);
+    background: color-mix(in oklch, var(--accent) 60%, transparent);
+  }
+
+  .is-open-source .career-bar,
+  .career-key.is-open-source::before {
+    fill: color-mix(in oklch, var(--accent) 22%, transparent);
+    background: color-mix(in oklch, var(--accent) 22%, transparent);
+    stroke: var(--accent);
+    stroke-dasharray: 4 3;
+    outline: 1px dashed var(--accent);
+    outline-offset: -1px;
+  }
+
+  .is-education :is(.career-bar, .career-marker),
+  .career-key.is-education::before {
+    fill: color-mix(in oklch, var(--glow-pr) 45%, transparent);
+    background: color-mix(in oklch, var(--glow-pr) 45%, transparent);
+  }
+
+  .career-row:hover :is(.career-bar, .career-marker) {
+    filter: brightness(1.12) saturate(1.25);
+  }
+
+  .career-label {
+    font-size: 13px;
+    font-weight: 600;
+    fill: var(--text);
+  }
+
+  .career-note {
+    font-weight: 400;
+    fill: var(--text-muted);
+  }
+
+  .career-now {
+    fill: var(--card-bg);
+  }
+
+  .is-current .career-now {
+    animation: career-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes career-pulse {
+    50% {
+      r: 6;
+    }
+  }
+
+  .career-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .career-key {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .career-key::before {
+    content: "";
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+  }
+
+  /* Bars grow from their start once the section is on stage. */
+  @media (prefers-reduced-motion: no-preference) {
+    .career-bar,
+    .career-marker,
+    .career-label {
+      transition:
+        scale 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 0.5s ease,
+        filter 0.2s ease;
+      transition-delay:
+        calc(0.3s + var(--row) * 90ms), calc(0.3s + var(--row) * 90ms), 0s;
+    }
+
+    :global(.story-frame:not([data-active="true"])) .career-bar {
+      scale: 0 1;
+      transition-delay: 0s;
+    }
+
+    :global(.story-frame:not([data-active="true"]))
+      :is(.career-marker, .career-label) {
+      opacity: 0;
+      transition-delay: 0s;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .is-current .career-now {
+      animation: none;
+    }
+  }
+</style>

@@ -11,12 +11,14 @@ const pages = [
 ]
 
 test.describe('home page', () => {
-  test('introduces Felix and lists the sections', async ({ page }) => {
+  test('introduces Felix and leads into every section', async ({ page }) => {
     await page.goto('/')
 
     await expect(page).toHaveTitle('Felix Schneider')
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Recent Blog Posts' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Read the blog' })).toBeVisible()
+    // Streams in once the repository export is downloaded.
+    await expect(page.getByRole('link', { name: 'Dig into my music' })).toBeVisible({ timeout: 30_000 })
   })
 
   test('has the canonical url and the Open Graph image', async ({ page }) => {
@@ -51,7 +53,9 @@ test.describe('accessibility', () => {
   for (const path of ['/', '/blog', '/books', '/music', '/events', '/projects', '/resume', '/404']) {
     for (const colorScheme of ['dark', 'light'] as const) {
       test(`${path} has no violations in ${colorScheme} mode`, async ({ page }) => {
-        await page.emulateMedia({ colorScheme })
+        // Sections fade through each other while scrolling, which axe would
+        // catch half way. Reduced motion shows every section as it settles.
+        await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' })
         await page.goto(path)
         await page.waitForLoadState('networkidle')
 
@@ -142,6 +146,12 @@ test.describe('mobile menu', () => {
 })
 
 test.describe('live visitors', () => {
+  test('stays out of the hero', async ({ page }) => {
+    await page.goto('/')
+
+    await expect(page.locator('live-visitors')).toHaveClass(/is-tucked/)
+  })
+
   // Other tests run in parallel against the same server, so they may count too.
   test('counts every open tab', async ({ browser }) => {
     const first = await browser.newPage()

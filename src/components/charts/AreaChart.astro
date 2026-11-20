@@ -1,0 +1,198 @@
+---
+import type { SeriesPoint } from "@/lib/stories";
+
+interface Props {
+  label: string;
+  points: SeriesPoint[];
+}
+
+const { label, points } = Astro.props;
+
+const WIDTH = 420;
+const HEIGHT = 180;
+const TOP = 28;
+const BOTTOM = 30;
+const SIDE = 10;
+const MAX_LABELS = 6;
+
+const id = `area-${Math.random().toString(36).slice(2, 9)}`;
+const max = Math.max(...points.map((point) => point.value), 1);
+const step = points.length > 1 ? (WIDTH - SIDE * 2) / (points.length - 1) : 0;
+const baseline = HEIGHT - BOTTOM;
+const coordinates = points.map((point, index) => ({
+  ...point,
+  x: SIDE + index * step,
+  y: TOP + (1 - point.value / max) * (baseline - TOP),
+}));
+
+// A Catmull-Rom curve through the points, with control points clamped to the
+// chart so the line never dips below zero between two quiet months.
+const line = coordinates
+  .map((point, index) => {
+    if (index === 0) return `M ${point.x} ${point.y}`;
+    const previous = coordinates[index - 1]!;
+    const beforePrevious = coordinates[index - 2] ?? previous;
+    const next = coordinates[index + 1] ?? point;
+    const clamp = (y: number) => Math.min(Math.max(y, TOP), baseline);
+    const c1x = previous.x + (point.x - beforePrevious.x) / 6;
+    const c1y = clamp(previous.y + (point.y - beforePrevious.y) / 6);
+    const c2x = point.x - (next.x - previous.x) / 6;
+    const c2y = clamp(point.y - (next.y - previous.y) / 6);
+    return `C ${c1x} ${c1y}, ${c2x} ${c2y}, ${point.x} ${point.y}`;
+  })
+  .join(" ");
+const first = coordinates[0];
+const last = coordinates.at(-1);
+const area =
+  first && last
+    ? `${line} L ${last.x} ${baseline} L ${first.x} ${baseline} Z`
+    : "";
+const labelEvery = Math.max(1, Math.ceil(points.length / MAX_LABELS));
+---
+
+<svg
+  class="area-chart"
+  viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+  role="img"
+  aria-label={label}
+>
+  <defs>
+    <linearGradient id={id} x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" class="area-stop-top"></stop>
+      <stop offset="100%" class="area-stop-bottom"></stop>
+    </linearGradient>
+  </defs>
+  <line
+    class="area-baseline"
+    x1={SIDE}
+    x2={WIDTH - SIDE}
+    y1={baseline}
+    y2={baseline}
+  ></line>
+  <path class="area-fill" d={area} fill={`url(#${id})`}></path>
+  <path class="area-line" d={line} pathLength="1"></path>
+  {coordinates.map((point, index) => (
+    <g class="area-point">
+      <rect
+        class="area-hit"
+        x={point.x - step / 2}
+        y={TOP - 20}
+        width={Math.max(step, 12)}
+        height={baseline - TOP + 20}
+      />
+      <line
+        class="area-guide"
+        x1={point.x}
+        x2={point.x}
+        y1={point.y}
+        y2={baseline}
+      />
+      <circle class="area-dot" cx={point.x} cy={point.y} r="3.5" />
+      <text class="area-value" x={point.x} y={point.y - 12}>
+        {point.value.toLocaleString("en-US")}
+      </text>
+      {index % labelEvery === (points.length - 1) % labelEvery && (
+        <text class="area-label" x={point.x} y={HEIGHT - 8}>
+          {point.label}
+        </text>
+      )}
+      <title>{point.title}</title>
+    </g>
+  ))}
+</svg>
+
+<style>
+  .area-chart {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .area-stop-top {
+    stop-color: var(--accent);
+    stop-opacity: 0.35;
+  }
+
+  .area-stop-bottom {
+    stop-color: var(--accent);
+    stop-opacity: 0;
+  }
+
+  .area-baseline {
+    stroke: var(--border);
+  }
+
+  .area-line {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1;
+  }
+
+  .area-hit {
+    fill: transparent;
+  }
+
+  .area-guide {
+    stroke: var(--accent);
+    stroke-dasharray: 2 3;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .area-dot {
+    fill: var(--card-bg);
+    stroke: var(--accent);
+    stroke-width: 2;
+    transition: r 0.2s ease;
+  }
+
+  .area-value {
+    font-size: 12px;
+    font-weight: 600;
+    fill: var(--text);
+    text-anchor: middle;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .area-label {
+    font-size: 11px;
+    fill: var(--text-muted);
+    text-anchor: middle;
+  }
+
+  .area-point:hover .area-guide,
+  .area-point:hover .area-value {
+    opacity: 1;
+  }
+
+  .area-point:hover .area-dot {
+    r: 6;
+  }
+
+  /* The line draws itself once the section is on stage. */
+  @media (prefers-reduced-motion: no-preference) {
+    .area-line {
+      transition: stroke-dashoffset 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.35s;
+    }
+
+    .area-fill {
+      transition: opacity 0.8s ease 0.9s;
+    }
+
+    :global(.story-frame:not([data-active="true"])) .area-line {
+      stroke-dashoffset: 1;
+      transition-duration: 0.4s;
+      transition-delay: 0s;
+    }
+
+    :global(.story-frame:not([data-active="true"])) .area-fill {
+      opacity: 0;
+      transition-delay: 0s;
+    }
+  }
+</style>

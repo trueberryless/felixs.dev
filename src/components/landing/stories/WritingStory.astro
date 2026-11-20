@@ -1,0 +1,44 @@
+---
+import PostTimeline from "@/components/charts/PostTimeline.astro";
+import Story from "@/components/story/Story.astro";
+import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { fetchPosts } from "@/lib/data";
+import { processPost } from "@/lib/posts";
+
+const posts = await fetchPosts().catch(() => null);
+applyCache(Astro.response, posts ? longLivedCache : degradedCache);
+
+const items = (posts ?? []).map((post) => ({
+  date: post.data.publishedAt,
+  href: processPost(post).postUrl,
+  title: post.data.title || "Untitled post",
+}));
+---
+
+<Story kicker="Writing" href="/blog" linkText="Read the blog">
+  <Fragment slot="title">
+    {items.length > 0 ? (
+      <>
+        <em>{items.length}</em> posts, mostly notes to my future self
+      </>
+    ) : (
+      "Mostly notes to my future self"
+    )}
+  </Fragment>
+  <Fragment slot="text">
+    <p>
+      Recipes, small fixes I don't want to look up twice, and the odd longer
+      thought.
+    </p>
+    <p>Every dot is a post. Pick one.</p>
+  </Fragment>
+  <div slot="visual">
+    {items.length > 0 && (
+      <PostTimeline
+        items={items}
+        nowMs={Date.now()}
+        label={`${items.length} blog posts by quarter, newest first`}
+      />
+    )}
+  </div>
+</Story>

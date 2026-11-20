@@ -52,9 +52,11 @@ const { description, fallbackHref, fallbackLabel } = Astro.props;
     color: var(--text);
     background: var(--badge-bg);
     border: 1px solid var(--border);
-    border-radius: var(--radius-pill);
+    border-radius: 18px;
     text-decoration: none;
     margin-top: 4px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
     transition: opacity 0.2s ease;
   }
 

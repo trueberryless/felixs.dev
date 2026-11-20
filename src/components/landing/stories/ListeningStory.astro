@@ -1,0 +1,82 @@
+---
+import AreaChart from "@/components/charts/AreaChart.astro";
+import NowPlaying from "@/components/landing/NowPlaying.astro";
+import Story from "@/components/story/Story.astro";
+import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { PLAY_COLLECTION, recordToPlay } from "@/lib/music";
+import { getRepoRecords } from "@/lib/repo";
+
+const nowMs = Date.now();
+const records = await getRepoRecords().catch(() => null);
+const plays = (records?.get(PLAY_COLLECTION) ?? [])
+  .map((record) => recordToPlay(record.value))
+  .filter((play) => play !== undefined);
+applyCache(Astro.response, plays.length > 0 ? longLivedCache : degradedCache);
+
+// Every year since the first play, so the whole history shows.
+const perYear = new Map<number, number>();
+for (const play of plays) {
+  const year = new Date(play.at).getUTCFullYear();
+  perYear.set(year, (perYear.get(year) ?? 0) + 1);
+}
+const firstYear = Math.min(...perYear.keys());
+const series = Number.isFinite(firstYear)
+  ? Array.from(
+      { length: new Date(nowMs).getUTCFullYear() - firstYear + 1 },
+      (_, index) => {
+        const year = firstYear + index;
+        const value = perYear.get(year) ?? 0;
+        return {
+          label: String(year),
+          title: `${year}: ${value.toLocaleString("en-US")} plays`,
+          value,
+        };
+      }
+    )
+  : [];
+
+const recentStart = nowMs - 90 * 24 * 60 * 60 * 1000;
+const artistCounts = new Map<string, number>();
+for (const play of plays) {
+  if (play.at < recentStart) continue;
+  for (const artist of play.artists) {
+    artistCounts.set(artist, (artistCounts.get(artist) ?? 0) + 1);
+  }
+}
+const topArtists = [...artistCounts]
+  .toSorted((a, b) => b[1] - a[1])
+  .slice(0, 3)
+  .map(([name]) => name);
+const listFormat = new Intl.ListFormat("en", { type: "conjunction" });
+---
+
+<Story kicker="Listening" href="/music" linkText="Dig into my music">
+  <Fragment slot="title">
+    {plays.length > 0 ? (
+      <>
+        <em>{plays.length.toLocaleString("en-US")}</em> plays and counting
+      </>
+    ) : (
+      "Always something playing"
+    )}
+  </Fragment>
+  <p slot="text">
+    Unusual taste, I know.
+    {topArtists.length > 0 &&
+      ` Lately it's mostly ${listFormat.format(topArtists)}.`}
+  </p>
+  <div slot="visual" class="listening-visual">
+    <NowPlaying bare />
+    {plays.length > 0 && (
+      <AreaChart points={series} label="Plays per year since my first play" />
+    )}
+  </div>
+</Story>
+
+<style>
+  .listening-visual {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+</style>
