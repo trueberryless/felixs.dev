@@ -1,8 +1,26 @@
 ---
 import { Image } from "astro:assets";
 
-const { event } = Astro.props;
+interface Props {
+  event?: any;
+  /** Draws the card as a skeleton, with the same shape as a real one. */
+  skeleton?: boolean;
+}
+
+const { skeleton = false } = Astro.props;
+const event = Astro.props.event ?? {
+  atmoUrl: "",
+  attendees: Array.from({ length: 5 }, () => ""),
+  data: { name: "An event name" },
+  endDate: new Date(Date.UTC(2026, 0, 5, 21)),
+  imageUrl: "",
+  isGoing: true,
+  locationText: "Somewhere",
+  startDate: new Date(Date.UTC(2026, 0, 5, 18)),
+  totalAttendees: 5,
+};
 const { name } = event.data;
+const Card = skeleton ? "div" : "a";
 const {
   startDate,
   endDate,
@@ -49,23 +67,33 @@ const extraCount =
   totalAttendees > attendees.length ? totalAttendees - attendees.length : 0;
 ---
 
-<div class="timeline-row">
+<div class="timeline-row" data-place={locationText.trim() || undefined}>
   <div class="timeline-date">
-    <span class="day-month">{formattedDay}</span>
-    <span class="day-name">{formattedWeekday}</span>
+    <span class="day-month">
+      {skeleton ? <span class="bone">{formattedDay}</span> : formattedDay}
+    </span>
+    <span class="day-name">
+      {skeleton ? (
+        <span class="bone">{formattedWeekday}</span>
+      ) : (
+        formattedWeekday
+      )}
+    </span>
   </div>
 
   <div class="timeline-marker">
     <div class="dot"></div>
   </div>
 
-  <a href={atmoUrl} class="card-container">
+  <Card href={skeleton ? undefined : atmoUrl} class="card-container">
     <div class="card-content">
       <span class="event-time">
-        {timeDisplay}
+        {skeleton ? <span class="bone">{timeDisplay}</span> : timeDisplay}
         {!isGoing && <span class="event-status">Interested</span>}
       </span>
-      <h2 class="event-name">{name}</h2>
+      <h2 class="event-name">
+        {skeleton ? <span class="bone">{name}</span> : name}
+      </h2>
 
       {locationText && (
         <div class="event-location">
@@ -83,24 +111,28 @@ const extraCount =
             <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
             <circle cx="12" cy="10" r="3" />
           </svg>
-          <span>{locationText}</span>
+          <span class:list={{ bone: skeleton }}>{locationText}</span>
         </div>
       )}
 
       <div class="card-footer">
         {attendees && attendees.length > 0 && (
           <div class="avatar-stack">
-            {attendees.map((avatar: string) => (
-              <Image src={avatar} class="avatar" alt="Attendee" inferSize />
-            ))}
+            {attendees.map((avatar: string) =>
+              skeleton ? (
+                <span class="avatar bone" />
+              ) : (
+                <Image src={avatar} class="avatar" alt="Attendee" inferSize />
+              )
+            )}
             {extraCount > 0 && <span class="more-count">+{extraCount}</span>}
           </div>
         )}
       </div>
     </div>
 
-    <div class="card-image-wrapper">
-      {imageUrl ? (
+    <div class:list={["card-image-wrapper", { bone: skeleton }]}>
+      {skeleton ? null : imageUrl ? (
         <Image
           src={imageUrl}
           alt={name}
@@ -112,7 +144,7 @@ const extraCount =
         <div class="image-placeholder">{initials}</div>
       )}
     </div>
-  </a>
+  </Card>
 </div>
 
 <style>
@@ -277,6 +309,17 @@ const extraCount =
     object-fit: cover;
     margin-left: -8px;
     background: var(--bg);
+  }
+
+  .avatar.bone {
+    display: block;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .card-image-wrapper.bone {
+    border-radius: 0;
+    background: var(--border);
   }
 
   .avatar:first-child {

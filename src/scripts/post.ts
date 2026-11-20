@@ -14,8 +14,9 @@ export function setUpPost() {
 }
 
 function setUpImageSkeletons() {
+  // The cover is the first thing to load and should show the moment it does.
   for (const image of document.querySelectorAll<HTMLImageElement>(
-    ".post-zoom img"
+    ".post-image:not(.post-cover) .post-zoom img"
   )) {
     if (image.complete) continue;
     const button = image.parentElement;
@@ -122,6 +123,18 @@ function setUpLightbox() {
   const open = (image: HTMLImageElement) => {
     source = image;
     zoomed.src = image.currentSrc || image.src;
+    // Phones show the smaller copy in the post; the zoom swaps in the full
+    // one once it has loaded.
+    if (image.currentSrc && image.currentSrc !== image.src) {
+      const full = new Image();
+      full.src = image.src;
+      void full
+        .decode()
+        .then(() => {
+          if (source === image) zoomed.src = image.src;
+        })
+        .catch(() => undefined);
+    }
     zoomed.alt = image.alt;
     zoomed.width = image.naturalWidth || image.width;
     zoomed.height = image.naturalHeight || image.height;

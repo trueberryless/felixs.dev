@@ -282,6 +282,52 @@ ul {
   list-style: none;
 }
 
+/* Skeletons: a bone stands in for content that is still loading. Around
+   text it keeps the text's own size, so nothing moves when it arrives. */
+.bone {
+  display: inline-block;
+  border-radius: 6px;
+  background: var(--border);
+  color: transparent;
+  user-select: none;
+  animation: bone-pulse 1.5s ease-in-out infinite;
+}
+
+/* Parts like chips and buttons bring their own colours; a bone covers them
+   all, text and borders included. */
+.bone,
+.bone * {
+  border-color: transparent !important;
+  color: transparent !important;
+}
+
+.bone {
+  background: var(--border) !important;
+}
+
+.bone * {
+  background: none !important;
+}
+
+/* Skeletons stand still apart from their pulse: the parts they borrow from
+   the page skip their entrance animations. */
+.skeleton :not(.bone) {
+  animation: none !important;
+}
+
+/* Running text: every line gets its own bar, like the text it stands for. */
+.bone.is-text {
+  display: inline;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+@keyframes bone-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
 /* Buttons: every pill link and button on the site shares this one look.
    On hover a circle in the text colour grows from exactly where the pointer
    came in and shrinks back to where it left, inverting the colours. The

@@ -1,0 +1,178 @@
+---
+interface Props {
+  part:
+    | "artists"
+    | "calendar"
+    | "clock"
+    | "currents"
+    | "highlights"
+    | "recent"
+    | "tracks"
+    | "weekdays";
+}
+
+// Each part draws what the music script renders into that spot, with the
+// same classes and bones in place of the data. They sit in the empty
+// containers until the script replaces them, so the page keeps its shape
+// from the first skeleton to the finished charts.
+const { part } = Astro.props;
+const bars = 9;
+const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const days = [0.6, 0.7, 0.5, 0.8, 1, 0.6, 0.4];
+---
+
+{part === "artists" && (
+  <>
+    <div class="ms-spotlight" aria-hidden="true">
+      <span class="ms-spotlight-rank">
+        <span class="bone">01</span>
+      </span>
+      <div class="ms-spotlight-body">
+        <span class="ms-spotlight-kicker">
+          <span class="bone">Most played artist</span>
+        </span>
+        <span class="ms-spotlight-name">
+          <span class="bone">An artist</span>
+        </span>
+        <span class="ms-spotlight-meta">
+          <span class="bone">38 plays · 100 minutes</span>
+        </span>
+      </div>
+      <svg class="ms-ring" viewBox="0 0 100 100">
+        <circle class="ms-ring-track" cx="50" cy="50" r="42" />
+      </svg>
+    </div>
+    <ol class="ms-bars" aria-hidden="true">
+      {Array.from({ length: bars }, (_, index) => (
+        <li class="ms-bar" style="--value: 0">
+          <span class="ms-bar-rank">
+            <span class="bone">{String(index + 2).padStart(2, "0")}</span>
+          </span>
+          <span class="ms-bar-name">
+            <span class="bone">An artist name</span>
+          </span>
+          <span class="ms-bar-value">
+            <span class="bone">10</span>
+          </span>
+        </li>
+      ))}
+    </ol>
+  </>
+)}
+
+{part === "tracks" && (
+  <ol class="ms-track-list" aria-hidden="true">
+    {Array.from({ length: 10 }, (_, index) => (
+      <li class="ms-track" style="--value: 0">
+        <span class="ms-track-rank">
+          <span class="bone">{index + 1}</span>
+        </span>
+        <span class="ms-track-text">
+          <span class="ms-track-name">
+            <span class="bone">A track name</span>
+          </span>
+          <span class="ms-track-artist">
+            <span class="bone">An artist</span>
+          </span>
+        </span>
+        <span class="ms-track-plays">
+          <span class="bone">10×</span>
+        </span>
+      </li>
+    ))}
+  </ol>
+)}
+
+{part === "currents" && (
+  <div class="ms-currents-scroll" aria-hidden="true">
+    <div
+      class="ms-currents-board bone music-bone-block"
+      style="--columns: 1; --rows: 5; --row: 40px"
+    />
+  </div>
+)}
+
+{part === "clock" && (
+  <svg class="ms-clock-svg" viewBox="-6 -6 232 232" aria-hidden="true">
+    <circle class="music-bone-fill" cx="110" cy="110" r="100" />
+    <circle class="ms-clock-face" cx="110" cy="110" r="38" />
+  </svg>
+)}
+
+{part === "weekdays" && (
+  <ol class="ms-weekday-list" aria-hidden="true">
+    {weekdays.map((name, index) => (
+      <li class="ms-weekday" style={`--value: ${days[index]}`}>
+        <span class="ms-weekday-count">
+          <span class="bone">10</span>
+        </span>
+        <span class="ms-weekday-bar bone" />
+        <span class="ms-weekday-name">{name}</span>
+      </li>
+    ))}
+  </ol>
+)}
+
+{part === "calendar" && (
+  <>
+    <div class="ms-calendar-scroll" aria-hidden="true">
+      <svg class="ms-calendar-svg" viewBox="0 0 795 123" width="795">
+        <rect class="music-bone-fill" y="18" width="795" height="105" rx="6" />
+      </svg>
+    </div>
+    <div class="ms-legend" aria-hidden="true">
+      <span>Less</span>
+      {[0, 1, 2, 3, 4].map((value) => (
+        <span class="ms-legend-cell" data-level={value} />
+      ))}
+      <span>More</span>
+    </div>
+  </>
+)}
+
+{part === "highlights" &&
+  [
+    [
+      "Longest streak",
+      "7 days",
+      "Music every single day from one date to another date.",
+    ],
+    ["Busiest day", "100 plays", "All on a weekday, with a date."],
+    ["On repeat", "25×", "A track name by an artist, on a date in the year."],
+    [
+      "Evergreen",
+      "A track",
+      "By an artist, on a few different days between two months.",
+    ],
+  ].map(([kicker, value, text]) => (
+    <article class="ms-highlight" aria-hidden="true">
+      <span class="ms-highlight-kicker">{kicker}</span>
+      <span class="ms-highlight-value">
+        <span class="bone">{value}</span>
+      </span>
+      <p class="ms-highlight-text">
+        <span class="bone is-text">{text}</span>
+      </p>
+    </article>
+  ))}
+
+{part === "recent" && (
+  <>
+    <div class="tr bone music-bone-block" aria-hidden="true" />
+    <div class="tr-ends" aria-hidden="true">
+      <span>earlier</span>
+      <span>now</span>
+    </div>
+  </>
+)}
+
+<style>
+  .music-bone-block {
+    display: block;
+  }
+
+  .music-bone-fill {
+    fill: var(--border);
+    animation: bone-pulse 1.5s ease-in-out infinite;
+  }
+</style>

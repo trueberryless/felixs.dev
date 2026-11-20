@@ -10,24 +10,44 @@ interface Props {
     title: string;
   };
   index: number;
+  /** Draws the award as a skeleton: the same shape, bones for the text. */
+  skeleton?: boolean;
 }
 
-const { honor, index } = Astro.props;
+const { honor, index, skeleton = false } = Astro.props;
 const { link, text } = splitTrailingLink(honor.description);
 ---
 
 <li class="honor" style={`--i: ${index}`}>
-  <span class="honor-date">{honor.awardedAt}</span>
+  <span class="honor-date">
+    <span class:list={{ bone: skeleton }}>{honor.awardedAt}</span>
+  </span>
   <div class="honor-body">
-    {honor.issuer && <span class="honor-issuer">{honor.issuer}</span>}
-    <h3 class="honor-title">{honor.title}</h3>
-    {text && <p class="honor-text">{text}</p>}
-    {link && (
-      <a class="button is-small honor-link" href={link.url}>
-        {link.host}
-        <ExternalIcon />
-      </a>
+    {honor.issuer && (
+      <span class="honor-issuer">
+        <span class:list={{ bone: skeleton }}>{honor.issuer}</span>
+      </span>
     )}
+    <h3 class="honor-title">
+      <span class:list={{ bone: skeleton }}>{honor.title}</span>
+    </h3>
+    {text && (
+      <p class="honor-text">
+        <span class:list={{ bone: skeleton, "is-text": skeleton }}>{text}</span>
+      </p>
+    )}
+    {link &&
+      (skeleton ? (
+        <span class="button is-small honor-link bone">
+          {link.host}
+          <ExternalIcon />
+        </span>
+      ) : (
+        <a class="button is-small honor-link" href={link.url}>
+          {link.host}
+          <ExternalIcon />
+        </a>
+      ))}
   </div>
 </li>
 

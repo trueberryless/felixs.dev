@@ -12,6 +12,8 @@ interface Props {
   /** Details like the location or the type of work. */
   meta?: (string | null)[];
   organisation: string;
+  /** Draws the chapter as a skeleton: the same shape, bones for the text. */
+  skeleton?: boolean;
   start: string;
   title: string;
 }
@@ -25,6 +27,7 @@ const {
   kind,
   meta = [],
   organisation,
+  skeleton = false,
   start,
   title,
 } = Astro.props;
@@ -54,24 +57,40 @@ const details = meta.filter(Boolean);
   <div class="chapter-when">
     <span class="chapter-dot" data-current={isCurrent || undefined}></span>
     <span class="chapter-dates">
-      {start} – {isCurrent ? "now" : (end ?? "")}
+      <span class:list={{ bone: skeleton }}>
+        {start} – {isCurrent ? "now" : (end ?? "")}
+      </span>
     </span>
-    {duration && <span class="chapter-duration">{duration}</span>}
+    {duration && (
+      <span class="chapter-duration">
+        <span class:list={{ bone: skeleton }}>{duration}</span>
+      </span>
+    )}
   </div>
   <div class="chapter-body">
     <span class="chapter-kind">{KINDS[kind]}</span>
-    <h3 class="chapter-title">{title}</h3>
+    <h3 class="chapter-title">
+      <span class:list={{ bone: skeleton }}>{title}</span>
+    </h3>
     <p class="chapter-organisation">
-      {organisation}
-      {details.length > 0 && (
-        <span class="chapter-meta"> · {details.join(" · ")}</span>
-      )}
+      <span class:list={{ bone: skeleton }}>
+        {organisation}
+        {details.length > 0 && (
+          <span class="chapter-meta"> · {details.join(" · ")}</span>
+        )}
+      </span>
     </p>
-    {description && <p class="chapter-description">{description}</p>}
+    {description && (
+      <p class="chapter-description">
+        <span class:list={{ bone: skeleton, "is-text": skeleton }}>
+          {description}
+        </span>
+      </p>
+    )}
     {chips.length > 0 && (
       <ul class="chapter-chips">
         {chips.map((chip) => (
-          <li>{chip}</li>
+          <li class:list={{ bone: skeleton }}>{chip}</li>
         ))}
       </ul>
     )}

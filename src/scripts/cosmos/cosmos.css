@@ -101,7 +101,7 @@
 /* Tinted glass: a sheen, an inner highlight and a glowing edge over a deep
    translucent violet, without a live backdrop blur. */
 
-:root.space :is(.fallback, .card-container, .honor-card, .skeleton-card) {
+:root.space :is(.fallback, .card-container, .number-card) {
   background:
     linear-gradient(140deg, oklch(1 0 0 / 0.1), transparent 40%), var(--card-bg);
   box-shadow:
@@ -495,8 +495,8 @@
     .book-item,
     .card-link,
     .fallback,
-    .honor-card,
-    .skill-chip,
+    .filter-chip,
+    .number-card,
     .timeline-row > .card-container,
     .year-watermark
   ) {
@@ -504,7 +504,7 @@
     var(--drift-delay, 0s) infinite;
 }
 
-:root.space :is(.action-link, .back-link, .skill-chip) {
+:root.space :is(.action-link, .back-link, .filter-chip) {
   animation-name: cosmos-drift-small;
 }
 
@@ -524,8 +524,8 @@
     .book-item,
     .card-link,
     .fallback,
-    .honor-card,
-    .skill-chip,
+    .filter-chip,
+    .number-card,
     .timeline-row > .card-container,
     .year-watermark,
     .hex,

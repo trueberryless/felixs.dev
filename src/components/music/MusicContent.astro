@@ -1,5 +1,6 @@
 ---
 import Fallback from "@/components/utils/Fallback.astro";
+import MusicBones from "@/components/music/MusicBones.astro";
 import { applyCache, dailyCache, degradedCache } from "@/lib/cache";
 import { actorDid, pdsEndpoint, scrobblerEndpoint } from "@/lib/const";
 import type { MusicStats } from "@/lib/music";
@@ -146,6 +147,7 @@ const timeZoneName =
         Top artists
       </h2>
       <div class="ms-artists">
+        <MusicBones part="artists" />
         <ol class="ms-fallback-list">
           {defaultRange.topArtists.slice(0, 10).map((artist) => (
             <li>
@@ -161,6 +163,7 @@ const timeZoneName =
         Top tracks
       </h2>
       <div class="ms-tracks">
+        <MusicBones part="tracks" />
         <ol class="ms-fallback-list">
           {defaultRange.topTracks.slice(0, 10).map((track) => (
             <li>
@@ -197,7 +200,9 @@ const timeZoneName =
           </button>
         </div>
       </div>
-      <div class="ms-currents" />
+      <div class="ms-currents">
+        <MusicBones part="currents" />
+      </div>
     </section>
 
     <section class="ms-section ms-rhythm" aria-labelledby="ms-rhythm-title">
@@ -220,8 +225,12 @@ const timeZoneName =
         </p>
       </div>
       <div class="ms-rhythm-grid">
-        <div class="ms-clock" />
-        <div class="ms-weekdays" />
+        <div class="ms-clock">
+          <MusicBones part="clock" />
+        </div>
+        <div class="ms-weekdays">
+          <MusicBones part="weekdays" />
+        </div>
       </div>
     </section>
 
@@ -230,16 +239,25 @@ const timeZoneName =
         <h2 id="ms-calendar-title" class="ms-title">
           Every day
         </h2>
-        <p class="ms-subtitle ms-calendar-caption" />
+        <p class="ms-subtitle ms-calendar-caption">
+          <span class="bone">
+            000 plays on 00 days over the last year. Pick a day to see just that
+            day.
+          </span>
+        </p>
       </div>
-      <div class="ms-calendar" />
+      <div class="ms-calendar">
+        <MusicBones part="calendar" />
+      </div>
     </section>
 
     <section class="ms-section" aria-labelledby="ms-highlights-title">
       <h2 id="ms-highlights-title" class="ms-title">
         Highlights
       </h2>
-      <div class="ms-highlights" />
+      <div class="ms-highlights">
+        <MusicBones part="highlights" />
+      </div>
     </section>
 
     <section class="ms-section" aria-labelledby="ms-recent-title">
@@ -252,7 +270,9 @@ const timeZoneName =
           goes by.
         </p>
       </div>
-      <div class="ms-recent" />
+      <div class="ms-recent">
+        <MusicBones part="recent" />
+      </div>
     </section>
   </music-stats>
 ) : (

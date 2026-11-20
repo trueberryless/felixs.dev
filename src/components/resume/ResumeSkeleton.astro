@@ -1,113 +1,187 @@
 ---
-const sections = [
-  { lines: 2, meta: true },
-  { lines: 3, meta: true },
-  { lines: 2, meta: false },
-];
-const chipRows = [6, 8, 5];
+import {
+  BriefcaseBusiness,
+  GraduationCap,
+  Trophy,
+  Wrench,
+} from "@lucide/astro";
+
+import HonorCard from "@/components/resume/HonorCard.astro";
+import ResumeChapter from "@/components/resume/ResumeChapter.astro";
+import NumberCards from "@/components/utils/NumberCards.astro";
+import Section from "@/components/utils/Section.astro";
+
+// The resume itself, built from the same parts, with bones for the text.
+const description =
+  "A few sentences about what I did there and what I worked on, the people I worked with and the things we shipped together over the years A few sentences about what I.";
 ---
 
-<div class="skeleton-resume">
-  {sections.map((section, sIndex) => (
-    <section class="skeleton-section">
-      <div class="skeleton-section-title" />
-      {Array.from({ length: section.lines }).map(() => (
-        <div class="skeleton-card">
-          <div class="skeleton-line title" />
-          <div class="skeleton-line sub" />
-          {section.meta && (
-            <div class="skeleton-chips">
-              <div class="skeleton-chip" />
-              <div class="skeleton-chip" />
-            </div>
-          )}
-        </div>
-      ))}
-    </section>
-  ))}
+<div class="skeleton" aria-hidden="true">
+  <NumberCards
+    numbers={[
+      { label: "years shipping software" },
+      { label: "positions" },
+      { label: "skills" },
+      { label: "awards" },
+    ]}
+  />
 
-  <section class="skeleton-section">
-    <div class="skeleton-section-title"></div>
-    {chipRows.map((count) => (
-      <div class="skeleton-chip-row">
-        {Array.from({ length: count }).map(() => (
-          <div class="skeleton-chip" />
-        ))}
-      </div>
-    ))}
-  </section>
+  <Section title="At a glance">
+    <div class="skeleton-career bone" />
+    <div class="skeleton-legend">
+      <span>Work</span>
+      <span>Education</span>
+      <span>Open source</span>
+    </div>
+  </Section>
+
+  <Section title="Experience">
+    <BriefcaseBusiness
+      slot="leading"
+      class="skeleton-icon"
+      width={18}
+      height={18}
+    />
+    <ol class="skeleton-chapters">
+      <ResumeChapter
+        chips={[
+          "C#",
+          ".NET",
+          "Microsoft Azure",
+          "DevOps",
+          "CI/CD",
+          "GitLab Pipelines",
+          "Octopus Deploy",
+        ]}
+        description="A few sentences about what I did there and what I worked on, the people I worked with and the things we shipped together over t."
+        end="Jan 2026"
+        index={0}
+        isCurrent={false}
+        kind="work"
+        meta={["Vienna, Austria", "Full-time", "Hybrid"]}
+        organisation="A company with a long name"
+        skeleton
+        start="Jan 2024"
+        title="Software developer"
+      />
+      <ResumeChapter
+        description={description}
+        end={null}
+        index={1}
+        isCurrent
+        kind="open-source"
+        organisation="On GitHub and Tangled"
+        skeleton
+        start="Oct 2023"
+        title="Open source maintainer"
+      >
+        <span class="button is-small bone">See the projects →</span>
+      </ResumeChapter>
+    </ol>
+  </Section>
+
+  <Section title="Education">
+    <GraduationCap
+      slot="leading"
+      class="skeleton-icon"
+      width={18}
+      height={18}
+    />
+    <ol class="skeleton-chapters">
+      {[0, 1, 2].map((index) => (
+        <ResumeChapter
+          end="Jun 2023"
+          index={index}
+          isCurrent={false}
+          kind="education"
+          meta={index > 0 ? ["Grade 1.0"] : []}
+          organisation="A school"
+          skeleton
+          start="Sep 2019"
+          title="A degree, in a field"
+        />
+      ))}
+    </ol>
+  </Section>
+
+  <Section title="Awards & Honors">
+    <Trophy slot="leading" class="skeleton-icon" width={18} height={18} />
+    <ol class="skeleton-chapters">
+      {[0, 1, 2].map((index) => (
+        <HonorCard
+          honor={{
+            awardedAt: "Nov 2024",
+            description:
+              index === 0
+                ? "A sentence about the award. https://example.com"
+                : "A sentence or two about the award and why I got it, long enough to wrap onto a second line. https://example.com",
+            issuer: "Issuer",
+            title: "An award title",
+          }}
+          index={index}
+          skeleton
+        />
+      ))}
+    </ol>
+  </Section>
+
+  <Section title="Skills">
+    <Wrench slot="leading" class="skeleton-icon" width={18} height={18} />
+    <div class="skeleton-skills">
+      <p class="skeleton-hint">
+        Bigger bubbles show up in more of my positions.
+      </p>
+      <div class="skeleton-bubbles bone" />
+    </div>
+  </Section>
 </div>
 
 <style>
-  .skeleton-resume {
-    display: flex;
-    flex-direction: column;
-    gap: 56px;
+  .skeleton-icon {
+    color: var(--text-muted);
+    flex-shrink: 0;
   }
 
-  .skeleton-section {
+  /* The timeline shows six years across the full width, five rows high. */
+  .skeleton-career {
+    display: block;
+    aspect-ratio: 660 / 334;
+    margin-bottom: 6px;
+  }
+
+  .skeleton-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .skeleton-chapters {
+    padding: 0;
+    list-style: none;
+  }
+
+  .skeleton-skills {
     display: flex;
     flex-direction: column;
     gap: 20px;
   }
 
-  .skeleton-section-title {
-    height: 24px;
-    width: 40%;
-    background: var(--border);
-    border-radius: 4px;
-    animation: skeleton-pulse 1.5s ease-in-out infinite;
+  .skeleton-hint {
+    color: var(--text-muted);
+    font-size: 0.9rem;
   }
 
-  .skeleton-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
+  .skeleton-bubbles {
+    display: block;
+    aspect-ratio: 760 / 420;
     border-radius: var(--radius-card);
-    padding: 20px 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
   }
 
-  .skeleton-line {
-    height: 18px;
-    background: var(--border);
-    border-radius: 4px;
-    animation: skeleton-pulse 1.5s ease-in-out infinite;
-  }
-
-  .skeleton-line.title {
-    width: 55%;
-    height: 22px;
-  }
-
-  .skeleton-line.sub {
-    width: 35%;
-    height: 14px;
-  }
-
-  .skeleton-chips,
-  .skeleton-chip-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .skeleton-chip {
-    width: 70px;
-    height: 18px;
-    background: var(--border);
-    border-radius: var(--radius-pill);
-    animation: skeleton-pulse 1.5s ease-in-out infinite;
-  }
-
-  @keyframes skeleton-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.4;
+  @media (max-width: 640px) {
+    .skeleton-bubbles {
+      aspect-ratio: 380 / 720;
     }
   }
 </style>
