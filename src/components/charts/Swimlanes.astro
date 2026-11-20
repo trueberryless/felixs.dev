@@ -53,7 +53,6 @@ const month = new Intl.DateTimeFormat("en-US", {
           class="lane-label"
           data-org={lane.key}
           aria-pressed="false"
-          aria-label={`${lane.name}: ${lane.count} merged pull requests, from ${month.format(lane.first)} to ${month.format(lane.last)}`}
         >
           {lane.avatar && (
             <img
@@ -66,6 +65,9 @@ const month = new Intl.DateTimeFormat("en-US", {
           )}
           <span class="lane-name">{lane.name}</span>
           <span class="lane-count">{lane.count}</span>
+          <span class="sr-only">
+            {` merged pull requests, from ${month.format(lane.first)} to ${month.format(lane.last)}`}
+          </span>
         </button>
         <svg
           class="lane-track"

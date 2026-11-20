@@ -50,11 +50,13 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
                 type="button"
                 class="shelf-year-button"
                 aria-pressed="false"
-                aria-label={`${year.count} books in ${year.year}`}
                 data-year={year.year}
               >
                 <span class="shelf-year-count" data-count>
                   {year.count}
+                </span>
+                <span class="sr-only" data-books>
+                  {year.count === 1 ? " book in" : " books in"}
                 </span>
                 <span class="shelf-year-bar" aria-hidden="true" />
                 <span class="shelf-year-label">{year.year}</span>
@@ -156,9 +158,10 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
           String(count / most)
         );
         button.setAttribute("aria-pressed", String(year === this.#year));
-        button.setAttribute("aria-label", `${count} books in ${year}`);
         const label = button.querySelector("[data-count]");
         if (label) label.textContent = String(count);
+        const books = button.querySelector("[data-books]");
+        if (books) books.textContent = count === 1 ? " book in" : " books in";
       }
       for (const button of this.querySelectorAll<HTMLElement>(
         ".shelf-author"

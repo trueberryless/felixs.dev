@@ -69,16 +69,22 @@ const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
             style={`--strength: ${Math.max(18, 72 - circle.index * 7)}%; --i: ${circle.index}`}
           />
           <g class="bubble-text">
+            {/* Spaces between the lines and the value keep them apart as
+                words, so the name read out matches the text on screen. */}
             {lines.map((line, index) => (
-              <text
-                class="bubble-label"
-                x={circle.x}
-                y={firstY + index * lineHeight}
-                style={`font-size: ${size.toFixed(1)}px`}
-              >
-                {line}
-              </text>
+              <>
+                {index > 0 && " "}
+                <text
+                  class="bubble-label"
+                  x={circle.x}
+                  y={firstY + index * lineHeight}
+                  style={`font-size: ${size.toFixed(1)}px`}
+                >
+                  {line}
+                </text>
+              </>
             ))}
+            {circle.showValue && " "}
             {circle.showValue && (
               <text
                 class="bubble-value"
