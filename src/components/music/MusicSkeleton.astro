@@ -1,5 +1,6 @@
 ---
 import MusicBones from "@/components/music/MusicBones.astro";
+import NumberCards from "@/components/utils/NumberCards.astro";
 
 // The music page itself, with the same classes, while its stats load.
 const ranges = ["4 weeks", "6 months", "12 months", "All time"];
@@ -16,16 +17,7 @@ const numbers = ["minutes listened", "plays", "artists", "tracks"];
     <span class="ms-range-toggle">By year</span>
   </div>
 
-  <div class="ms-numbers">
-    {numbers.map((label) => (
-      <div class="ms-number">
-        <span class="ms-number-value">
-          <span class="bone">000</span>
-        </span>
-        <span class="ms-number-label">{label}</span>
-      </div>
-    ))}
-  </div>
+  <NumberCards numbers={numbers.map((label) => ({ label }))} />
 
   <section class="ms-section">
     <h2 class="ms-title">Top artists</h2>
