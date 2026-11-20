@@ -123,6 +123,18 @@ function setUpLightbox() {
   const open = (image: HTMLImageElement) => {
     source = image;
     zoomed.src = image.currentSrc || image.src;
+    // Phones show the smaller copy in the post; the zoom swaps in the full
+    // one once it has loaded.
+    if (image.currentSrc && image.currentSrc !== image.src) {
+      const full = new Image();
+      full.src = image.src;
+      void full
+        .decode()
+        .then(() => {
+          if (source === image) zoomed.src = image.src;
+        })
+        .catch(() => undefined);
+    }
     zoomed.alt = image.alt;
     zoomed.width = image.naturalWidth || image.width;
     zoomed.height = image.naturalHeight || image.height;
