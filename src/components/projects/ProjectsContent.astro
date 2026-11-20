@@ -1,22 +1,211 @@
 ---
-import Section from "@/components/utils/Section.astro";
+import BubbleChart from "@/components/charts/BubbleChart.astro";
+import MonthlyBars from "@/components/charts/MonthlyBars.astro";
+import Swimlanes from "@/components/charts/Swimlanes.astro";
 import Card from "@/components/projects/Card.astro";
 import Fallback from "@/components/utils/Fallback.astro";
+import Section from "@/components/utils/Section.astro";
 import { fetchProjects } from "@/lib/data";
+import {
+  getLanes,
+  getMonthlyCounts,
+  getTopRepos,
+  getTotals,
+} from "@/lib/projects";
 
 const data = await fetchProjects().catch((err) => {
   console.error("[projects] fetch failed:", err);
   return null;
 });
+
+const nowMs = Date.now();
+const orgs = (data?.contributedProjects ?? []).toSorted(
+  (a, b) => b.contributions - a.contributions
+);
+const lanes = getLanes(orgs);
+const totals = getTotals(orgs);
+const months = getMonthlyCounts(orgs, nowMs);
+const numberFormat = new Intl.NumberFormat("en-US");
+const pullRequests = orgs
+  .flatMap((org) =>
+    org.pullRequests.map((pr) => ({
+      m: pr.mergedAt,
+      o: org.owner,
+      r: pr.repo.split("/")[1] ?? pr.repo,
+      t: pr.title,
+      u: pr.url,
+    }))
+  )
+  .toSorted((a, b) => b.m.localeCompare(a.m));
+const activeMonths = new Set(pullRequests.map((pr) => pr.m.slice(0, 7))).size;
+const numbers = [
+  {
+    key: "pullRequests",
+    label: "merged pull requests",
+    value: totals.pullRequests,
+  },
+  { key: "repositories", label: "repositories", value: totals.repositories },
+  {
+    key: "organisations",
+    label: "organisations",
+    value: totals.organisations,
+  },
+  { key: "months", label: "months with merges", value: activeMonths },
+];
+// `<` is escaped so a title can never close the script element.
+const avatarOf = (owner: string) => {
+  const avatar = orgs.find((org) => org.owner === owner)?.avatar;
+  return avatar ? `${avatar}${avatar.includes("?") ? "&" : "?"}s=40` : "";
+};
+const explorerData = JSON.stringify({
+  avatars: Object.fromEntries(
+    orgs.map((org) => [org.owner, avatarOf(org.owner)])
+  ),
+  names: Object.fromEntries(orgs.map((org) => [org.owner, org.name])),
+  pullRequests,
+}).replaceAll("<", "\\u003c");
+const dayFormat = new Intl.DateTimeFormat("en-US", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+  year: "numeric",
+});
+const bubbles = orgs
+  .filter((org) => org.contributions > 0)
+  .map((org) => ({
+    key: org.owner,
+    label: org.name,
+    title: `${org.name}: ${org.contributions} merged pull requests`,
+    value: org.contributions,
+  }));
 ---
 
 {data ? (
-  <>
-    {data.contributedProjects.length > 0 && (
+  <projects-explorer class="projects">
+    <script type="application/json" class="pe-data" set:html={explorerData} />
+    {totals.pullRequests > 0 && (
+      <ul class="projects-numbers">
+        {numbers.map((number, index) => (
+          <li class="projects-number" style={`--i: ${index}`}>
+            <span class="projects-number-value" data-stat={number.key}>
+              {numberFormat.format(number.value)}
+            </span>
+            <span class="projects-number-label">{number.label}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    <p class="sr-only" aria-live="polite" data-summary />
+
+    {lanes.length > 0 && (
+      <Section title="Over time">
+        <button
+          slot="header-actions"
+          type="button"
+          class="button is-small"
+          data-clear
+          hidden
+        >
+          Show everything
+        </button>
+        <p class="projects-lede">
+          Every dot is a merged pull request, one lane per organisation, in the
+          order I found them. Pick one to see only its work.
+        </p>
+        <Swimlanes
+          label="Merged pull requests over time, one lane per organisation"
+          lanes={lanes}
+          nowMs={nowMs}
+        />
+      </Section>
+    )}
+
+    {months.length > 1 && (
+      <Section title="Month by month">
+        <button
+          slot="header-actions"
+          type="button"
+          class="button is-small"
+          data-clear
+          hidden
+        >
+          Show everything
+        </button>
+        <div class="projects-split">
+          <MonthlyBars
+            label="Merged pull requests per month"
+            months={months}
+            unit="merged pull request"
+          />
+          {bubbles.length > 1 && (
+            <BubbleChart
+              bubbles={bubbles}
+              height={300}
+              label="Merged pull requests per organisation"
+              scale="sqrt"
+              width={300}
+            />
+          )}
+        </div>
+      </Section>
+    )}
+
+    {pullRequests.length > 0 && (
+      <Section title="Pull requests">
+        <button
+          slot="header-actions"
+          type="button"
+          class="button is-small"
+          data-clear
+          hidden
+        >
+          Show everything
+        </button>
+        <ol class="pe-list" data-list>
+          {pullRequests.slice(0, 12).map((pr, index) => (
+            <li class="pe-item" style={`--i: ${index}`}>
+              {avatarOf(pr.o) && (
+                <img
+                  class="pe-avatar"
+                  src={avatarOf(pr.o)}
+                  alt=""
+                  width="20"
+                  height="20"
+                  loading="lazy"
+                />
+              )}
+              <a class="pe-title" href={pr.u}>
+                {pr.t}
+              </a>
+              <span class="pe-repo">{pr.r}</span>
+              <time class="pe-date" datetime={pr.m}>
+                {dayFormat.format(Date.parse(pr.m))}
+              </time>
+            </li>
+          ))}
+        </ol>
+        <p class="pe-more" data-more>
+          {pullRequests.length > 12
+            ? `And ${numberFormat.format(pullRequests.length - 12)} more.`
+            : ""}
+        </p>
+      </Section>
+    )}
+
+    {orgs.length > 0 && (
       <Section title="Contributions">
         <div class="projects-grid">
-          {data.contributedProjects.map((p) => (
-            <Card {...p} />
+          {orgs.map((org) => (
+            <Card
+              avatar={org.avatar}
+              contributions={org.contributions}
+              description={org.description}
+              name={org.name}
+              repos={getTopRepos(org.pullRequests)}
+              stars={org.stars}
+              url={org.url}
+            />
           ))}
         </div>
       </Section>
@@ -25,13 +214,13 @@ const data = await fetchProjects().catch((err) => {
     {data.ownProjects.length > 0 && (
       <Section title="Personal creations">
         <div class="projects-grid">
-          {data.ownProjects.map((p) => (
-            <Card {...p} />
+          {data.ownProjects.map((project) => (
+            <Card {...project} />
           ))}
         </div>
       </Section>
     )}
-  </>
+  </projects-explorer>
 ) : (
   <Fallback
     description="I couldn't reach GitHub right now. You can browse my repositories directly on GitHub."
@@ -41,6 +230,149 @@ const data = await fetchProjects().catch((err) => {
 )}
 
 <style>
+  .projects {
+    display: block;
+  }
+
+  /* The script renders these rows too, so their styles reach past this
+     component's scope. */
+  .pe-list {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    list-style: none;
+  }
+
+  .projects :global(.pe-item) {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 6px 14px;
+    padding: 14px 4px;
+    border-top: 1px solid var(--border);
+  }
+
+  .projects :global(.pe-item:first-child) {
+    border-top: 0;
+  }
+
+  .projects :global(.pe-avatar) {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+  }
+
+  .projects :global(.pe-title) {
+    min-width: 0;
+    color: var(--text);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+
+  .projects :global(.pe-title:hover),
+  .projects :global(.pe-title:focus-visible) {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .projects :global(.pe-repo) {
+    padding: 1px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--badge-bg);
+    color: var(--text-muted);
+    font-family: var(--font-family-mono);
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .projects :global(.pe-date) {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .pe-more {
+    margin-top: 12px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 640px) {
+    .projects :global(.pe-item) {
+      grid-template-columns: 20px minmax(0, 1fr);
+    }
+
+    .projects :global(:is(.pe-repo, .pe-date)) {
+      grid-column: 2;
+      justify-self: start;
+      max-width: 100%;
+    }
+
+    .projects :global(.pe-repo) {
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .projects :global(.pe-item) {
+      animation: projects-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--i, 0) * 35ms);
+    }
+  }
+
+  .projects-numbers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+    gap: 16px;
+    margin-bottom: 56px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .projects-number {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 20px clamp(14px, 4vw, 22px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--card-bg);
+  }
+
+  .projects-number-value {
+    font-family: var(--font-family-heading);
+    font-size: clamp(1.8rem, 6vw, 2.6rem);
+    line-height: 1.1;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .projects-number-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .projects-lede {
+    margin-bottom: 16px;
+    color: var(--text-muted);
+  }
+
+  .projects-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: 32px;
+  }
+
+  @media (min-width: 760px) {
+    .projects-split {
+      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    }
+  }
+
   .projects-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -50,6 +382,21 @@ const data = await fetchProjects().catch((err) => {
   @media (min-width: 640px) {
     .projects-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .projects-number {
+      animation: projects-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--i) * 70ms);
+    }
+  }
+
+  @keyframes projects-rise {
+    from {
+      opacity: 0;
+      translate: 0 12px;
+      filter: blur(6px);
     }
   }
 </style>

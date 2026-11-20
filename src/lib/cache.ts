@@ -17,7 +17,8 @@
 
 const ONE_MINUTE = 60;
 const ONE_HOUR = 60 * 60;
-const ONE_WEEK = 60 * 60 * 24 * 7;
+const ONE_DAY = 60 * 60 * 24;
+const ONE_WEEK = ONE_DAY * 7;
 const SIX_MONTHS = 60 * 60 * 24 * 30 * 6;
 
 export interface CacheProfile {
@@ -36,6 +37,24 @@ const cdn = (maxAge: number, swr: number, sie: number) =>
 export const longLivedCache: CacheProfile = {
   browser: `public, max-age=${ONE_MINUTE}, stale-while-revalidate=${ONE_WEEK}`,
   cdn: cdn(ONE_MINUTE, SIX_MONTHS, SIX_MONTHS),
+};
+
+/**
+ * For data that may be a day old. The edge serves it for a day, then keeps
+ * serving it for up to two weeks while it fetches a fresh copy in the
+ * background, so nobody waits for a slow upstream.
+ */
+export const dailyCache: CacheProfile = {
+  browser: `public, max-age=${5 * ONE_MINUTE}, stale-while-revalidate=${ONE_DAY}`,
+  cdn: cdn(ONE_DAY, 2 * ONE_WEEK, 2 * ONE_WEEK),
+};
+
+/**
+ * For responses that never change, like the plays of a day that is over.
+ */
+export const immutableCache: CacheProfile = {
+  browser: `public, max-age=${ONE_WEEK}, immutable`,
+  cdn: cdn(SIX_MONTHS, SIX_MONTHS, SIX_MONTHS),
 };
 
 /**

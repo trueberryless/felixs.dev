@@ -1,40 +1,64 @@
 ---
-import Layout from "@/layouts/Layout.astro";
 import Hero from "@/components/landing/Hero.astro";
 import Intro from "@/components/landing/Intro.astro";
-import NowPlaying from "@/components/landing/NowPlaying.astro";
-import RecentPosts from "@/components/landing/RecentPosts.astro";
-import RecentPostsSkeleton from "@/components/landing/RecentPostsSkeleton.astro";
-import RecentBlueskyPosts from "@/components/landing/RecentBlueskyPosts.astro";
-import RecentBlueskyPostsSkeleton from "@/components/landing/RecentBlueskyPostsSkeleton.astro";
-import ReadingSummary from "@/components/landing/ReadingSummary.astro";
-import ReadingSummarySkeleton from "@/components/landing/ReadingSummarySkeleton.astro";
-import UpcomingEvents from "@/components/landing/UpcomingEvents.astro";
-import UpcomingEventsSkeleton from "@/components/landing/UpcomingEventsSkeleton.astro";
+import BuildingStory from "@/components/landing/stories/BuildingStory.astro";
+import ListeningStory from "@/components/landing/stories/ListeningStory.astro";
+import MeetingStory from "@/components/landing/stories/MeetingStory.astro";
+import ReadingStory from "@/components/landing/stories/ReadingStory.astro";
+import SocialStory from "@/components/landing/stories/SocialStory.astro";
+import WorkingStory from "@/components/landing/stories/WorkingStory.astro";
+import WritingStory from "@/components/landing/stories/WritingStory.astro";
+import StorySkeleton from "@/components/story/StorySkeleton.astro";
+import Layout from "@/layouts/Layout.astro";
 
 export const prerender = true;
 ---
 
 <Layout title="Felix Schneider">
+  <noscript>
+    <style>
+      .story-frame .story-copy > *,
+      .story-frame .story-visual,
+      .story-frame > .story-skeleton {
+        opacity: 1 !important;
+        translate: none !important;
+        filter: none !important;
+      }
+    </style>
+  </noscript>
   <Hero name="Felix Schneider" />
 
   <div class="content-wrapper layout-stream">
     <Intro />
-    <NowPlaying />
-    <RecentPosts server:defer>
-      <RecentPostsSkeleton slot="fallback" />
-    </RecentPosts>
-    <ReadingSummary server:defer>
-      <ReadingSummarySkeleton slot="fallback" />
-    </ReadingSummary>
-    <UpcomingEvents server:defer>
-      <UpcomingEventsSkeleton slot="fallback" />
-    </UpcomingEvents>
-    <RecentBlueskyPosts server:defer>
-      <RecentBlueskyPostsSkeleton slot="fallback" />
-    </RecentBlueskyPosts>
+
+    <div class="stories" data-stories>
+      <div class="stories-stage">
+        <WritingStory server:defer>
+          <StorySkeleton slot="fallback" />
+        </WritingStory>
+        <BuildingStory />
+        <ReadingStory server:defer>
+          <StorySkeleton slot="fallback" />
+        </ReadingStory>
+        <ListeningStory server:defer>
+          <StorySkeleton slot="fallback" />
+        </ListeningStory>
+        <WorkingStory server:defer>
+          <StorySkeleton slot="fallback" />
+        </WorkingStory>
+        <MeetingStory server:defer />
+        <SocialStory server:defer>
+          <StorySkeleton slot="fallback" />
+        </SocialStory>
+      </div>
+    </div>
   </div>
 </Layout>
+
+<script>
+  import "@/scripts/now-playing";
+  import "@/scripts/stories";
+</script>
 
 <style>
   .layout-stream {
@@ -42,5 +66,78 @@ export const prerender = true;
     z-index: 10;
     padding-top: 80px;
     padding-bottom: 80px;
+  }
+
+  .stories {
+    position: relative;
+  }
+
+  .stories-stage {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* On wide screens the sections share one stage pinned to the screen, like
+     slides: the page scrolls past it, and the section that matches the
+     scroll position plays in while the one before plays out. This applies
+     before the script runs, so the page never shows every section at once. */
+  @media (min-width: 860px) and (min-height: 620px) and (prefers-reduced-motion: no-preference) {
+    :global(html:has(.stories)) {
+      scroll-snap-type: y proximity;
+    }
+
+    .stories {
+      height: calc(var(--count, 7) * 85svh + 100svh);
+    }
+
+    .stories-stage {
+      position: sticky;
+      top: 0;
+      display: grid;
+      height: 100svh;
+      translate: 0 var(--stage-shift, 0px);
+    }
+
+    .stories-stage > :global(*) {
+      grid-area: 1 / 1;
+      min-width: 0;
+    }
+
+    .stories :global(.story-frame) {
+      display: grid;
+      align-items: center;
+      padding-top: 72px;
+    }
+
+    .stories :global(.story-frame > *) {
+      padding-block: 0;
+      min-height: 0;
+    }
+
+    .stories :global(.story-frame:not([data-active="true"])) {
+      pointer-events: none;
+    }
+
+    .stories :global(.stories-snap) {
+      position: absolute;
+      top: calc((var(--i) + 0.5) * 85svh);
+      left: 0;
+      width: 1px;
+      height: 1px;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      pointer-events: none;
+    }
+  }
+
+  /* A section still loading never shows through the one on stage. */
+  @media (prefers-reduced-motion: no-preference) {
+    .stories :global(.story-frame > .story-skeleton) {
+      transition: opacity 0.4s ease;
+    }
+
+    .stories :global(.story-frame:not([data-active="true"]) > .story-skeleton) {
+      opacity: 0;
+    }
   }
 </style>

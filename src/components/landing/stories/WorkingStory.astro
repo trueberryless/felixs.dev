@@ -1,0 +1,48 @@
+---
+import CareerTimeline from "@/components/charts/CareerTimeline.astro";
+import Story from "@/components/story/Story.astro";
+import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { fetchResume } from "@/lib/data";
+import { getCareerRows, parseResumeDate, tellCareer } from "@/lib/stories";
+
+const resume = await fetchResume().catch(() => null);
+applyCache(Astro.response, resume ? longLivedCache : degradedCache);
+
+const nowMs = Date.now();
+const rows = getCareerRows(resume, nowMs);
+
+const job = resume?.positions.find((position) => position.isCurrent);
+const study = resume?.education.find((education) => education.isCurrent);
+const firstJob = (resume?.positions ?? [])
+  .map((position) => parseResumeDate(position.startLabel))
+  .filter((ms) => !Number.isNaN(ms))
+  .toSorted((a, b) => a - b)[0];
+---
+
+<Story kicker="Working" href="/resume" linkText="Read the resume">
+  <Fragment slot="title">
+    {firstJob ? (
+      <>
+        Shipping software since <em>{new Date(firstJob).getUTCFullYear()}</em>
+      </>
+    ) : (
+      "Developer and student"
+    )}
+  </Fragment>
+  <p slot="text">
+    {job && `${job.title} at ${job.company}`}
+    {job && study && ", "}
+    {study &&
+      `studying ${study.fieldOfStudy ?? study.degree ?? ""} at ${study.institution}`}
+    {(job || study) && "."}
+  </p>
+  <div slot="visual">
+    {rows.length > 0 && (
+      <CareerTimeline
+        rows={tellCareer(rows, nowMs)}
+        nowMs={nowMs}
+        label="My work, education and open source over time"
+      />
+    )}
+  </div>
+</Story>

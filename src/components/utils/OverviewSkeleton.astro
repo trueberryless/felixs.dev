@@ -1,0 +1,116 @@
+---
+interface Props {
+  /** Shows a row of columns, like books per year. */
+  bars?: boolean;
+  /** How many pills to show under the numbers, like authors. */
+  chips?: number;
+  /** Shows a wall of round avatars, like the people I met. */
+  people?: boolean;
+}
+
+const { bars = false, chips = 0, people = false } = Astro.props;
+---
+
+<div class="overview-skeleton" aria-hidden="true">
+  <div class="overview-skeleton-numbers">
+    {Array.from({ length: 4 }, () => (
+      <span class="overview-skeleton-number" />
+    ))}
+  </div>
+  {bars && (
+    <div class="overview-skeleton-bars">
+      {[0.4, 0.7, 0.5, 1, 0.8, 0.3].map((value) => (
+        <span style={`--value: ${value}`} />
+      ))}
+    </div>
+  )}
+  {chips > 0 && (
+    <div class="overview-skeleton-chips">
+      {Array.from({ length: chips }, () => (
+        <span />
+      ))}
+    </div>
+  )}
+  {people && (
+    <div class="overview-skeleton-people">
+      {Array.from({ length: 18 }, (_, index) => (
+        <span style={`--size: ${32 + ((index * 7) % 5) * 7}px`} />
+      ))}
+    </div>
+  )}
+</div>
+
+<style>
+  .overview-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    margin-bottom: 48px;
+  }
+
+  .overview-skeleton-numbers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+    gap: 16px;
+  }
+
+  .overview-skeleton-number {
+    height: 96px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--card-bg);
+  }
+
+  .overview-skeleton-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    height: 110px;
+  }
+
+  .overview-skeleton-bars span {
+    flex: 1;
+    max-width: 44px;
+    height: calc(var(--value) * 100%);
+    border-radius: 8px 8px 3px 3px;
+    background: var(--border);
+  }
+
+  .overview-skeleton-chips,
+  .overview-skeleton-people {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .overview-skeleton-chips span {
+    width: 120px;
+    height: 32px;
+    border-radius: var(--radius-pill);
+    background: var(--border);
+  }
+
+  .overview-skeleton-people span {
+    width: var(--size);
+    height: var(--size);
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .overview-skeleton > * > * {
+    animation: overview-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes overview-pulse {
+    50% {
+      opacity: 0.45;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .overview-skeleton > * > * {
+      animation: none;
+    }
+  }
+</style>

@@ -30,3 +30,56 @@ function easeIntoLimit(progress: number) {
   const overshoot = Math.min(KNEE - progress, 2 * KNEE);
   return KNEE - overshoot + overshoot ** 2 / (4 * KNEE);
 }
+
+interface BookLike {
+  authors: string;
+  finishedAt?: string | undefined;
+  pages?: number | undefined;
+  startedAt?: string | undefined;
+}
+
+/** Finished books per year, from the first year until `nowMs`. */
+export function getBooksPerYear(
+  books: BookLike[],
+  nowMs: number
+): { count: number; year: number }[] {
+  const counts = new Map<number, number>();
+  for (const book of books) {
+    const time = Date.parse(book.finishedAt ?? book.startedAt ?? "");
+    if (Number.isNaN(time)) continue;
+    const year = new Date(time).getUTCFullYear();
+    counts.set(year, (counts.get(year) ?? 0) + 1);
+  }
+  if (counts.size === 0) return [];
+  const first = Math.min(...counts.keys());
+  const last = new Date(nowMs).getUTCFullYear();
+  return Array.from({ length: last - first + 1 }, (_, index) => ({
+    count: counts.get(first + index) ?? 0,
+    year: first + index,
+  }));
+}
+
+/** The year I finished a book, or started it when there is no end date. */
+export function getBookYear(book: BookLike): number | undefined {
+  const time = Date.parse(book.finishedAt ?? book.startedAt ?? "");
+  return Number.isNaN(time) ? undefined : new Date(time).getUTCFullYear();
+}
+
+/** Authors by how many of their books I read, most first. */
+export function getAuthors(
+  books: BookLike[]
+): { count: number; name: string }[] {
+  const counts = new Map<string, number>();
+  for (const book of books) {
+    const name = book.authors?.trim();
+    if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return [...counts]
+    .toSorted((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([name, count]) => ({ count, name }));
+}
+
+/** Pages read, counting only books with a known page count. */
+export function getPagesRead(books: BookLike[]): number {
+  return books.reduce((sum, book) => sum + (book.pages ?? 0), 0);
+}

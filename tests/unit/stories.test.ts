@@ -1,0 +1,111 @@
+import { describe, expect, test } from 'vitest'
+
+import { getSkillBubbles, getSocialActivity, parseResumeDate, splitTrailingLink } from '../../src/lib/stories'
+
+describe('getSocialActivity', () => {
+  test('counts posts, replies and quotes separately', () => {
+    const records = new Map([
+      [
+        'app.bsky.feed.post',
+        [
+          { value: { text: 'hi' } },
+          { value: { reply: { root: {} }, text: 'yes' } },
+          { value: { embed: { $type: 'app.bsky.embed.record' }, text: 'this' } },
+          { value: { embed: { $type: 'app.bsky.embed.images' }, text: 'pic' } },
+        ],
+      ],
+      ['app.bsky.feed.like', [{ value: {} }, { value: {} }, { value: {} }]],
+      ['sh.tangled.feed.star', [{ value: {} }]],
+      ['org.tangled.feed.star', [{ value: {} }]],
+    ])
+
+    expect(Object.fromEntries(getSocialActivity(records).map(({ label, value }) => [label, value]))).toEqual({
+      Follows: 0,
+      Likes: 3,
+      Posts: 2,
+      Quotes: 1,
+      Replies: 1,
+      Reposts: 0,
+      Stars: 2,
+    })
+  })
+})
+
+describe('parseResumeDate', () => {
+  test('reads month and year labels', () => {
+    expect(parseResumeDate('Apr 2025')).toBe(Date.UTC(2025, 3, 1))
+    expect(parseResumeDate('2019')).toBe(Date.UTC(2019, 0, 1))
+    expect(parseResumeDate(null)).toBeNaN()
+  })
+})
+
+describe('resume', () => {
+  test('turns work and education into timeline rows, newest first', async () => {
+    const { getCareerRows } = await import('../../src/lib/stories')
+    const rows = getCareerRows(
+      {
+        education: [{ degree: 'BSc', endLabel: null, fieldOfStudy: 'CS', institution: 'TU Wien', isCurrent: true, startLabel: 'Oct 2025' }],
+        positions: [{ company: 'Fronius', endLabel: null, isCurrent: true, startLabel: 'Jul 2025', title: 'Developer' }],
+      },
+      Date.parse('2026-11-19T00:00:00Z')
+    )
+    expect(rows.map((row) => [row.label, row.kind])).toEqual([
+      ['TU Wien', 'education'],
+      ['Fronius', 'work'],
+    ])
+    expect(rows[0]?.title).toBe('BSc, CS, TU Wien')
+  })
+
+  test('counts how many positions use a skill', async () => {
+    const { getSkillUsage } = await import('../../src/lib/stories')
+    expect(getSkillUsage([{ skills: ['C#', '.NET'] }, { skills: ['c#'] }])).toEqual(
+      new Map([
+        ['c#', 2],
+        ['.net', 1],
+      ])
+    )
+  })
+})
+
+describe('tellCareer', () => {
+  test('drops short stints and adds open source', async () => {
+    const { tellCareer } = await import('../../src/lib/stories')
+    const day = 86_400_000
+    const rows = tellCareer(
+      [
+        { end: Date.UTC(2024, 0, 1), isCurrent: false, kind: 'work', label: 'Long', start: Date.UTC(2023, 0, 1), title: 'Long' },
+        { end: Date.UTC(2023, 7, 1) + 30 * day, isCurrent: false, kind: 'work', label: 'Short', start: Date.UTC(2023, 7, 1), title: 'Short' },
+      ],
+      Date.UTC(2026, 10, 20)
+    )
+    expect(rows.map((row) => row.label)).toEqual(['Open source', 'Long'])
+    expect(rows[0]).toMatchObject({ isCurrent: true, kind: 'open-source' })
+  })
+})
+
+describe('splitTrailingLink', () => {
+  test('splits a trailing link off the text', () => {
+    expect(splitTrailingLink('Recognized for October.\n\nhttps://www.astro.build/blog/#awards')).toEqual({
+      link: { host: 'astro.build', url: 'https://www.astro.build/blog/#awards' },
+      text: 'Recognized for October.',
+    })
+  })
+
+  test('keeps text without a link as it is', () => {
+    expect(splitTrailingLink('Just words.')).toEqual({ text: 'Just words.' })
+    expect(splitTrailingLink(null)).toEqual({ text: '' })
+  })
+})
+
+describe('getSkillBubbles', () => {
+  test('grows bubbles with usage', () => {
+    const [astro, css, docs] = getSkillBubbles(
+      [{ name: 'Astro' }, { name: 'CSS' }, { name: 'Technical Documentation' }],
+      new Map([['astro', 2]])
+    )
+    expect(astro?.title).toBe('Astro: used in 2 positions')
+    expect(css?.title).toBe('CSS')
+    expect(astro!.value).toBeGreaterThan(css!.value)
+    expect(docs!.value).toBe(css!.value)
+  })
+})

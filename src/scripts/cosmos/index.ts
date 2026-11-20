@@ -37,7 +37,6 @@ const DRIFT_SELECTOR = [
   ".fallback",
   ".hex",
   ".honor-card",
-  ".list",
   ".skill-chip",
   ".timeline-row > .card-container",
   ".year-watermark",
@@ -222,6 +221,7 @@ function createScene(): Scene {
       height,
       pointer: view,
       scroll,
+      scrollMax: document.documentElement.scrollHeight - height,
       time: motionTime,
       width,
     });

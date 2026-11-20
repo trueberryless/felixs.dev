@@ -1,0 +1,180 @@
+---
+import type { Activity } from "@/lib/stories";
+
+interface Props {
+  activities: Activity[];
+  label: string;
+}
+
+const { activities, label } = Astro.props;
+
+const SIZE = 360;
+const CENTER = SIZE / 2;
+const RADIUS = 122;
+const RINGS = [0.25, 0.5, 0.75, 1];
+
+// A log scale, so a few stars still show next to thousands of likes.
+const max = Math.max(...activities.map((activity) => activity.value), 1);
+const scale = (value: number) => Math.log10(value + 1) / Math.log10(max + 1);
+const angle = (index: number) =>
+  (index / activities.length) * Math.PI * 2 - Math.PI / 2;
+const point = (index: number, radius: number) => ({
+  x: CENTER + Math.cos(angle(index)) * radius,
+  y: CENTER + Math.sin(angle(index)) * radius,
+});
+
+const points = activities.map((activity, index) => ({
+  ...point(index, Math.max(scale(activity.value), 0.04) * RADIUS),
+  activity,
+  label: point(index, RADIUS + 28),
+}));
+const polygon = points
+  .map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`)
+  .join(" ");
+const ring = (fraction: number) =>
+  activities
+    .map((_, index) => {
+      const { x, y } = point(index, RADIUS * fraction);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+const compact = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 1,
+  notation: "compact",
+});
+---
+
+<svg
+  class="radar"
+  viewBox={`-30 -10 ${SIZE + 60} ${SIZE + 20}`}
+  role="img"
+  aria-label={label}
+>
+  {RINGS.map((fraction) => (
+    <polygon class="radar-ring" points={ring(fraction)} />
+  ))}
+  {activities.map((_, index) => {
+    const end = point(index, RADIUS);
+    return (
+      <line class="radar-axis" x1={CENTER} y1={CENTER} x2={end.x} y2={end.y} />
+    );
+  })}
+  <polygon class="radar-shape" points={polygon}></polygon>
+  {points.map(({ activity, label: position, x, y }, index) => (
+    <g class="radar-point" style={`--i: ${index}`}>
+      <circle class="radar-dot" cx={x} cy={y} r="4.5" />
+      <text
+        class="radar-label"
+        x={position.x}
+        y={position.y - 6}
+        text-anchor={
+          Math.abs(position.x - CENTER) < 8
+            ? "middle"
+            : position.x > CENTER
+              ? "start"
+              : "end"
+        }
+      >
+        {activity.label}
+      </text>
+      <text
+        class="radar-value"
+        x={position.x}
+        y={position.y + 10}
+        text-anchor={
+          Math.abs(position.x - CENTER) < 8
+            ? "middle"
+            : position.x > CENTER
+              ? "start"
+              : "end"
+        }
+      >
+        {compact.format(activity.value)}
+      </text>
+      <title>{`${activity.value.toLocaleString("en-US")} ${activity.label.toLowerCase()}`}</title>
+    </g>
+  ))}
+</svg>
+
+<style>
+  .radar {
+    display: block;
+    width: min(100%, 440px);
+    height: auto;
+    margin-inline: auto;
+    overflow: visible;
+  }
+
+  .radar-ring {
+    fill: none;
+    stroke: var(--border);
+  }
+
+  .radar-ring:last-of-type {
+    stroke-dasharray: 3 4;
+  }
+
+  .radar-axis {
+    stroke: var(--border);
+  }
+
+  .radar-shape {
+    fill: color-mix(in oklch, var(--accent) 26%, transparent);
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    transform-box: view-box;
+    transform-origin: 180px 180px;
+  }
+
+  .radar-dot {
+    fill: var(--card-bg);
+    stroke: var(--accent);
+    stroke-width: 2;
+    transition: r 0.25s ease;
+  }
+
+  .radar-point:hover .radar-dot {
+    r: 7;
+  }
+
+  .radar-label {
+    font-size: 13px;
+    font-weight: 600;
+    fill: var(--text);
+  }
+
+  .radar-value {
+    font-size: 12px;
+    fill: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  :global(:root.space) .radar-shape {
+    filter: drop-shadow(0 0 10px var(--accent-glow));
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .radar-shape {
+      transition:
+        scale 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.35s,
+        rotate 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.35s;
+    }
+
+    .radar-point {
+      transition: opacity 0.5s ease calc(0.6s + var(--i) * 60ms);
+    }
+
+    :global(.story-frame:not([data-active="true"])) .radar-shape {
+      scale: 0.1;
+      rotate: -40deg;
+      transition-duration: 0.4s;
+      transition-delay: 0s;
+    }
+
+    :global(.story-frame:not([data-active="true"])) .radar-point {
+      opacity: 0;
+      transition-delay: 0s;
+    }
+  }
+</style>

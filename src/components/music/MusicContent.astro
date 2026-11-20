@@ -1,0 +1,264 @@
+---
+import Fallback from "@/components/utils/Fallback.astro";
+import { applyCache, dailyCache, degradedCache } from "@/lib/cache";
+import { actorDid, pdsEndpoint, scrobblerEndpoint } from "@/lib/const";
+import type { MusicStats } from "@/lib/music";
+import { getMusicStats } from "@/lib/music-data";
+
+const stats: MusicStats | null = await getMusicStats().catch(() => null);
+applyCache(Astro.response, stats ? dailyCache : degradedCache);
+
+const defaultRange =
+  stats?.ranges.find((range) => range.id === "12m" && range.plays > 0) ??
+  stats?.ranges.find((range) => range.id === "all");
+const relativeRanges =
+  stats?.ranges.filter((range) => !/^\d+$/.test(range.id)) ?? [];
+const yearRanges =
+  stats?.ranges.filter((range) => /^\d+$/.test(range.id)) ?? [];
+
+// `<` is escaped so a track name can never close the script element.
+const json = stats ? JSON.stringify(stats).replaceAll("<", "\\u003c") : "";
+const numberFormat = new Intl.NumberFormat("en-US");
+const isYearDefault = /^\d+$/.test(defaultRange?.id ?? "");
+// "CET" or "CEST", whichever Vienna is on right now.
+const timeZoneName =
+  new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Vienna",
+    timeZoneName: "short",
+  })
+    .formatToParts(new Date())
+    .find((part) => part.type === "timeZoneName")?.value ?? "CET";
+---
+
+{stats && defaultRange ? (
+  <music-stats
+    class="ms"
+    data-default-range={defaultRange.id}
+    data-did={actorDid}
+    data-pds={pdsEndpoint}
+    data-now-playing={`${scrobblerEndpoint}/api/now-playing`}
+  >
+    <script type="application/json" class="ms-data" set:html={json} />
+    <fieldset class="ms-ranges">
+      <legend class="sr-only">Time range</legend>
+      <div
+        class:list={["ms-range-group", { "is-open": !isYearDefault }]}
+        data-group="relative"
+      >
+        <button
+          type="button"
+          class="ms-range-toggle"
+          aria-expanded={isYearDefault ? "false" : "true"}
+          aria-controls="ms-range-relative"
+          hidden
+          data-label="Recent"
+        >
+          Recent
+        </button>
+        <div class="ms-range-options" id="ms-range-relative">
+          <div class="ms-range-inner">
+            {relativeRanges.map((range) => (
+              <label class="ms-range">
+                <input
+                  type="radio"
+                  name="music-range"
+                  value={range.id}
+                  checked={range.id === defaultRange.id}
+                />
+                <span>{range.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div
+        class:list={["ms-range-group", { "is-open": isYearDefault }]}
+        data-group="year"
+      >
+        <button
+          type="button"
+          class="ms-range-toggle"
+          aria-expanded={isYearDefault ? "true" : "false"}
+          aria-controls="ms-range-year"
+          hidden
+          data-label="By year"
+        >
+          By year
+        </button>
+        <div class="ms-range-options" id="ms-range-year">
+          <div class="ms-range-inner">
+            {yearRanges.map((range) => (
+              <label class="ms-range">
+                <input
+                  type="radio"
+                  name="music-range"
+                  value={range.id}
+                  checked={range.id === defaultRange.id}
+                />
+                <span>{range.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div class="ms-range-day" hidden>
+        <span class="ms-range-day-label" />
+        <button
+          type="button"
+          class="ms-range-day-close"
+          aria-label="Back to the time range"
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+    </fieldset>
+    <p class="sr-only" aria-live="polite" data-status />
+
+    <div class="ms-numbers" aria-live="polite">
+      <div class="ms-number">
+        <span class="ms-number-value" data-stat="minutes">
+          {numberFormat.format(defaultRange.minutes)}
+        </span>
+        <span class="ms-number-label">minutes listened</span>
+      </div>
+      <div class="ms-number">
+        <span class="ms-number-value" data-stat="plays">
+          {numberFormat.format(defaultRange.plays)}
+        </span>
+        <span class="ms-number-label">plays</span>
+      </div>
+      <div class="ms-number">
+        <span class="ms-number-value" data-stat="artists">
+          {numberFormat.format(defaultRange.artists)}
+        </span>
+        <span class="ms-number-label">artists</span>
+      </div>
+      <div class="ms-number">
+        <span class="ms-number-value" data-stat="tracks">
+          {numberFormat.format(defaultRange.tracks)}
+        </span>
+        <span class="ms-number-label">tracks</span>
+      </div>
+    </div>
+
+    <section class="ms-section" aria-labelledby="ms-artists-title">
+      <h2 id="ms-artists-title" class="ms-title">
+        Top artists
+      </h2>
+      <div class="ms-artists">
+        <ol class="ms-fallback-list">
+          {defaultRange.topArtists.slice(0, 10).map((artist) => (
+            <li>
+              {artist.name} · {numberFormat.format(artist.plays)} plays
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <section class="ms-section" aria-labelledby="ms-tracks-title">
+      <h2 id="ms-tracks-title" class="ms-title">
+        Top tracks
+      </h2>
+      <div class="ms-tracks">
+        <ol class="ms-fallback-list">
+          {defaultRange.topTracks.slice(0, 10).map((track) => (
+            <li>
+              {track.name} by {track.artist} ·{" "}
+              {numberFormat.format(track.plays)} plays
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <section
+      class="ms-section ms-currents-section"
+      aria-labelledby="ms-currents-title"
+    >
+      <div class="ms-section-head is-row">
+        <div class="ms-section-text">
+          <h2 id="ms-currents-title" class="ms-title">
+            Currents
+          </h2>
+          <p class="ms-subtitle">
+            How my favourite artists rise and fall over time. Hover an artist to
+            follow it.
+          </p>
+        </div>
+        <div class="ms-currents-nav" hidden>
+          <button type="button" class="ms-nav button is-icon" data-step="-1">
+            <span aria-hidden="true">←</span>
+            <span class="sr-only">Earlier months</span>
+          </button>
+          <button type="button" class="ms-nav button is-icon" data-step="1">
+            <span aria-hidden="true">→</span>
+            <span class="sr-only">Later months</span>
+          </button>
+        </div>
+      </div>
+      <div class="ms-currents" />
+    </section>
+
+    <section class="ms-section ms-rhythm" aria-labelledby="ms-rhythm-title">
+      <div class="ms-section-head">
+        <h2 id="ms-rhythm-title" class="ms-title">
+          Rhythm
+        </h2>
+        <p class="ms-subtitle">
+          When I listen, in{" "}
+          <abbr
+            title={
+              timeZoneName === "CEST"
+                ? "Central European Summer Time"
+                : "Central European Time"
+            }
+          >
+            {timeZoneName}
+          </abbr>
+          .
+        </p>
+      </div>
+      <div class="ms-rhythm-grid">
+        <div class="ms-clock" />
+        <div class="ms-weekdays" />
+      </div>
+    </section>
+
+    <section class="ms-section" aria-labelledby="ms-calendar-title">
+      <div class="ms-section-head">
+        <h2 id="ms-calendar-title" class="ms-title">
+          Every day
+        </h2>
+        <p class="ms-subtitle ms-calendar-caption" />
+      </div>
+      <div class="ms-calendar" />
+    </section>
+
+    <section class="ms-section" aria-labelledby="ms-highlights-title">
+      <h2 id="ms-highlights-title" class="ms-title">
+        Highlights
+      </h2>
+      <div class="ms-highlights" />
+    </section>
+
+    <section class="ms-section" aria-labelledby="ms-recent-title">
+      <div class="ms-section-head">
+        <h2 id="ms-recent-title" class="ms-title">
+          Recently played
+        </h2>
+        <p class="ms-subtitle">
+          Every new song joins the track on the right and drifts along as time
+          goes by.
+        </p>
+      </div>
+      <div class="ms-recent" />
+    </section>
+  </music-stats>
+) : (
+  <Fallback
+    description="My listening stats aren't reachable right now. You can browse my plays directly on teal.fm."
+    fallbackHref="https://teal.fm/profile/felixs.dev"
+    fallbackLabel="Browse my plays on teal.fm"
+  />
+)}

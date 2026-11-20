@@ -12,8 +12,12 @@ export const DEPTH = {
 
 export const POINTER_REACH = 420;
 
-/** The furthest the planet rises on long pages, as a share of the viewport. */
-const MAX_PLANET_RISE = 0.42;
+/**
+ * How far the planet rises by the end of a long page, as a share of the
+ * viewport. Long pages slow its rise down evenly instead of stopping it, so it
+ * keeps moving until the very end.
+ */
+const FULL_PLANET_RISE = 0.9;
 
 /**
  * Positions the planet and the moon in CSS pixels. The nebula shader paints
@@ -24,10 +28,15 @@ export function getBodies({
   height,
   pointer,
   scroll,
+  scrollMax,
   time,
   width,
 }: BodiesInput): Bodies {
-  const planetRise = Math.min(scroll * DEPTH.planet, height * MAX_PLANET_RISE);
+  const rate = Math.min(
+    DEPTH.planet,
+    (height * FULL_PLANET_RISE) / Math.max(scrollMax, 1)
+  );
+  const planetRise = Math.min(scroll, scrollMax) * rate;
 
   return {
     moon: {
@@ -84,6 +93,8 @@ interface BodiesInput {
   /** The smoothed pointer position, from -0.5 to 0.5 on each axis. */
   pointer: { x: number; y: number };
   scroll: number;
+  /** How far the page can scroll at all. */
+  scrollMax: number;
   time: number;
   width: number;
 }

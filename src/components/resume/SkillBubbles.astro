@@ -1,0 +1,66 @@
+---
+import BubbleChart from "@/components/charts/BubbleChart.astro";
+import { getSkillBubbles } from "@/lib/stories";
+
+interface Props {
+  skills: { name: string }[];
+  /** How many positions use each skill, by lowercase name. */
+  usage: Map<string, number>;
+}
+
+const { skills, usage } = Astro.props;
+const bubbles = getSkillBubbles(skills, usage);
+const label = `${skills.length} skills, bigger the more positions use them`;
+---
+
+<div class="skills">
+  <p class="skills-hint">Bigger bubbles show up in more of my positions.</p>
+  {/* Phones get a tall chart so the names stay readable. */}
+  <div class="skills-wide">
+    <BubbleChart
+      bubbles={bubbles}
+      label={label}
+      fill
+      showValues={false}
+      width={760}
+      height={420}
+    />
+  </div>
+  <div class="skills-tall">
+    <BubbleChart
+      bubbles={bubbles}
+      label={label}
+      fill
+      showValues={false}
+      width={380}
+      height={720}
+    />
+  </div>
+</div>
+
+<style>
+  .skills {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .skills-hint {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .skills-tall {
+    display: none;
+  }
+
+  @media (max-width: 640px) {
+    .skills-wide {
+      display: none;
+    }
+
+    .skills-tall {
+      display: block;
+    }
+  }
+</style>

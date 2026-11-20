@@ -179,13 +179,23 @@ interface OwnProject {
   language: string | null;
 }
 
+export interface MergedPullRequest {
+  mergedAt: string;
+  repo: string;
+  title: string;
+  url: string;
+}
+
 interface ContributedOrg {
+  avatar: string | undefined;
   owner: string;
   name: string;
   description: string;
   url: string;
   stars: number;
   contributions: number;
+  /** Every merged pull request the Search API returns, newest first. */
+  pullRequests: MergedPullRequest[];
 }
 
 export interface ProjectsData {
@@ -208,6 +218,43 @@ async function fetchOwnRepos(): Promise<OwnProject[]> {
       stars: r.stargazers_count ?? 0,
       language: r.language ?? null,
     }));
+}
+
+export interface GitHubActivity {
+  following: number;
+  starred: number;
+}
+
+/**
+ * How many people I follow and how many repositories I starred on GitHub.
+ * The starred count comes from the last page number of a one-per-page list.
+ * This runs on request, so it doesn't wait out rate limits like the build.
+ */
+export async function fetchGitHubActivity(): Promise<GitHubActivity | null> {
+  try {
+    const [user, starred] = await Promise.all([
+      fetch(`${GITHUB_API}/users/${GITHUB_USERNAME}`, {
+        headers: githubHeaders(),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      }),
+      fetch(`${GITHUB_API}/users/${GITHUB_USERNAME}/starred?per_page=1`, {
+        headers: githubHeaders(),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      }),
+    ]);
+    if (!user.ok || !starred.ok) return null;
+
+    const { following } = (await user.json()) as { following?: number };
+    const last = /[?&]page=(\d+)>; rel="last"/.exec(
+      starred.headers.get("link") ?? ""
+    )?.[1];
+    const starredCount = last
+      ? Number(last)
+      : ((await starred.json()) as unknown[]).length;
+    return { following: following ?? 0, starred: starredCount };
+  } catch {
+    return null;
+  }
 }
 
 async function searchPRs(owner: string) {
@@ -268,8 +315,24 @@ async function fetchOrg(
       ? `https://${profile.blog}`
       : `https://github.com/${owner}`;
 
+  const pullRequests: MergedPullRequest[] = search.items
+    .map((pr) => ({
+      mergedAt: String(pr.pull_request?.merged_at ?? pr.closed_at ?? ""),
+      repo: String(pr.repository_url ?? "")
+        .split("/")
+        .slice(-2)
+        .join("/"),
+      title: String(pr.title ?? ""),
+      url: String(pr.html_url ?? ""),
+    }))
+    .filter((pr) => pr.mergedAt && pr.repo)
+    .toSorted((a, b) => b.mergedAt.localeCompare(a.mergedAt));
+
   return {
+    avatar:
+      typeof profile?.avatar_url === "string" ? profile.avatar_url : undefined,
     owner,
+    pullRequests,
     name: profile?.name || owner,
     description: description || profile?.bio || "",
     url,
@@ -278,7 +341,18 @@ async function fetchOrg(
   };
 }
 
-export async function fetchProjects(): Promise<ProjectsData | null> {
+let projectsPromise: Promise<ProjectsData | null> | undefined;
+
+/**
+ * Fetches the projects once per build, so the landing page and the projects
+ * page share one set of GitHub requests and stay within its rate limits.
+ */
+export function fetchProjects(): Promise<ProjectsData | null> {
+  projectsPromise ??= fetchProjectsUncached();
+  return projectsPromise;
+}
+
+async function fetchProjectsUncached(): Promise<ProjectsData | null> {
   if (!getGithubToken()) {
     console.warn("[data] GITHUB_TOKEN not set, projects will be empty");
     return null;
@@ -379,6 +453,8 @@ export interface Book {
   rotation: string;
   thickness: number;
   finishedAt?: string;
+  /** The real page count, when Bookhive knows it. */
+  pages?: number;
   startedAt?: string;
   stars?: number;
 }
@@ -389,7 +465,8 @@ async function processBook(raw: any): Promise<Book> {
   const catalogBook = raw.data.hiveBookUri
     ? await fetchRecord(raw.data.hiveBookUri)
     : null;
-  let pages = catalogBook?.numPages || raw.data.bookProgress?.totalPages;
+  const knownPages = catalogBook?.numPages || raw.data.bookProgress?.totalPages;
+  let pages = knownPages;
   if (!pages) {
     let hash = 0;
     const text = raw.data.title || raw.id;
@@ -411,6 +488,7 @@ async function processBook(raw: any): Promise<Book> {
     rotation: (Math.random() * 8 - 4).toFixed(2),
     thickness: getBookThickness(pages),
     finishedAt: raw.data.finishedAt,
+    pages: typeof knownPages === "number" ? knownPages : undefined,
     startedAt: raw.data.startedAt,
     stars: raw.data.stars,
   };
@@ -452,6 +530,10 @@ async function fetchProfile(did: string): Promise<any | null> {
   ).catch(() => null);
 }
 
+function isGoing(status: unknown): boolean {
+  return typeof status === "string" && status.endsWith("#going");
+}
+
 async function fetchBacklinks(subject: string): Promise<string[]> {
   const url = new URL(
     "/xrpc/blue.microcosm.links.getBacklinks",
@@ -474,12 +556,21 @@ async function fetchBacklinks(subject: string): Promise<string[]> {
 
 export interface Event {
   id: string;
+  /** Whether I'm going or only interested. */
+  isGoing: boolean;
   data: any;
   startDate: string;
   endDate: string;
   atmoUrl: string;
   locationText: string;
   attendees: string[];
+  /** Everyone going, with what their profile says about them. */
+  people: {
+    avatar: string | undefined;
+    did: string;
+    handle: string;
+    name: string;
+  }[];
   totalAttendees: number;
   imageUrl: string | null;
 }
@@ -501,10 +592,28 @@ export async function fetchEvents(): Promise<Event[] | null> {
     ),
   ] as string[];
 
-  const [records, backlinks] = await Promise.all([
+  const myStatus = new Map<string, string>();
+  for (const rsvp of rsvps) {
+    const ref = rsvp.data?.event || rsvp.data?.subject;
+    const uri = typeof ref === "string" ? ref : ref?.uri;
+    if (typeof uri === "string") myStatus.set(uri, String(rsvp.data?.status));
+  }
+
+  const [records, allBacklinks] = await Promise.all([
     batchAll(uris, 10, fetchRecord),
     batchAll(uris, 10, fetchBacklinks),
   ]);
+  // Only people who said they're going count as going, so each of their
+  // answers is read too.
+  const answers = await batchAll(allBacklinks.flat(), 10, fetchRecord);
+  const isGoingAnswer = new Map(
+    allBacklinks
+      .flat()
+      .map((link, index) => [link, isGoing(answers[index]?.status)])
+  );
+  const backlinks = allBacklinks.map((links) =>
+    links.filter((link) => isGoingAnswer.get(link))
+  );
 
   const dids = new Set<string>();
   uris.forEach((u) => {
@@ -564,6 +673,15 @@ export async function fetchEvents(): Promise<Event[] | null> {
         .filter((a): a is string => Boolean(a))
         .slice(0, 5);
 
+      const people = attendeeDids.map((attendee) => ({
+        avatar: profiles[attendee]?.avatar as string | undefined,
+        did: attendee,
+        handle: String(profiles[attendee]?.handle ?? attendee),
+        name: String(
+          profiles[attendee]?.displayName || profiles[attendee]?.handle || ""
+        ),
+      }));
+
       let imageUrl: string | null = null;
       if (Array.isArray(value.media)) {
         const thumb = value.media.find(
@@ -573,14 +691,23 @@ export async function fetchEvents(): Promise<Event[] | null> {
           imageUrl = `https://cdn.bsky.app/img/feed_thumbnail/plain/${did}/${thumb.content.ref.$link}@jpeg`;
       }
 
+      // Past events only count when I went, upcoming ones also when I'm
+      // interested, and never when I said no.
+      const status = myStatus.get(uri) ?? "";
+      const going = isGoing(status);
+      if (status.endsWith("#notgoing")) return null;
+      if (!going && Date.parse(endDate) < Date.now()) return null;
+
       return {
         id: uri,
+        isGoing: going,
         data: value,
         startDate,
         endDate,
         atmoUrl,
         locationText,
         attendees,
+        people,
         totalAttendees: attendeeDids.length,
         imageUrl,
       };

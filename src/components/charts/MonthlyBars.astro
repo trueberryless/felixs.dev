@@ -1,0 +1,165 @@
+---
+interface Props {
+  label: string;
+  months: { count: number; month: string }[];
+  /** What one item is called, like "merged pull request". */
+  unit: string;
+}
+
+const { label, months, unit } = Astro.props;
+
+const max = Math.max(...months.map((month) => month.count), 1);
+const busiest = months.reduce(
+  (best, month) => (month.count > best.count ? month : best),
+  months[0] ?? { count: 0, month: "" }
+);
+const format = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  timeZone: "UTC",
+  year: "numeric",
+});
+const name = (month: string) => format.format(Date.parse(`${month}-01`));
+const plural = (count: number) => `${count} ${count === 1 ? unit : `${unit}s`}`;
+---
+
+<figure class="bars" data-bars>
+  <div
+    class="bars-plot"
+    role="group"
+    aria-label={`${label}. Use the arrow keys to move between months and Enter to pick one.`}
+  >
+    {months.map((month, index) => (
+      <button
+        type="button"
+        class:list={["bar", { "is-busiest": month === busiest }]}
+        style={`--value: ${month.count / max}; --i: ${index}`}
+        data-month={month.month}
+        aria-pressed="false"
+        aria-label={`${name(month.month)}: ${plural(month.count)}`}
+        title={`${name(month.month)}: ${plural(month.count)}`}
+        tabindex={index === months.length - 1 ? 0 : -1}
+      >
+        <span class="bar-fill" aria-hidden="true" />
+        {month.month.endsWith("-01") && index < months.length - 3 && (
+          <span class="bar-year" aria-hidden="true">
+            {month.month.slice(0, 4)}
+          </span>
+        )}
+      </button>
+    ))}
+  </div>
+  <figcaption class="sr-only">
+    The busiest month was {name(busiest.month)} with {plural(busiest.count)}.
+  </figcaption>
+</figure>
+
+<script>
+  // The bars are one tab stop: the arrow keys move between months.
+  function enableBars() {
+    for (const figure of document.querySelectorAll<HTMLElement>(
+      "[data-bars]:not([data-ready])"
+    )) {
+      figure.dataset.ready = "";
+      const bars = [...figure.querySelectorAll<HTMLButtonElement>(".bar")];
+      figure.addEventListener("keydown", (event) => {
+        const current = bars.indexOf(event.target as HTMLButtonElement);
+        if (current === -1) return;
+        const next =
+          event.key === "Home"
+            ? bars[0]
+            : event.key === "End"
+              ? bars.at(-1)
+              : event.key === "ArrowRight"
+                ? bars[current + 1]
+                : event.key === "ArrowLeft"
+                  ? bars[current - 1]
+                  : undefined;
+        if (!next) return;
+        event.preventDefault();
+        for (const bar of bars) bar.tabIndex = -1;
+        next.tabIndex = 0;
+        next.focus();
+      });
+    }
+  }
+  enableBars();
+  document.addEventListener("astro:page-load", enableBars);
+</script>
+
+<style>
+  .bars {
+    margin: 0;
+  }
+
+  .bars-plot {
+    display: flex;
+    align-items: stretch;
+    height: 160px;
+    padding-bottom: 22px;
+  }
+
+  /* Every month is a full height column, so even a quiet one is easy to
+     pick; the bar inside shows its count. */
+  .bar {
+    position: relative;
+    display: flex;
+    flex: 1;
+    align-items: flex-end;
+    min-width: 1px;
+    padding: 0 1px;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    transition: opacity 0.35s ease;
+  }
+
+  .bar-fill {
+    width: 100%;
+    height: calc(var(--value) * 100% + 2px);
+    border-radius: 3px 3px 1px 1px;
+    background: color-mix(in oklch, var(--accent) 45%, transparent);
+    transform-origin: bottom;
+    transition:
+      background 0.2s ease,
+      height 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .bar.is-busiest .bar-fill,
+  .bar:hover .bar-fill,
+  .bar[aria-pressed="true"] .bar-fill {
+    background: var(--accent);
+  }
+
+  .bars-plot:has([aria-pressed="true"]) .bar:not([aria-pressed="true"]) {
+    opacity: 0.35;
+  }
+
+  .bar:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
+  }
+
+  .bar-year {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .bar-fill {
+      animation: bars-grow 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--i) * 8ms);
+    }
+  }
+
+  @keyframes bars-grow {
+    from {
+      scale: 1 0;
+    }
+  }
+</style>

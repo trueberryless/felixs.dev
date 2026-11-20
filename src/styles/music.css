@@ -1,0 +1,1251 @@
+/* The music page is rendered by a client script, so its styles are global. */
+
+.ms {
+  --ms-accent: var(--accent);
+  --ms-line: color-mix(in oklch, var(--text) 22%, transparent);
+  --ms-soft: color-mix(in oklch, var(--text) 7%, transparent);
+
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+  margin-top: 4px;
+}
+
+.ms-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ms-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ms-section-head.is-row {
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ms-section-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ms-section[hidden],
+.ms-weekdays[hidden] {
+  display: none;
+}
+
+.ms-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.ms-subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.ms-empty {
+  color: var(--text-muted);
+}
+
+.ms:not(.is-enhanced)
+  .ms-section:has(
+    .ms-currents,
+    .ms-clock,
+    .ms-calendar,
+    .ms-highlights,
+    .ms-recent
+  ) {
+  display: none;
+}
+
+.ms-fallback-list {
+  padding-left: 1.4em;
+  display: grid;
+  gap: 4px;
+}
+
+/* Entrance: every re-render fades and drifts in, staggered by `--i`, and
+   whole sections arrive one after another (`--reveal`), so a new range
+   lands as one wave instead of a few elements jumping in on their own. */
+@media (prefers-reduced-motion: no-preference) {
+  .ms-enter {
+    animation: ms-enter 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--reveal, 0) * 70ms + var(--i, 0) * 45ms);
+  }
+
+  .ms-reveal {
+    animation: ms-reveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--reveal, 0) * 70ms);
+  }
+}
+
+@keyframes ms-enter {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+    filter: blur(6px);
+  }
+}
+
+@keyframes ms-reveal {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+    filter: blur(8px);
+  }
+}
+
+/* Loading a single day: what's about to change steps back, the calendar
+   stays sharp so you can keep picking. */
+.ms > .ms-section,
+.ms > .ms-numbers {
+  transition:
+    opacity 0.3s ease,
+    filter 0.3s ease;
+}
+
+.ms[data-loading] > :is(.ms-numbers, .ms-section:not(:has(.ms-calendar))) {
+  opacity: 0.4;
+  filter: blur(2px) saturate(0.6);
+  pointer-events: none;
+}
+
+/* Range picker: one glass pill under the header, like the header itself.
+   The group that isn't in use folds into a single button. */
+.ms-ranges {
+  position: sticky;
+  top: 76px;
+  z-index: 20;
+  align-self: flex-start;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--header-bg);
+  -webkit-backdrop-filter: blur(17px) saturate(180%);
+  backdrop-filter: blur(17px) saturate(180%);
+  box-shadow: 0 8px 30px var(--header-shadow);
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Fieldsets refuse to shrink below their content by default. */
+  min-inline-size: 0;
+}
+
+.ms-ranges::-webkit-scrollbar {
+  display: none;
+}
+
+.ms-range-group {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.ms-range-group + .ms-range-group::before,
+.ms-range-day::before {
+  content: "";
+  width: 1px;
+  height: 18px;
+  margin-inline: 4px;
+  background: var(--border);
+}
+
+.ms-range-toggle,
+.ms-range span,
+.ms-range-day-label {
+  display: block;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ms-range-toggle {
+  overflow: hidden;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 0.25s ease,
+    color 0.25s ease;
+}
+
+.ms-range-toggle::after {
+  content: " \203A";
+}
+
+.ms-range-toggle:hover {
+  color: var(--text);
+  background: var(--hover-bg);
+}
+
+.ms-range-toggle.is-picked {
+  background: var(--text);
+  color: var(--card-bg);
+}
+
+.ms-range-toggle:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.ms-range-toggle[hidden],
+.ms-range-options[hidden] {
+  display: none;
+}
+
+/* The script folds and unfolds the options by their width. */
+.ms-range-options {
+  overflow: hidden;
+}
+
+.ms-range-inner {
+  display: flex;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ms-range {
+  position: relative;
+}
+
+.ms-range input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.ms-range span {
+  color: var(--text-muted);
+  transition:
+    background 0.25s ease,
+    color 0.25s ease;
+}
+
+.ms-range:hover span {
+  color: var(--text);
+}
+
+.ms-range input:checked + span {
+  background: var(--text);
+  color: var(--card-bg);
+}
+
+.ms-range input:focus-visible + span {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+}
+
+.ms-range-day {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.ms-range-day[hidden] {
+  display: none;
+}
+
+.ms-range-day-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 6px;
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
+  background: var(--text);
+  color: var(--card-bg);
+}
+
+.ms[data-loading] .ms-range-day-label::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: ms-spin 0.8s linear infinite;
+}
+
+@keyframes ms-spin {
+  to {
+    rotate: 1turn;
+  }
+}
+
+.ms-range-day-close {
+  align-self: stretch;
+  padding: 0 12px 0 6px;
+  border: 0;
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+  background: var(--text);
+  color: var(--card-bg);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ms-range-day-close:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* Big numbers */
+.ms-numbers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: 16px;
+}
+
+.ms-number {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 20px clamp(14px, 4vw, 22px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--card-bg);
+}
+
+.ms-number-value {
+  font-family: var(--font-family-heading);
+  font-size: clamp(1.8rem, 6vw, 2.6rem);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.ms-number-label {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Top artists */
+.ms-spotlight {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(12px, 3vw, 28px);
+  padding: clamp(18px, 4vw, 32px);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius-card) + 6px);
+  background:
+    radial-gradient(
+      120% 140% at 0% 0%,
+      color-mix(in oklch, var(--ms-accent) 16%, transparent),
+      transparent 60%
+    ),
+    var(--card-bg);
+  overflow: hidden;
+}
+
+.ms-spotlight-rank {
+  font-family: var(--font-family-heading);
+  font-size: clamp(2.5rem, 9vw, 5rem);
+  line-height: 1;
+  color: color-mix(in oklch, var(--ms-accent) 70%, var(--text));
+}
+
+.ms-spotlight-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ms-spotlight-kicker,
+.ms-highlight-kicker {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ms-spotlight-name {
+  font-family: var(--font-family-heading);
+  font-size: clamp(1.6rem, 6vw, 3rem);
+  line-height: 1.1;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.ms-spotlight-meta {
+  color: var(--text-muted);
+}
+
+.ms-ring {
+  width: clamp(72px, 16vw, 112px);
+  height: auto;
+}
+
+.ms-ring-track,
+.ms-ring-value {
+  fill: none;
+  stroke-width: 8;
+}
+
+.ms-ring-track {
+  stroke: var(--ms-soft);
+}
+
+.ms-ring-value {
+  stroke: var(--ms-accent);
+  stroke-linecap: round;
+  stroke-dasharray: var(--dash);
+  stroke-dashoffset: var(--offset);
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  animation: ms-ring 1.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes ms-ring {
+  from {
+    stroke-dashoffset: var(--dash);
+  }
+}
+
+.ms-ring-label {
+  font-family: var(--font-family-heading);
+  font-size: 22px;
+  fill: var(--text);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.ms-ring-caption {
+  font-size: 9px;
+  fill: var(--text-muted);
+  text-anchor: middle;
+}
+
+.ms-bars {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.ms-bar,
+.ms-track {
+  position: relative;
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  isolation: isolate;
+}
+
+.ms-bar {
+  grid-template-columns: 2.2em minmax(0, 1fr) auto;
+}
+
+.ms-bar::before,
+.ms-track::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--ms-accent) 22%, transparent),
+    color-mix(in oklch, var(--ms-accent) 8%, transparent)
+  );
+  transform-origin: left;
+  transform: scaleX(var(--value));
+  animation: ms-grow 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms + 120ms);
+}
+
+@keyframes ms-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.ms-bar-rank,
+.ms-track-rank {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.ms-bar-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-bar-value,
+.ms-track-plays {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Top tracks */
+.ms-track-list {
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.ms-track {
+  grid-template-columns: 2em minmax(0, 1fr) auto;
+  transition: background 0.2s ease;
+}
+
+.ms-track:hover {
+  background: var(--hover-bg);
+}
+
+.ms-track-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ms-track-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+a.ms-track-name:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ms-track-artist {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Currents */
+.ms-currents {
+  position: relative;
+}
+
+/* Fades at the edges show there is more to scroll. */
+.ms-currents-scroll[data-scroll~="start"] {
+  mask-image: linear-gradient(to right, transparent, black 64px);
+}
+
+.ms-currents-scroll[data-scroll~="end"] {
+  mask-image: linear-gradient(to left, transparent, black 64px);
+}
+
+.ms-currents-scroll[data-scroll~="start"][data-scroll~="end"] {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 64px,
+    black calc(100% - 64px),
+    transparent
+  );
+}
+
+.ms-currents-nav {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.ms-currents-nav[hidden] {
+  display: none;
+}
+
+.ms-currents-scroll {
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius-card) + 4px);
+  background: var(--card-bg);
+}
+
+.ms-currents-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--columns), minmax(210px, 1fr));
+  min-height: calc(var(--rows) * var(--row) + 72px);
+}
+
+.ms-currents-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.ms-current-line {
+  fill: none;
+  stroke: var(--ms-line);
+  stroke-width: 1;
+  transition:
+    stroke 0.25s ease,
+    stroke-width 0.25s ease,
+    opacity 0.25s ease;
+  stroke-dasharray: 1;
+}
+
+/* Lines draw themselves from column to column, right after the columns
+   they connect have arrived. */
+@media (prefers-reduced-motion: no-preference) {
+  .ms-current-line {
+    animation: ms-draw 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--reveal, 0) * 70ms + var(--i, 0) * 90ms + 250ms);
+  }
+}
+
+@keyframes ms-draw {
+  from {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+}
+
+.ms-current-column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 44px 44px 16px;
+  border-left: 1px solid var(--border);
+  scroll-snap-align: end;
+  transition: background 0.3s ease;
+}
+
+.ms-current-column:first-child {
+  border-left: 0;
+}
+
+.ms-current-column:hover {
+  background: var(--ms-soft);
+}
+
+.ms-current {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--row);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  transition:
+    color 0.25s ease,
+    opacity 0.25s ease;
+}
+
+.ms-current:first-of-type {
+  color: var(--text);
+}
+
+.ms-current-count {
+  flex-shrink: 0;
+  min-width: 2.4em;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  background: var(--card-bg);
+}
+
+.ms-current-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-current-label {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.ms-currents-board[data-active] .ms-current:not(.is-active) {
+  opacity: 0.35;
+}
+
+.ms-currents-board[data-active] .ms-current-line:not(.is-active) {
+  opacity: 0.25;
+}
+
+.ms-current.is-active {
+  color: var(--text);
+}
+
+.ms-current.is-active .ms-current-count {
+  border-color: var(--ms-accent);
+  color: var(--text);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ms-accent) 22%, transparent);
+}
+
+.ms-current-line.is-active {
+  stroke: var(--ms-accent);
+  stroke-width: 2;
+}
+
+/* Rhythm */
+.ms-rhythm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: 24px;
+  align-items: center;
+}
+
+.ms-clock-svg {
+  display: block;
+  width: min(100%, 320px);
+  margin-inline: auto;
+  overflow: visible;
+}
+
+.ms-clock-face {
+  fill: none;
+  stroke: var(--border);
+  stroke-dasharray: 2 4;
+}
+
+.ms-clock-wedge {
+  fill: color-mix(in oklch, var(--ms-accent) 45%, transparent);
+  transform-origin: 110px 110px;
+  animation: ms-bloom 0.9s cubic-bezier(0.34, 1.3, 0.64, 1) both;
+  animation-delay: calc(var(--i) * 25ms);
+  transition: fill 0.2s ease;
+}
+
+.ms-clock-wedge:hover,
+.ms-clock-wedge.is-peak {
+  fill: var(--ms-accent);
+}
+
+@keyframes ms-bloom {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ms-clock-hour,
+  .ms-clock-caption,
+  .ms-clock-peak {
+    animation: ms-fade 0.6s ease 0.35s both;
+  }
+
+  .ms-weekday-count {
+    animation: ms-fade 0.5s ease both;
+    animation-delay: calc(var(--i) * 50ms + 450ms);
+  }
+}
+
+@keyframes ms-fade {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+
+.ms-clock-hour,
+.ms-clock-caption {
+  font-size: 10px;
+  fill: var(--text-muted);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.ms-clock-peak {
+  font-family: var(--font-family-heading);
+  font-size: 20px;
+  fill: var(--text);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.ms-weekday-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
+  height: 220px;
+}
+
+.ms-weekday {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  height: 100%;
+}
+
+.ms-weekday-bar {
+  width: 100%;
+  max-width: 36px;
+  height: calc(var(--value) * 150px + 4px);
+  border-radius: 8px 8px 4px 4px;
+  background: color-mix(in oklch, var(--ms-accent) 40%, transparent);
+  transform-origin: bottom;
+  animation: ms-rise 0.9s cubic-bezier(0.34, 1.3, 0.64, 1) both;
+  animation-delay: calc(var(--i) * 50ms + 100ms);
+}
+
+.ms-weekday.is-favourite .ms-weekday-bar {
+  background: var(--ms-accent);
+}
+
+@keyframes ms-rise {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+.ms-weekday-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ms-weekday-name {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Calendar */
+.ms-calendar-scroll {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.ms-calendar-svg {
+  display: block;
+  min-width: 640px;
+  width: 100%;
+  height: auto;
+}
+
+.ms-day-month {
+  font-size: 10px;
+  fill: var(--text-muted);
+}
+
+.ms-day,
+.ms-legend-cell {
+  fill: var(--ms-soft);
+  background: var(--ms-soft);
+}
+
+.ms-day {
+  cursor: pointer;
+  transition: stroke-width 0.2s ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ms-day {
+    animation: ms-enter 0.6s ease both;
+    animation-delay: calc(var(--i) * 12ms);
+  }
+}
+
+.ms-day[aria-disabled="true"] {
+  cursor: default;
+}
+
+.ms-day:not([aria-disabled="true"]):hover,
+.ms-day:focus-visible,
+.ms-day.is-selected {
+  stroke: var(--text);
+  stroke-width: 1.5;
+  outline: none;
+}
+
+.ms-day.is-selected {
+  stroke-width: 2.5;
+}
+
+.ms[data-loading] .ms-day.is-selected {
+  animation: ms-pick 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes ms-pick {
+  to {
+    stroke-width: 0.5;
+  }
+}
+
+.ms [data-level="1"] {
+  fill: color-mix(in oklch, var(--ms-accent) 28%, transparent);
+  background: color-mix(in oklch, var(--ms-accent) 28%, transparent);
+}
+
+.ms [data-level="2"] {
+  fill: color-mix(in oklch, var(--ms-accent) 50%, transparent);
+  background: color-mix(in oklch, var(--ms-accent) 50%, transparent);
+}
+
+.ms [data-level="3"] {
+  fill: color-mix(in oklch, var(--ms-accent) 75%, transparent);
+  background: color-mix(in oklch, var(--ms-accent) 75%, transparent);
+}
+
+.ms [data-level="4"] {
+  fill: var(--ms-accent);
+  background: var(--ms-accent);
+}
+
+.ms-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.ms-legend-cell {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+}
+
+/* Highlights */
+.ms-highlights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: 16px;
+}
+
+.ms-highlight {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px clamp(14px, 4vw, 22px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--card-bg);
+}
+
+.ms-highlight-value {
+  font-family: var(--font-family-heading);
+  font-size: 1.6rem;
+  line-height: 1.15;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.ms-highlight-text {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Recently played: covers hanging off a winding track. Positions are set by
+   the script every frame. */
+.tr {
+  --tr-cover: 64px;
+
+  position: relative;
+  height: 300px;
+}
+
+.tr-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.tr-line {
+  fill: none;
+  stroke: color-mix(in oklch, var(--text) 55%, transparent);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.tr-stem {
+  stroke: color-mix(in oklch, var(--text) 55%, transparent);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* Solid, so the ends of the stems never show underneath. */
+.tr-dot {
+  fill: var(--header-bg-solid);
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+.tr-items {
+  list-style: none;
+}
+
+.tr-ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.tr-count {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  z-index: 1;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--text);
+  color: var(--card-bg);
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tr-repeat {
+  color: var(--text);
+}
+
+.tr-item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--tr-cover);
+  height: var(--tr-cover);
+}
+
+.tr-link {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--text);
+}
+
+.tr-cover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background: var(--badge-bg);
+  object-fit: cover;
+  box-shadow: 0 10px 24px -12px var(--header-shadow);
+  transition:
+    scale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.3s ease;
+}
+
+.tr-card {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: max-content;
+  max-width: 220px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--header-bg-solid);
+  box-shadow: var(--lift-shadow);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  translate: -50% 6px;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    translate 0.25s ease,
+    opacity 0.25s ease,
+    visibility 0s linear 0.25s;
+}
+
+.tr-item.is-below .tr-card {
+  top: calc(100% + 10px);
+  bottom: auto;
+  translate: -50% -6px;
+}
+
+.tr-title {
+  font-weight: 600;
+}
+
+.tr-artist,
+.tr-time {
+  color: var(--text-muted);
+}
+
+.tr-link:focus-visible {
+  outline: none;
+}
+
+@media (hover: hover) {
+  .tr-link:hover .tr-cover,
+  .tr-link:focus-visible .tr-cover {
+    scale: 1.12;
+    box-shadow: var(--lift-shadow);
+  }
+}
+
+.tr-link:focus-visible .tr-cover {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .tr-link:hover .tr-card,
+  .tr-link:focus-visible .tr-card {
+    translate: -50% 0;
+    opacity: 1;
+    visibility: visible;
+    transition:
+      translate 0.25s ease,
+      opacity 0.25s ease,
+      visibility 0s;
+  }
+}
+
+.tr-item:has(.tr-link:hover, .tr-link:focus-visible) {
+  z-index: 5;
+}
+
+.tr-pulse {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 6px var(--accent))
+    drop-shadow(0 0 14px var(--accent-glow));
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+.tr.is-live .tr-pulse {
+  opacity: 1;
+}
+
+@media (max-width: 600px) {
+  .tr {
+    --tr-cover: 48px;
+
+    height: 250px;
+  }
+}
+
+@media (max-width: 280px) {
+  .tr {
+    --tr-cover: 36px;
+
+    height: 200px;
+  }
+}
+
+/* Space: everything glows a little. */
+:root.space .ms-spotlight {
+  box-shadow:
+    0 24px 60px -24px oklch(0.6 0.22 300 / 0.6),
+    inset 0 0 40px oklch(0.6 0.2 300 / 0.12);
+}
+
+:root.space .ms-current-line.is-active,
+:root.space .ms-clock-wedge.is-peak,
+:root.space .ms-ring-value {
+  filter: drop-shadow(0 0 6px var(--accent-glow));
+}
+
+:root.space .ms-number-value,
+:root.space .ms-spotlight-name {
+  background-image: var(--text-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@media (max-width: 600px) {
+  .ms-spotlight {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .ms-ring {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 280px) {
+  .ms {
+    gap: 48px;
+  }
+
+  .ms-ranges {
+    position: static;
+  }
+
+  .ms-spotlight {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ms-weekday-list {
+    gap: 3px;
+  }
+
+  .ms-weekday-count {
+    display: none;
+  }
+
+  .ms-weekday-name {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.7rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ms *,
+  .ms *::before {
+    animation: none !important;
+    transition: none !important;
+  }
+}

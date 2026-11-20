@@ -1,0 +1,156 @@
+---
+interface Props {
+  items: { date: string; href: string; title: string }[];
+  label: string;
+  nowMs: number;
+}
+
+const { items, label, nowMs } = Astro.props;
+
+const ROW = 30;
+const DOT = 7;
+const GAP = 6;
+const LABEL_WIDTH = 64;
+const WIDTH = 320;
+
+// One row per quarter, newest at the top like a feed. Posts from the same
+// quarter line up to the right, so busy quarters stand out.
+const quarterOf = (ms: number) => {
+  const date = new Date(ms);
+  return date.getUTCFullYear() * 4 + Math.floor(date.getUTCMonth() / 3);
+};
+const dated = items
+  .map(({ date, href, title }) => ({ href, ms: Date.parse(date), title }))
+  .filter((item) => !Number.isNaN(item.ms))
+  .toSorted((a, b) => a.ms - b.ms);
+
+const newest = quarterOf(nowMs);
+const oldest = dated[0] ? quarterOf(dated[0].ms) : newest;
+const rows = Array.from(
+  { length: newest - oldest + 1 },
+  (_, index) => newest - index
+);
+const perQuarter = new Map<number, typeof dated>();
+for (const item of dated) {
+  const quarter = quarterOf(item.ms);
+  perQuarter.set(quarter, [...(perQuarter.get(quarter) ?? []), item]);
+}
+const height = rows.length * ROW;
+const dateFormat = new Intl.DateTimeFormat("en-US", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+  year: "numeric",
+});
+---
+
+<svg
+  class="posts"
+  viewBox={`0 0 ${WIDTH} ${height}`}
+  role="group"
+  aria-label={label}
+>
+  <line
+    class="posts-axis"
+    x1={LABEL_WIDTH - 12}
+    x2={LABEL_WIDTH - 12}
+    y1="4"
+    y2={height - 4}
+  ></line>
+  {rows.map((quarter, rowIndex) => {
+    const y = rowIndex * ROW + ROW / 2;
+    const year = Math.floor(quarter / 4);
+    const isYearStart = quarter % 4 === 3 || rowIndex === 0;
+    return (
+      <g class="posts-row">
+        {isYearStart && (
+          <text class="posts-year" x={LABEL_WIDTH - 22} y={y + 4}>
+            {year}
+          </text>
+        )}
+        <circle
+          class="posts-tick"
+          cx={LABEL_WIDTH - 12}
+          cy={y}
+          r={isYearStart ? 3 : 1.5}
+        />
+        {(perQuarter.get(quarter) ?? []).map((item, index) => (
+          <a
+            class="posts-link"
+            href={item.href}
+            aria-label={item.title}
+            style={`--row: ${rowIndex}; --i: ${index}`}
+          >
+            <circle
+              class="posts-dot"
+              cx={LABEL_WIDTH + DOT + index * (DOT * 2 + GAP)}
+              cy={y}
+              r={DOT}
+            />
+            <title>{`${item.title} · ${dateFormat.format(item.ms)}`}</title>
+          </a>
+        ))}
+      </g>
+    );
+  })}
+</svg>
+
+<style>
+  .posts {
+    display: block;
+    width: min(100%, 420px);
+    height: auto;
+    max-height: 70svh;
+    margin-inline: auto;
+    overflow: visible;
+  }
+
+  .posts-axis {
+    stroke: var(--border);
+  }
+
+  .posts-tick {
+    fill: var(--text-muted);
+  }
+
+  .posts-year {
+    font-size: 12px;
+    fill: var(--text-muted);
+    text-anchor: end;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .posts-dot {
+    fill: color-mix(in oklch, var(--accent) 55%, transparent);
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition:
+      scale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+      fill 0.2s ease;
+  }
+
+  @media (hover: hover) {
+    .posts-link:hover .posts-dot,
+    .posts-link:focus-visible .posts-dot {
+      scale: 1.45;
+      fill: var(--accent);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .posts-link {
+      transition:
+        opacity 0.5s ease,
+        translate 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      transition-delay: calc(0.3s + var(--row) * 22ms + var(--i) * 30ms);
+    }
+
+    :global(.story-frame:not([data-active="true"])) .posts-link {
+      opacity: 0;
+      translate: -16px 0;
+      transition-delay: 0s;
+    }
+  }
+</style>

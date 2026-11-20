@@ -1,0 +1,211 @@
+---
+import { Code } from "astro:components";
+
+import { toSegments, type Footnote, type LeafletBlock } from "@/lib/leaflet";
+import { escapeHtml, isSafeUrl, segmentsToHtml } from "@/lib/leaflet-html";
+import BskyEmbed, { type EmbeddedPost } from "./BskyEmbed.astro";
+import PostImage from "./PostImage.astro";
+import ExternalIcon from "@/components/utils/ExternalIcon.astro";
+
+interface Props {
+  avatars: Map<string, string>;
+  blocks: LeafletBlock[];
+  embeds: Map<string, EmbeddedPost>;
+  footnotes: Footnote[];
+}
+
+const { avatars, blocks, embeds, footnotes } = Astro.props;
+
+// Languages Shiki ships with that my posts use, by the names Leaflet stores.
+const LANGUAGES: Record<string, string> = {
+  bash: "bash",
+  css: "css",
+  diff: "diff",
+  dockerfile: "dockerfile",
+  html: "html",
+  javascript: "javascript",
+  js: "javascript",
+  json: "json",
+  jsx: "jsx",
+  markdown: "markdown",
+  nix: "nix",
+  python: "python",
+  shell: "shellscript",
+  shellscript: "shellscript",
+  sql: "sql",
+  toml: "toml",
+  ts: "typescript",
+  tsx: "tsx",
+  typescript: "typescript",
+  yaml: "yaml",
+  yml: "yaml",
+  astro: "astro",
+  csharp: "csharp",
+  hcl: "hcl",
+  terraform: "terraform",
+  xml: "xml",
+};
+
+const html = (block: LeafletBlock) =>
+  segmentsToHtml(
+    toSegments(String(block.plaintext ?? ""), (block.facets as never[]) ?? []),
+    footnotes,
+    { avatars }
+  );
+const slug = (text: unknown) =>
+  String(text ?? "")
+    .normalize("NFKD")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+---
+
+{blocks.map((block) => {
+  switch (block.$type) {
+    case "pub.leaflet.blocks.text":
+      return String(block.plaintext ?? "").trim() ? (
+        <p set:html={html(block)} />
+      ) : null;
+
+    case "pub.leaflet.blocks.header": {
+      const level = Math.min(Math.max(Number(block.level) || 2, 2), 4);
+      const Tag = `h${level}` as "h2" | "h3" | "h4";
+      const id = slug(block.plaintext);
+      return (
+        <Tag id={id} class="post-heading">
+          <span set:html={html(block)} />
+          <a
+            class="post-anchor"
+            href={`#${id}`}
+            aria-label={`Link to ${escapeHtml(String(block.plaintext ?? ""))}`}
+          >
+            #
+          </a>
+        </Tag>
+      );
+    }
+
+    case "pub.leaflet.blocks.blockquote":
+      return <blockquote set:html={html(block)} />;
+
+    case "pub.leaflet.blocks.horizontalRule":
+      return <hr />;
+
+    case "pub.leaflet.blocks.unorderedList":
+    case "pub.leaflet.blocks.orderedList": {
+      const List =
+        block.$type.endsWith("orderedList") &&
+        !block.$type.endsWith("unorderedList")
+          ? "ol"
+          : "ul";
+      const items =
+        (block.children as {
+          children?: LeafletBlock[];
+          content?: LeafletBlock;
+        }[]) ?? [];
+      return (
+        <List>
+          {items.map((item) => (
+            <li>
+              {item.content && <span set:html={html(item.content)} />}
+              {item.children?.length ? (
+                <Astro.self
+                  avatars={avatars}
+                  blocks={[{ $type: block.$type, children: item.children }]}
+                  embeds={embeds}
+                  footnotes={footnotes}
+                />
+              ) : null}
+            </li>
+          ))}
+        </List>
+      );
+    }
+
+    case "pub.leaflet.blocks.code": {
+      const language = LANGUAGES[String(block.language ?? "").toLowerCase()];
+      const name =
+        language === "shellscript" ? "shell" : (language ?? "plain text");
+      return (
+        <figure class="post-code">
+          <figcaption class="post-code-bar">
+            <span class="post-code-language">{name}</span>
+            <button
+              class="post-copy button is-small"
+              type="button"
+              data-copy
+              aria-label={`Copy the ${name} code`}
+            >
+              <span class="post-copy-label">Copy</span>
+              <span class="post-copy-done" aria-hidden="true">
+                Copied
+              </span>
+            </button>
+          </figcaption>
+          <Code
+            code={String(block.plaintext ?? "")}
+            lang={(language ?? "plaintext") as never}
+            themes={{
+              dark: "github-dark-high-contrast",
+              light: "github-light-high-contrast",
+            }}
+            defaultColor={false}
+          />
+        </figure>
+      );
+    }
+
+    case "pub.leaflet.blocks.image": {
+      const ratio = block.aspectRatio as
+        { height?: number; width?: number } | undefined;
+      return (
+        <PostImage
+          alt={String(block.alt ?? "")}
+          blob={block.image}
+          height={ratio?.height}
+          width={ratio?.width}
+        />
+      );
+    }
+
+    case "pub.leaflet.blocks.imageGallery": {
+      const images =
+        (block.images as {
+          alt?: string;
+          aspectRatio?: { height?: number; width?: number };
+          image?: unknown;
+        }[]) ?? [];
+      return (
+        <div class="post-gallery">
+          {images.map((entry) => (
+            <PostImage
+              alt={entry.alt ?? ""}
+              blob={entry.image}
+              height={entry.aspectRatio?.height}
+              width={entry.aspectRatio?.width}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    case "pub.leaflet.blocks.button":
+      return isSafeUrl(block.url) ? (
+        <p class="post-button-row">
+          <a class="post-button button" href={block.url}>
+            {String(block.text ?? block.url)}
+            <ExternalIcon />
+          </a>
+        </p>
+      ) : null;
+
+    case "pub.leaflet.blocks.bskyPost": {
+      const uri = (block.postRef as { uri?: string } | undefined)?.uri;
+      const post = uri ? embeds.get(uri) : undefined;
+      return post ? <BskyEmbed post={post} /> : null;
+    }
+
+    default:
+      return null;
+  }
+})}

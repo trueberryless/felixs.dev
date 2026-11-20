@@ -1,27 +1,115 @@
 ---
 import Book from "@/components/books/Book.astro";
 import Fallback from "@/components/utils/Fallback.astro";
-import { fetchBooks } from "@/lib/data";
+import {
+  getAuthors,
+  getBookYear,
+  getBooksPerYear,
+  getPagesRead,
+} from "@/lib/books";
 import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { fetchBooks } from "@/lib/data";
 
 const books = await fetchBooks().catch(() => null);
 applyCache(Astro.response, books ? longLivedCache : degradedCache);
 const hasData = Boolean(books && books.length > 0);
+
+const nowMs = Date.now();
+const perYear = getBooksPerYear(books ?? [], nowMs);
+const authors = getAuthors(books ?? []);
+const pages = getPagesRead(books ?? []);
+const numberFormat = new Intl.NumberFormat("en-US");
+const numbers = [
+  { label: "books", value: books?.length ?? 0 },
+  { label: "pages, that I know of", value: pages },
+  { label: "authors", value: authors.length },
+  {
+    label: "books this year",
+    value: perYear.at(-1)?.count ?? 0,
+  },
+].filter((number) => number.value > 0);
+const busiestYear = Math.max(...perYear.map((year) => year.count), 1);
+const shelfAuthors = authors.filter((author) => author.count > 1);
 ---
 
 {hasData ? (
-  <div class="books-grid">
-    {books!.map((book) => (
-      <Book
-        title={book.title}
-        authors={book.authors}
-        coverUrl={book.coverUrl}
-        rotation={book.rotation}
-        hiveId={book.hiveId}
-        thickness={book.thickness}
-      />
-    ))}
-  </div>
+  <books-shelf class="shelf">
+    {numbers.length > 0 && (
+      <ul class="shelf-numbers">
+        {numbers.map((number, index) => (
+          <li class="shelf-number" style={`--i: ${index}`}>
+            <span class="shelf-number-value">
+              {numberFormat.format(number.value)}
+            </span>
+            <span class="shelf-number-label">{number.label}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    {perYear.length > 1 && (
+      <figure class="shelf-years">
+        <ol class="shelf-years-plot" aria-label="Books finished per year">
+          {perYear.map((year, index) => (
+            <li
+              class="shelf-year"
+              style={`--value: ${year.count / busiestYear}; --i: ${index}`}
+            >
+              <button
+                type="button"
+                class="shelf-year-button"
+                aria-pressed="false"
+                aria-label={`${year.count} books in ${year.year}`}
+                data-year={year.year}
+              >
+                <span class="shelf-year-count" data-count>
+                  {year.count}
+                </span>
+                <span class="shelf-year-bar" aria-hidden="true" />
+                <span class="shelf-year-label">{year.year}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+      </figure>
+    )}
+
+    {shelfAuthors.length > 0 && (
+      <div class="shelf-authors" role="group" aria-label="Show books by">
+        {shelfAuthors.map((author) => (
+          <button
+            type="button"
+            class="shelf-author"
+            aria-pressed="false"
+            data-author={author.name}
+          >
+            {author.name}
+            <span class="shelf-author-count">{author.count}</span>
+          </button>
+        ))}
+      </div>
+    )}
+    <p class="sr-only" aria-live="polite" data-status />
+
+    <div class="books-grid">
+      {books!.map((book) => (
+        <div
+          class="shelf-book"
+          data-author={book.authors}
+          data-year={getBookYear(book)}
+        >
+          <Book
+            title={book.title}
+            authors={book.authors}
+            coverUrl={book.coverUrl}
+            rotation={book.rotation}
+            hiveId={book.hiveId}
+            thickness={book.thickness}
+          />
+        </div>
+      ))}
+    </div>
+  </books-shelf>
 ) : (
   <Fallback
     description="My reading log lives on ATproto through Bookhive and isn't reachable right now. You can browse it directly on Bookhive."
@@ -30,12 +118,305 @@ const hasData = Boolean(books && books.length > 0);
   />
 )}
 
+<script>
+  // Authors and years narrow the shelf down together. The years keep their
+  // place and only their counts follow the author.
+  class BooksShelf extends HTMLElement {
+    #author: string | undefined;
+    #year: string | undefined;
+
+    connectedCallback() {
+      if (this.dataset.ready !== undefined) return;
+      this.dataset.ready = "";
+      this.addEventListener("click", (event) => {
+        const target = event.target as Element;
+        const author = target.closest<HTMLElement>(".shelf-author");
+        const year = target.closest<HTMLElement>(".shelf-year-button");
+        if (author) {
+          const name = author.dataset.author;
+          this.#author = this.#author === name ? undefined : name;
+        } else if (year) {
+          const value = year.dataset.year;
+          this.#year = this.#year === value ? undefined : value;
+        } else {
+          return;
+        }
+        this.#apply();
+      });
+    }
+
+    #apply() {
+      const books = [...this.querySelectorAll<HTMLElement>(".shelf-book")];
+      const byAuthor = books.filter(
+        (book) => !this.#author || book.dataset.author === this.#author
+      );
+
+      const counts = new Map<string, number>();
+      for (const book of byAuthor) {
+        const year = book.dataset.year ?? "";
+        counts.set(year, (counts.get(year) ?? 0) + 1);
+      }
+      const most = Math.max(...counts.values(), 1);
+      for (const button of this.querySelectorAll<HTMLElement>(
+        ".shelf-year-button"
+      )) {
+        const year = button.dataset.year ?? "";
+        const count = counts.get(year) ?? 0;
+        button.parentElement?.style.setProperty(
+          "--value",
+          String(count / most)
+        );
+        button.setAttribute("aria-pressed", String(year === this.#year));
+        button.setAttribute("aria-label", `${count} books in ${year}`);
+        const label = button.querySelector("[data-count]");
+        if (label) label.textContent = String(count);
+      }
+      for (const button of this.querySelectorAll<HTMLElement>(
+        ".shelf-author"
+      )) {
+        button.setAttribute(
+          "aria-pressed",
+          String(button.dataset.author === this.#author)
+        );
+      }
+
+      let shown = 0;
+      for (const book of books) {
+        const wasHidden = book.hidden;
+        book.hidden =
+          !byAuthor.includes(book) ||
+          (Boolean(this.#year) && book.dataset.year !== this.#year);
+        if (!book.hidden) shown++;
+        if (wasHidden && !book.hidden) {
+          book.classList.remove("is-returning");
+          void book.offsetWidth;
+          book.classList.add("is-returning");
+        }
+      }
+      this.toggleAttribute(
+        "data-filtered",
+        Boolean(this.#author || this.#year)
+      );
+
+      const status = this.querySelector("[data-status]");
+      if (status) {
+        const parts = [
+          this.#author && `by ${this.#author}`,
+          this.#year && `in ${this.#year}`,
+        ].filter(Boolean);
+        status.textContent = parts.length
+          ? `${shown} books ${parts.join(" ")}.`
+          : "All books.";
+      }
+    }
+  }
+
+  if (!customElements.get("books-shelf")) {
+    customElements.define("books-shelf", BooksShelf);
+  }
+</script>
+
 <style>
+  .shelf {
+    display: block;
+  }
+
+  .shelf-numbers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .shelf-number {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 20px clamp(14px, 4vw, 22px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--card-bg);
+  }
+
+  .shelf-number-value {
+    font-family: var(--font-family-heading);
+    font-size: clamp(1.8rem, 6vw, 2.6rem);
+    line-height: 1.1;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .shelf-number-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .shelf-years {
+    margin: 0 0 40px;
+  }
+
+  .shelf-years-plot {
+    display: flex;
+    align-items: flex-end;
+    gap: clamp(6px, 2vw, 16px);
+    height: 150px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .shelf-year {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    min-width: 0;
+    height: 100%;
+  }
+
+  .shelf-year-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition: opacity 0.35s ease;
+  }
+
+  .shelf-year-button:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 4px;
+    border-radius: 8px;
+  }
+
+  .shelf-years-plot:has([aria-pressed="true"])
+    .shelf-year-button:not([aria-pressed="true"]) {
+    opacity: 0.4;
+  }
+
+  .shelf-year-button:hover .shelf-year-bar,
+  .shelf-year-button[aria-pressed="true"] .shelf-year-bar {
+    background: var(--accent);
+  }
+
+  .shelf-year-button[aria-pressed="true"] .shelf-year-label {
+    color: var(--text);
+  }
+
+  .shelf-book.is-returning {
+    animation: shelf-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .shelf-year-bar {
+    width: 100%;
+    max-width: 44px;
+    height: calc(var(--value) * 90px + 3px);
+    border-radius: 8px 8px 3px 3px;
+    background: color-mix(in oklch, var(--accent) 50%, transparent);
+    transform-origin: bottom;
+    transition:
+      height 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+      background 0.25s ease;
+  }
+
+  .shelf-year-count,
+  .shelf-year-label {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .shelf-authors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 48px;
+  }
+
+  .shelf-author {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px 4px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--badge-bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition:
+      background 0.25s ease,
+      color 0.25s ease,
+      border-color 0.25s ease;
+  }
+
+  .shelf-author[aria-pressed="true"] {
+    border-color: var(--text);
+    background: var(--text);
+    color: var(--card-bg);
+  }
+
+  .shelf-author:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
+  }
+
+  .shelf-author-count {
+    padding: 0 7px;
+    border-radius: var(--radius-pill);
+    background: var(--card-bg);
+    color: var(--text);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+  }
+
   .books-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
     gap: 4rem 2.5rem;
     padding-top: 1rem;
     padding-bottom: 2rem;
+  }
+
+  .shelf-book[hidden] {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .shelf-number {
+      animation: shelf-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--i) * 70ms);
+    }
+
+    .shelf-year-bar {
+      animation: shelf-grow 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(0.2s + var(--i) * 50ms);
+    }
+  }
+
+  @keyframes shelf-rise {
+    from {
+      opacity: 0;
+      translate: 0 12px;
+      filter: blur(6px);
+    }
+  }
+
+  @keyframes shelf-grow {
+    from {
+      scale: 1 0;
+    }
   }
 </style>

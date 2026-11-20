@@ -10,6 +10,7 @@ const legal = {
 const textLinks = [
   { label: "Blog", url: "/blog" },
   { label: "Books", url: "/books" },
+  { label: "Music", url: "/music" },
   { label: "Events", url: "/events" },
   { label: "Projects", url: "/projects" },
   { label: "Resume", url: "/resume" },
@@ -84,7 +85,7 @@ const socialLinks = [
 
   @media (max-width: 768px) {
     footer {
-      padding: 32px 24px;
+      padding: 48px 24px 32px;
     }
   }
 
@@ -120,6 +121,15 @@ const socialLinks = [
       @media (max-width: 768px) {
         .footer-container {
           animation-name: footer-reveal-compact;
+        }
+      }
+
+      /* On phones the links stack into a tall column, and trailing the page
+         would keep the first row behind the divider until the very end. */
+      @media (max-width: 480px) {
+        .footer-container {
+          animation: none;
+          will-change: auto;
         }
       }
     }
@@ -190,14 +200,6 @@ const socialLinks = [
   .text-links a:hover,
   .icon-links a:hover {
     color: var(--text);
-  }
-
-  .text-links a:hover {
-    transform: translateY(-2px);
-  }
-
-  .icon-links a:hover {
-    transform: translateY(-2px);
   }
 
   .icon-links :global(svg) {

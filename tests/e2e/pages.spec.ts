@@ -4,18 +4,21 @@ import { expect, test } from '@playwright/test'
 const pages = [
   { heading: 'Blog', path: '/blog', title: /Blog/ },
   { heading: 'Books', path: '/books', title: /Books/ },
+  { heading: 'Music', path: '/music', title: /Music/ },
   { heading: 'Events', path: '/events', title: /Events/ },
   { heading: 'Open Source', path: '/projects', title: /Projects/ },
   { heading: 'Resume', path: '/resume', title: /Resume/ },
 ]
 
 test.describe('home page', () => {
-  test('introduces Felix and lists the sections', async ({ page }) => {
+  test('introduces Felix and leads into every section', async ({ page }) => {
     await page.goto('/')
 
     await expect(page).toHaveTitle('Felix Schneider')
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Recent Blog Posts' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Read the blog' })).toBeVisible()
+    // Streams in once the repository export is downloaded.
+    await expect(page.getByRole('link', { name: 'Dig into my music' })).toBeVisible({ timeout: 30_000 })
   })
 
   test('has the canonical url and the Open Graph image', async ({ page }) => {
@@ -46,11 +49,22 @@ test('shows the not found page', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Return to Home' })).toBeVisible()
 })
 
+test.describe('blog post', () => {
+  test('shows a not found state for unknown posts', async ({ page }) => {
+    const response = await page.goto('/blog/zzzzzzzzzzzzz')
+
+    expect(response?.status()).toBe(404)
+    await expect(page.getByRole('heading', { level: 1, name: 'Post not found' })).toBeVisible()
+  })
+})
+
 test.describe('accessibility', () => {
-  for (const path of ['/', '/blog', '/books', '/events', '/projects', '/resume', '/404']) {
+  for (const path of ['/', '/blog', '/blog/3mpvwzmluok2z', '/books', '/music', '/events', '/projects', '/resume', '/404']) {
     for (const colorScheme of ['dark', 'light'] as const) {
       test(`${path} has no violations in ${colorScheme} mode`, async ({ page }) => {
-        await page.emulateMedia({ colorScheme })
+        // Sections fade through each other while scrolling, which axe would
+        // catch half way. Reduced motion shows every section as it settles.
+        await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' })
         await page.goto(path)
         await page.waitForLoadState('networkidle')
 
@@ -75,7 +89,7 @@ for (const width of [320, 200, 136]) {
   test.describe(`at ${width} pixels wide`, () => {
     test.use({ viewport: { height: 800, width } })
 
-    for (const path of ['/', '/blog', '/books', '/events', '/projects', '/resume', '/404']) {
+    for (const path of ['/', '/blog', '/books', '/music', '/events', '/projects', '/resume', '/404']) {
       test(`${path} keeps its content inside the screen`, async ({ page }) => {
         await page.goto(path)
         await page.waitForLoadState('networkidle')
@@ -85,6 +99,15 @@ for (const width of [320, 200, 136]) {
           return [...document.querySelectorAll('header *, main *, footer *')]
             .filter((element) => !element.closest('[aria-hidden="true"], .sr-only'))
             .filter((element) => getComputedStyle(element).visibility !== 'hidden')
+            // Rows that scroll sideways on purpose, like the range picker.
+            .filter((element) => {
+              for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+                if (['auto', 'scroll'].includes(getComputedStyle(parent).overflowX)) return false
+              }
+              return true
+            })
+            // Wide charts scroll inside their own container on purpose.
+            .filter((element) => !element.closest('[role="region"][tabindex="0"]'))
             .filter((element) => {
               const { height, left, right } = element.getBoundingClientRect()
               return height > 0 && (right > viewportWidth + 1 || left < -1)
@@ -128,5 +151,29 @@ test.describe('mobile menu', () => {
 
     await expect(toggle).toHaveAttribute('aria-expanded', 'false')
     await expect(toggle).toBeFocused()
+  })
+})
+
+test.describe('live visitors', () => {
+  test('stays out of the hero', async ({ page }) => {
+    await page.goto('/')
+
+    await expect(page.locator('live-visitors')).toHaveClass(/is-tucked/)
+  })
+
+  // Other tests run in parallel against the same server, so they may count too.
+  test('counts every open tab', async ({ browser }) => {
+    const first = await browser.newPage()
+    // The count stays out of the hero, so the home page would hide it.
+    await first.goto('/books')
+    await expect(first.locator('live-visitors').getByRole('status')).toHaveText(/visit/)
+
+    const second = await browser.newPage()
+    await second.goto('/blog')
+
+    await expect(second.locator('live-visitors').getByRole('status')).toHaveText(/^([2-9]|\d{2,}) people/)
+
+    await first.close()
+    await second.close()
   })
 })

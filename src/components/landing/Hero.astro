@@ -253,7 +253,9 @@ const prints = await Promise.all(
 </section>
 
 <style is:global>
-  main {
+  /* Specific enough to win over the global padding, whatever order the
+     stylesheets end up in. */
+  main:has(> #hero-section) {
     padding-top: 0;
     min-height: 0;
   }

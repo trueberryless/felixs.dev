@@ -1,0 +1,132 @@
+---
+import Book from "@/components/books/Book.astro";
+import Story from "@/components/story/Story.astro";
+import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { buildReadingSummary, fetchBooks } from "@/lib/data";
+
+const books = await fetchBooks().catch(() => null);
+applyCache(Astro.response, books ? longLivedCache : degradedCache);
+
+const summary = books ? buildReadingSummary(books) : null;
+const shelf = (books ?? []).slice(0, 5);
+
+const authorCounts = new Map<string, number>();
+for (const book of (books ?? []).slice(0, 12)) {
+  authorCounts.set(book.authors, (authorCounts.get(book.authors) ?? 0) + 1);
+}
+const [topAuthor, topAuthorBooks = 0] =
+  [...authorCounts].toSorted((a, b) => b[1] - a[1])[0] ?? [];
+---
+
+<Story kicker="Reading" href="/books" linkText="Browse the bookshelf">
+  <Fragment slot="title">
+    {books && books.length > 0 ? (
+      <>
+        <em>{books.length}</em> books, mostly fantasy
+      </>
+    ) : (
+      "Mostly fantasy"
+    )}
+  </Fragment>
+  <Fragment slot="text">
+    {summary && <p>Right now I'm reading {summary.latest.title}.</p>}
+    {topAuthor && topAuthorBooks > 1 && (
+      <p>Lately a lot of {topAuthor}, apparently.</p>
+    )}
+  </Fragment>
+  <div slot="visual" class="reading-shelf">
+    {shelf.map((book) => (
+      <div class="reading-book">
+        <Book
+          title={book.title}
+          authors={book.authors}
+          coverUrl={book.coverUrl}
+          rotation={book.rotation}
+          hiveId={book.hiveId}
+          thickness={book.thickness}
+          compact
+        />
+      </div>
+    ))}
+  </div>
+</Story>
+
+<style>
+  .reading-shelf {
+    position: relative;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 28px;
+  }
+
+  /* A soft pool of shadow instead of a shelf board, so the books stand on
+     the page in every theme. */
+  .reading-shelf::after {
+    content: "";
+    position: absolute;
+    left: 6%;
+    right: 6%;
+    bottom: 6px;
+    height: 26px;
+    border-radius: 50%;
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklch, var(--header-shadow) 70%, transparent),
+      transparent
+    );
+    z-index: -1;
+  }
+
+  /* Like the Dock: the book you point at lifts, and every other book moves
+     aside far enough that nothing overlaps it, so it never has to jump in
+     front of the others. */
+  .reading-book {
+    position: relative;
+    margin-inline: -14px;
+    zoom: 0.66;
+    transition: translate 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @media (hover: hover) {
+    .reading-book:is(:hover, :focus-within) {
+      translate: 0 -14px;
+    }
+
+    .reading-book:has(~ .reading-book:is(:hover, :focus-within)) {
+      translate: -46px 0;
+    }
+
+    .reading-book:is(:hover, :focus-within) ~ .reading-book {
+      translate: 46px 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reading-book,
+    .reading-book:hover,
+    .reading-book:focus-within {
+      translate: none;
+      transition: none;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .reading-book {
+      margin-inline: -18px;
+      zoom: 0.48;
+    }
+  }
+
+  @media (max-width: 280px) {
+    .reading-book {
+      margin-inline: -16px;
+      zoom: 0.36;
+    }
+
+    .reading-book:nth-child(n + 4) {
+      display: none;
+    }
+  }
+</style>

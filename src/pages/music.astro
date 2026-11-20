@@ -1,0 +1,27 @@
+---
+import MusicContent from "@/components/music/MusicContent.astro";
+import MusicSkeleton from "@/components/music/MusicSkeleton.astro";
+import PageHeader from "@/components/utils/PageHeader.astro";
+import LayoutPage from "@/layouts/LayoutPage.astro";
+import { tealProfileUrl } from "@/lib/const";
+import "@/styles/music.css";
+
+export const prerender = true;
+---
+
+<LayoutPage title="Music | Felix Schneider">
+  <PageHeader title="Music">
+    <Fragment slot="description">
+      Unusual taste, but cool stats. Every play is saved on{" "}
+      <a href={tealProfileUrl}>teal.fm</a>.
+    </Fragment>
+  </PageHeader>
+
+  <MusicContent server:defer>
+    <MusicSkeleton slot="fallback" />
+  </MusicContent>
+</LayoutPage>
+
+<script>
+  import "@/scripts/music/music-stats";
+</script>

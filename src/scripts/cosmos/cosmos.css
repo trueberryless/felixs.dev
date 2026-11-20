@@ -101,15 +101,7 @@
 /* Tinted glass: a sheen, an inner highlight and a glowing edge over a deep
    translucent violet, without a live backdrop blur. */
 
-:root.space
-  :is(
-    .list,
-    .fallback,
-    .card-container,
-    .honor-card,
-    .skeleton-list,
-    .skeleton-card
-  ) {
+:root.space :is(.fallback, .card-container, .honor-card, .skeleton-card) {
   background:
     linear-gradient(140deg, oklch(1 0 0 / 0.1), transparent 40%), var(--card-bg);
   box-shadow:
@@ -504,7 +496,6 @@
     .card-link,
     .fallback,
     .honor-card,
-    .list,
     .skill-chip,
     .timeline-row > .card-container,
     .year-watermark
@@ -534,7 +525,6 @@
     .card-link,
     .fallback,
     .honor-card,
-    .list,
     .skill-chip,
     .timeline-row > .card-container,
     .year-watermark,
@@ -804,9 +794,10 @@
 
 /* Pause control */
 
+/* Bottom left, out of the way of the visitor count on the right. */
 .cosmos-still-toggle {
   position: fixed;
-  right: 16px;
+  left: 16px;
   bottom: 16px;
   z-index: 900;
   display: none;

@@ -1,36 +1,8 @@
 import type { AugmentedPost } from "./data";
 
-export function processPost(post: AugmentedPost) {
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "N/A";
-    const month = date
-      .toLocaleString("en-US", { month: "short", timeZone: "UTC" })
-      .toUpperCase();
-    const day = date.getUTCDate().toString().padStart(2, "0");
-    return `${month}.${day}`;
-  };
-
-  const constructUrl = () => {
-    const pubUrl = post.data.publication?.url;
-    if (pubUrl && /^https?:\/\//i.test(pubUrl) && post.data.path) {
-      const baseUrl = pubUrl.replace(/\/$/, "");
-      const path = post.data.path.startsWith("/")
-        ? post.data.path
-        : `/${post.data.path}`;
-      return `${baseUrl}${path}`;
-    }
-    return "#";
-  };
-
-  return {
-    title: post.data.title || "Untitled Blog Post",
-    formattedDate: formatDate(post.data.publishedAt),
-    firstTag: post.data.tags?.[0],
-    otherTags: post.data.tags?.slice(1).join("  ") || "",
-    postUrl: constructUrl(),
-  };
+/** The path of a post on this site, from its record key. */
+export function getPostPath(post: AugmentedPost): string {
+  return `/blog/${post.id.split("/").at(-1)}`;
 }
 
 export function groupPostsByYear(posts: AugmentedPost[]) {
