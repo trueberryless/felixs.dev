@@ -1,3 +1,5 @@
+import { groupRepeats } from "@/lib/music";
+
 import { formatRelative, html, svg } from "./dom";
 
 const PLAY_LIMIT = 10;
@@ -234,6 +236,13 @@ export function renderTrack(
       const point = pointAt(newestX + (oldestX - newestX) * eased);
       pulse.setAttribute("cx", point.x.toFixed(1));
       pulse.setAttribute("cy", point.y.toFixed(1));
+      // Each trip fades and grows in at the start and fades out at the end,
+      // so the jump back to the newest song is never seen.
+      const presence = reduced.matches
+        ? 1
+        : smoothstep(progress / 0.14) * smoothstep((1 - progress) / 0.2);
+      pulse.style.fillOpacity = presence.toFixed(3);
+      pulse.setAttribute("r", (DOT * (0.55 + 0.45 * presence)).toFixed(2));
     }
   }
 
@@ -443,35 +452,24 @@ async function fetchPlays(pds: string, did: string): Promise<TrackPlay[]> {
     };
 
     // A song played several times in a row becomes one stop on the track.
-    const plays: TrackPlay[] = [];
-    for (const { uri, value } of records) {
-      const artist =
-        value.artists?.map((entry) => entry.artistName).join(", ") ||
-        "Unknown artist";
-      const previous = plays.at(-1);
-      const same =
-        previous &&
-        (value.originUri
-          ? previous.url === value.originUri
-          : previous.title === value.trackName && previous.artist === artist);
-      // The group is known by its first play, so it stays the same stop
-      // when the song plays once more.
-      if (same) {
-        previous.count++;
-        previous.key = uri;
-        continue;
-      }
-      plays.push({
-        artist,
+    const plays = groupRepeats(
+      records.map(({ uri, value }) => ({
+        artist:
+          value.artists?.map((entry) => entry.artistName).join(", ") ||
+          "Unknown artist",
         at: Date.parse(value.playedTime),
-        count: 1,
         key: uri,
         title: value.trackName,
         url: value.originUri,
-      });
-    }
+      }))
+    );
     return plays.slice(0, PLAY_LIMIT);
   } catch {
     return [];
   }
+}
+
+function smoothstep(value: number) {
+  const t = Math.min(1, Math.max(0, value));
+  return t * t * (3 - 2 * t);
 }

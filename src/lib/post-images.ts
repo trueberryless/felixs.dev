@@ -5,6 +5,11 @@ export interface PostImage {
   original: string;
   /** A resized copy from Bluesky's image CDN, or the original for GIFs. */
   src: string;
+  /**
+   * The CDN's 1000 pixel copy next to the full one, so phones load a tenth of
+   * the bytes. Left out for GIFs.
+   */
+  srcset: string | undefined;
   /** A small copy, for previews. */
   thumbnail: string;
   isAnimated: boolean;
@@ -37,6 +42,9 @@ export function getPostImage(blob: unknown): PostImage | undefined {
     src: isAnimated
       ? original
       : `https://cdn.bsky.app/img/feed_fullsize/plain/${actorDid}/${cid}@webp`,
+    srcset: isAnimated
+      ? undefined
+      : `https://cdn.bsky.app/img/feed_thumbnail/plain/${actorDid}/${cid}@webp 1000w, https://cdn.bsky.app/img/feed_fullsize/plain/${actorDid}/${cid}@webp 2400w`,
     thumbnail: `https://cdn.bsky.app/img/feed_thumbnail/plain/${actorDid}/${cid}@jpeg`,
     tilt: getTilt(cid),
   };

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { getSocialActivity, parseResumeDate } from '../../src/lib/stories'
+import { getSkillBubbles, getSocialActivity, parseResumeDate, splitTrailingLink } from '../../src/lib/stories'
 
 describe('getSocialActivity', () => {
   test('counts posts, replies and quotes separately', () => {
@@ -80,5 +80,32 @@ describe('tellCareer', () => {
     )
     expect(rows.map((row) => row.label)).toEqual(['Open source', 'Long'])
     expect(rows[0]).toMatchObject({ isCurrent: true, kind: 'open-source' })
+  })
+})
+
+describe('splitTrailingLink', () => {
+  test('splits a trailing link off the text', () => {
+    expect(splitTrailingLink('Recognized for October.\n\nhttps://www.astro.build/blog/#awards')).toEqual({
+      link: { host: 'astro.build', url: 'https://www.astro.build/blog/#awards' },
+      text: 'Recognized for October.',
+    })
+  })
+
+  test('keeps text without a link as it is', () => {
+    expect(splitTrailingLink('Just words.')).toEqual({ text: 'Just words.' })
+    expect(splitTrailingLink(null)).toEqual({ text: '' })
+  })
+})
+
+describe('getSkillBubbles', () => {
+  test('grows bubbles with usage', () => {
+    const [astro, css, docs] = getSkillBubbles(
+      [{ name: 'Astro' }, { name: 'CSS' }, { name: 'Technical Documentation' }],
+      new Map([['astro', 2]])
+    )
+    expect(astro?.title).toBe('Astro: used in 2 positions')
+    expect(css?.title).toBe('CSS')
+    expect(astro!.value).toBeGreaterThan(css!.value)
+    expect(docs!.value).toBe(css!.value)
   })
 })

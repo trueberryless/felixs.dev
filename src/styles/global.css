@@ -112,13 +112,12 @@
   --glow-pr: oklch(0.8 0.15 310);
   --accent: oklch(0.84 0.13 195);
   --accent-glow: oklch(0.84 0.13 195 / 0.55);
+  /* One cool white with a soft sheen, like starlight. */
   --text-gradient: linear-gradient(
-    100deg,
-    oklch(0.9 0.1 200) 0%,
-    oklch(0.88 0.1 290) 30%,
-    oklch(0.84 0.14 330) 50%,
-    oklch(0.88 0.1 290) 70%,
-    oklch(0.9 0.1 200) 100%
+    180deg,
+    oklch(0.99 0.01 285) 0%,
+    oklch(0.93 0.03 285) 55%,
+    oklch(0.86 0.05 285) 100%
   );
 
   /* Painted before the lazily loaded nebula canvas fades in, and kept as the
@@ -280,6 +279,71 @@ a {
 
 ul {
   list-style: none;
+}
+
+/* The first stop for keyboard users, hidden until it has focus. */
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 1000;
+  max-width: calc(100vw - 24px);
+  white-space: normal;
+  translate: 0 calc(-100% - 24px);
+}
+
+.skip-link:focus-visible {
+  translate: none;
+}
+
+main:focus {
+  outline: none;
+}
+
+/* Skeletons: a bone stands in for content that is still loading. Around
+   text it keeps the text's own size, so nothing moves when it arrives. */
+.bone {
+  display: inline-block;
+  border-radius: 6px;
+  background: var(--border);
+  color: transparent;
+  user-select: none;
+  animation: bone-pulse 1.5s ease-in-out infinite;
+}
+
+/* Parts like chips and buttons bring their own colours; a bone covers them
+   all, text and borders included. */
+.bone,
+.bone * {
+  border-color: transparent !important;
+  color: transparent !important;
+}
+
+.bone {
+  background: var(--border) !important;
+}
+
+.bone * {
+  background: none !important;
+}
+
+/* Skeletons stand still apart from their pulse: the parts they borrow from
+   the page skip their entrance animations. */
+.skeleton :not(.bone) {
+  animation: none !important;
+}
+
+/* Running text: every line gets its own bar, like the text it stands for. */
+.bone.is-text {
+  display: inline;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+@keyframes bone-pulse {
+  50% {
+    opacity: 0.45;
+  }
 }
 
 /* Buttons: every pill link and button on the site shares this one look.

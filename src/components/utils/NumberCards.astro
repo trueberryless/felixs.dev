@@ -1,0 +1,77 @@
+---
+interface Props {
+  /** Leave out the values to show the cards as a skeleton. */
+  numbers: { label: string; value?: number | string }[];
+}
+
+const { numbers } = Astro.props;
+const numberFormat = new Intl.NumberFormat("en-US");
+---
+
+<ul class="number-cards">
+  {numbers.map((number, index) => (
+    <li class="number-card" style={`--i: ${index}`}>
+      {number.value === undefined ? (
+        <span class="number-card-value">
+          <span class="bone">00</span>
+        </span>
+      ) : (
+        <span class="number-card-value">
+          {typeof number.value === "number"
+            ? numberFormat.format(number.value)
+            : number.value}
+        </span>
+      )}
+      <span class="number-card-label">{number.label}</span>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .number-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .number-card {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 20px clamp(14px, 4vw, 22px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--card-bg);
+  }
+
+  .number-card-value {
+    font-family: var(--font-family-heading);
+    font-size: clamp(1.8rem, 6vw, 2.6rem);
+    line-height: 1.1;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .number-card-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .number-card:not(:has(.bone)) {
+      animation: number-card-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: calc(var(--i) * 70ms);
+    }
+  }
+
+  @keyframes number-card-rise {
+    from {
+      opacity: 0;
+      translate: 0 12px;
+      filter: blur(6px);
+    }
+  }
+</style>

@@ -1,4 +1,5 @@
 ---
+import { actorDid } from "@/lib/const";
 import Hero from "@/components/landing/Hero.astro";
 import Intro from "@/components/landing/Intro.astro";
 import BuildingStory from "@/components/landing/stories/BuildingStory.astro";
@@ -34,21 +35,84 @@ export const prerender = true;
     <div class="stories" data-stories>
       <div class="stories-stage">
         <WritingStory server:defer>
-          <StorySkeleton slot="fallback" />
+          <StorySkeleton
+            slot="fallback"
+            kicker="Writing"
+            href="/blog"
+            linkText="Read the blog"
+            title={[{ bone: "33" }, " posts, mostly notes to my future self"]}
+            text={[
+              [
+                "Recipes, small fixes I don't want to look up twice, and the odd longer thought.",
+              ],
+              ["Every dot is a post. Pick one."],
+            ]}
+            visual={368 / 448}
+          />
         </WritingStory>
         <BuildingStory />
         <ReadingStory server:defer>
-          <StorySkeleton slot="fallback" />
+          <StorySkeleton
+            slot="fallback"
+            kicker="Reading"
+            href="/books"
+            linkText="Browse the bookshelf"
+            title={[{ bone: "30" }, " books, mostly fantasy"]}
+            text={[
+              ["Right now I'm reading ", { bone: "a book with a title" }, "."],
+              ["Lately a lot of ", { bone: "an author" }, ", apparently."],
+            ]}
+            visual={368 / 167}
+          />
         </ReadingStory>
         <ListeningStory server:defer>
-          <StorySkeleton slot="fallback" />
+          <StorySkeleton
+            slot="fallback"
+            kicker="Listening"
+            href="/music"
+            linkText="Dig into my music"
+            title={[{ bone: "1,000" }, " plays and counting"]}
+            text={[
+              [
+                "Unusual taste, I know. ",
+                { bone: "Lately it's mostly a few artists and another one." },
+              ],
+            ]}
+            visual={368 / 158}
+          />
         </ListeningStory>
         <WorkingStory server:defer>
-          <StorySkeleton slot="fallback" />
+          <StorySkeleton
+            slot="fallback"
+            kicker="Working"
+            href="/resume"
+            linkText="Read the resume"
+            title={["Shipping software since ", { bone: "2019" }]}
+            text={[
+              [
+                {
+                  bone: "A job title at a company, studying a field at a school.",
+                },
+              ],
+            ]}
+            visual={368 / 316}
+          />
         </WorkingStory>
         <MeetingStory server:defer />
         <SocialStory server:defer>
-          <StorySkeleton slot="fallback" />
+          <StorySkeleton
+            slot="fallback"
+            kicker="Hanging out"
+            href={`https://bsky.app/profile/${actorDid}`}
+            linkText="Find me on Bluesky"
+            title={["Mostly ", { bone: "posting" }]}
+            text={[
+              [
+                "What I actually do on Bluesky, GitHub and Tangled, from posts and replies to stars and follows.",
+              ],
+            ]}
+            visual={368 / 333}
+          />
         </SocialStory>
       </div>
     </div>
@@ -116,6 +180,153 @@ export const prerender = true;
 
     .stories :global(.story-frame:not([data-active="true"])) {
       pointer-events: none;
+    }
+
+    /* Where scroll timelines work, the stage glides in and out on the
+       compositor, in step with the scrolling and with its own pinning, so it
+       never lags a frame behind. The script moves it everywhere else. The
+       stops trace the script's curve: it follows the page right after the
+       intro, slows down into the middle and speeds up again at the end. */
+    @supports (animation-timeline: view()) {
+      .stories {
+        view-timeline: --stories block;
+      }
+
+      .stories-stage {
+        translate: none;
+        animation:
+          stage-enter linear both,
+          stage-leave linear both;
+      }
+
+      /* Separate on purpose, see the parallax in `Hero.astro`: a minifier
+         would fold these into the shorthand above, which browsers reject. */
+      .stories-stage.stories-stage {
+        animation-timeline: --stories, --stories;
+        animation-range:
+          entry 0% contain 7svh,
+          exit -7svh exit 100%;
+        animation-composition: replace, add;
+      }
+
+      @keyframes stage-enter {
+        0.0% {
+          translate: 0 -18svh;
+        }
+        53.27% {
+          translate: 0 -18svh;
+        }
+        56.19% {
+          translate: 0 -17.9svh;
+        }
+        59.11% {
+          translate: 0 -17.61svh;
+        }
+        62.03% {
+          translate: 0 -17.12svh;
+        }
+        64.95% {
+          translate: 0 -16.44svh;
+        }
+        67.87% {
+          translate: 0 -15.56svh;
+        }
+        70.79% {
+          translate: 0 -14.48svh;
+        }
+        73.71% {
+          translate: 0 -13.21svh;
+        }
+        76.64% {
+          translate: 0 -11.75svh;
+        }
+        79.56% {
+          translate: 0 -10.09svh;
+        }
+        82.48% {
+          translate: 0 -8.23svh;
+        }
+        85.4% {
+          translate: 0 -6.18svh;
+        }
+        88.32% {
+          translate: 0 -3.94svh;
+        }
+        91.24% {
+          translate: 0 -1.5svh;
+        }
+        93.46% {
+          translate: 0 0.49svh;
+        }
+        94.16% {
+          translate: 0 0.39svh;
+        }
+        97.08% {
+          translate: 0 0.1svh;
+        }
+        100.0% {
+          translate: 0 0svh;
+        }
+      }
+      @keyframes stage-leave {
+        0.0% {
+          translate: 0 0svh;
+        }
+        2.92% {
+          translate: 0 -0.1svh;
+        }
+        5.84% {
+          translate: 0 -0.39svh;
+        }
+        6.54% {
+          translate: 0 -0.49svh;
+        }
+        8.76% {
+          translate: 0 1.5svh;
+        }
+        11.68% {
+          translate: 0 3.94svh;
+        }
+        14.6% {
+          translate: 0 6.18svh;
+        }
+        17.52% {
+          translate: 0 8.23svh;
+        }
+        20.44% {
+          translate: 0 10.09svh;
+        }
+        23.36% {
+          translate: 0 11.75svh;
+        }
+        26.29% {
+          translate: 0 13.21svh;
+        }
+        29.21% {
+          translate: 0 14.48svh;
+        }
+        32.13% {
+          translate: 0 15.56svh;
+        }
+        35.05% {
+          translate: 0 16.44svh;
+        }
+        37.97% {
+          translate: 0 17.12svh;
+        }
+        40.89% {
+          translate: 0 17.61svh;
+        }
+        43.81% {
+          translate: 0 17.9svh;
+        }
+        46.73% {
+          translate: 0 18svh;
+        }
+        100.0% {
+          translate: 0 18svh;
+        }
+      }
     }
 
     .stories :global(.stories-snap) {

@@ -218,18 +218,20 @@ export function renderCurrents(
       const button = html(
         "button",
         {
-          "aria-label": `${artist.name}: ${formatNumber(artist.plays)} plays in ${column.title}`,
           class: "ms-current",
           "data-artist": slug(artist.name),
           style: `--rank: ${rank}`,
           type: "button",
         },
         [
+          // The name read out keeps the visible count and artist, in order.
           html("span", {
             class: "ms-current-count",
             text: formatNumber(artist.plays),
           }),
+          html("span", { class: "sr-only", text: " plays of " }),
           html("span", { class: "ms-current-name", text: artist.name }),
+          html("span", { class: "sr-only", text: ` in ${column.title}` }),
         ]
       );
       element.append(button);

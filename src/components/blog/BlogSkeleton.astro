@@ -1,162 +1,190 @@
 ---
+import FilterChip from "@/components/utils/FilterChip.astro";
+// The same tools and rows as the blog list, with bones where the posts go.
+const topics = [
+  "starlight",
+  "education",
+  "automation",
+  "plugins",
+  "mindspace",
+  "css",
+  "deployment",
+  "github",
+  "story",
+  "tool",
+  "collaboration",
+  "git",
+];
 const rowsPerYear = [4, 6, 3];
-const titleWidths = ["65%", "45%", "80%", "55%"];
-const dateWidths = ["80px", "110px", "70px", "95px"];
-const tagWidths = ["60px", "90px", "45px", "75px"];
+const titles = [
+  "A post title that is long",
+  "A shorter post title",
+  "A post title that runs a little longer",
+  "Some post title",
+];
 ---
 
-<div class="skeleton-years">
-  {rowsPerYear.map((count, yearIndex) => (
-    <section class="skeleton-year">
-      <div class="skeleton-posts">
-        {Array.from({ length: count }).map((_, i) => (
-          <div class="skeleton-post">
-            <div class="skeleton-title-container">
-              <div
-                class="skeleton-line title"
-                style={`width: ${titleWidths[i % titleWidths.length]}`}
-              />
+<div class="skeleton skeleton-blog" aria-hidden="true">
+  <div class="skeleton-tools">
+    <div class="skeleton-search">
+      <svg
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      >
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-3.5-3.5" />
+      </svg>
+      <span>Search posts</span>
+    </div>
+    <div class="skeleton-topics">
+      {topics.map((topic) => (
+        <FilterChip skeleton count={5}>
+          {topic}
+        </FilterChip>
+      ))}
+      <span class="bone skeleton-more">21 more topics</span>
+    </div>
+  </div>
+
+  <div class="skeleton-years">
+    {rowsPerYear.map((count) => (
+      <ol class="skeleton-posts">
+        {Array.from({ length: count }, (_, index) => (
+          <li class="skeleton-post">
+            <div class="skeleton-link">
+              <span class="skeleton-title">
+                <span class="bone">{titles[index % titles.length]}</span>
+              </span>
+              <span class="skeleton-description">
+                <span class="bone is-text">
+                  A sentence or two about what the post is about, long enough to
+                  wrap onto a second line like most of them do.
+                </span>
+              </span>
+              <span class="skeleton-meta">
+                <span class="bone">Jan 12</span>
+                <span class="bone">3 min read</span>
+                <span class="bone skeleton-tag">automation</span>
+              </span>
             </div>
-            <div class="skeleton-meta">
-              <div
-                class="skeleton-line date"
-                style={`width: ${dateWidths[i % dateWidths.length]}`}
-              />
-              <span class="skeleton-separator">&bull;</span>
-              <div
-                class="skeleton-line tag"
-                style={`width: ${tagWidths[i % tagWidths.length]}`}
-              />
-            </div>
-          </div>
+            <span class="bone skeleton-thumb" />
+          </li>
         ))}
-      </div>
-    </section>
-  ))}
+      </ol>
+    ))}
+  </div>
 </div>
 
 <style>
+  .skeleton-blog {
+    margin-block: 32px 80px;
+  }
+
+  .skeleton-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 72px;
+  }
+
+  .skeleton-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 420px;
+    padding: 10px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--card-bg);
+    color: var(--text-muted);
+  }
+
+  .skeleton-topics {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .skeleton-more {
+    padding: 0 16px;
+    border-radius: var(--radius-pill);
+    font-size: 0.9rem;
+    line-height: 1.75rem;
+  }
+
   .skeleton-years {
     display: flex;
     flex-direction: column;
     gap: 80px;
-    margin-block: 80px;
-  }
-
-  .skeleton-year {
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    z-index: 1;
   }
 
   .skeleton-posts {
     display: flex;
     flex-direction: column;
+    padding: 0;
+    list-style: none;
   }
 
   .skeleton-post {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 16px 0;
+    align-items: center;
+    gap: 20px;
+    border-top: 1px solid var(--border);
   }
 
-  .skeleton-title-container {
-    flex: 1 1 auto;
+  .skeleton-post:first-child {
+    border-top: 0;
+  }
+
+  .skeleton-link {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
     min-width: 0;
+    padding: 22px 0;
+  }
+
+  .skeleton-title {
+    font-family: var(--font-family-heading);
+    font-size: clamp(1.25rem, 3vw, 1.6rem);
+    line-height: 1.25;
+  }
+
+  .skeleton-description {
+    max-width: 64ch;
   }
 
   .skeleton-meta {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
-    gap: 8px;
+    align-items: center;
+    gap: 6px 16px;
+    font-size: 0.85rem;
+  }
+
+  .skeleton-tag {
+    padding: 0 8px;
+    font-family: var(--font-family-mono);
+    font-size: 0.75rem;
+  }
+
+  .skeleton-thumb {
     flex-shrink: 0;
+    width: 96px;
+    height: 64px;
+    border-radius: 10px;
   }
 
-  .skeleton-separator {
-    color: var(--border);
-    font-size: 1.2em;
-    user-select: none;
-    animation: skeleton-pulse 1.5s ease-in-out infinite;
-  }
-
-  .skeleton-line {
-    background: var(--border);
-    border-radius: 4px;
-    animation: skeleton-pulse 1.5s ease-in-out infinite;
-  }
-
-  .skeleton-line.title {
-    height: 22px;
-  }
-
-  .skeleton-line.date {
-    height: 14px;
-  }
-
-  .skeleton-line.tag {
-    height: 14px;
-  }
-
-  @keyframes skeleton-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.4;
-    }
-  }
-
-  @media (min-width: 768px) {
-    .skeleton-post {
-      flex-direction: row;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 16px;
-    }
-  }
-
-  @media (max-width: 767px) {
-    .skeleton-separator {
+  @media (hover: hover) and (pointer: fine), (max-width: 420px) {
+    .skeleton-thumb {
       display: none;
-    }
-    .skeleton-meta {
-      flex-direction: row;
-      flex-wrap: wrap;
-      row-gap: 6px;
-      column-gap: 12px;
-      padding-left: 4px;
-    }
-    .skeleton-line.date,
-    .skeleton-line.tag {
-      height: 14px;
-    }
-    .skeleton-meta > .skeleton-line {
-      position: relative;
-    }
-    .skeleton-meta > .skeleton-line::before {
-      content: "";
-      position: absolute;
-      left: -12px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 4px;
-      height: 12px;
-      background: var(--border);
-      border-radius: 2px;
-      opacity: 0.5;
-    }
-    .skeleton-meta > .skeleton-line:first-child::before {
-      height: 8px;
-      width: 8px;
-      border-radius: 0 0 0 4px;
-      border-left: 2px solid var(--border);
-      border-bottom: 2px solid var(--border);
-      background: transparent;
-      left: -14px;
     }
   }
 </style>

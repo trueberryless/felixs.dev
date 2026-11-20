@@ -579,3 +579,42 @@ function createLocalTime(timeZone: string): LocalTime {
     };
   };
 }
+
+// Longer than this between two plays, and the same song starts over as a new
+// stop: last night's loop and this morning's are two different sessions.
+const REPEAT_GAP_MS = 30 * 60 * 1000;
+
+/**
+ * Groups a song played several times in a row into one entry, with how many
+ * times it played. Plays come newest first, and a long pause between two
+ * plays of the same song splits them into separate entries. An entry keeps
+ * the key of its first play, so it stays the same entry when the song plays
+ * once more.
+ */
+export function groupRepeats<
+  T extends {
+    artist: string;
+    at: number;
+    key: string;
+    title: string;
+    url?: string | undefined;
+  },
+>(plays: T[]): (T & { count: number; since: number })[] {
+  const groups: (T & { count: number; since: number })[] = [];
+  for (const play of plays) {
+    const previous = groups.at(-1);
+    const isSame =
+      previous &&
+      (play.url
+        ? previous.url === play.url
+        : previous.title === play.title && previous.artist === play.artist);
+    if (previous && isSame && previous.since - play.at <= REPEAT_GAP_MS) {
+      previous.count++;
+      previous.key = play.key;
+      previous.since = play.at;
+      continue;
+    }
+    groups.push(Object.assign({}, play, { count: 1, since: play.at }));
+  }
+  return groups;
+}

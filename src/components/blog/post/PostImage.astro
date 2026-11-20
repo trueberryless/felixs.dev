@@ -48,6 +48,8 @@ const megabytes = image?.size ? Math.round(image.size / 1_000_000) : 0;
       >
         <img
           src={image.src}
+          srcset={image.srcset}
+          sizes="(max-width: 760px) calc(100vw - 48px), 712px"
           alt={alt}
           width={width}
           height={height}

@@ -93,6 +93,67 @@
   text-shadow: 0 1px 14px oklch(0.06 0.03 285 / 0.9);
 }
 
+/* Text filled with a gradient would show the halo through its letters and
+   look muddy, so it goes without. */
+:root.space
+  :is(
+    .story-title-text,
+    .post-title,
+    .ms-number-value,
+    .ms-spotlight-name,
+    .error-code
+  ) {
+  text-shadow: none;
+}
+
+/* The planet rises behind the landing sections, and its bright rim would
+   wash out any text crossing it. A soft dark backing that fades out at its
+   edges keeps the copy and the charts readable, and it comes and goes with
+   its section. */
+:root.space .story-frame :is(.story-copy, .story-visual) {
+  position: relative;
+  isolation: isolate;
+}
+
+:root.space .story-frame :is(.story-copy, .story-visual)::before {
+  content: "";
+  position: absolute;
+  inset: -48px -64px;
+  z-index: -1;
+  background: radial-gradient(
+    closest-side,
+    oklch(0.08 0.035 280 / 0.78),
+    oklch(0.08 0.035 280 / 0.6) 55%,
+    transparent
+  );
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+:root.space
+  .story-frame:not([data-active="true"])
+  :is(.story-copy, .story-visual)::before {
+  opacity: 0;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root.space .story-frame :is(.story-copy, .story-visual)::before {
+    background: radial-gradient(
+      closest-side,
+      oklch(0.08 0.035 280),
+      oklch(0.08 0.035 280 / 0.92) 70%,
+      transparent
+    );
+  }
+}
+
+/* Blurring the landing sections in and out would redraw every glowing
+   letter on every frame over the moving sky, so in space they only fade
+   and drift, which stays on the compositor. */
+:root.space .story-frame :is(.story-copy > *, .story-visual) {
+  filter: none !important;
+}
+
 :root.space :focus-visible {
   outline: 2px solid oklch(0.86 0.12 200);
   outline-offset: 3px;
@@ -101,7 +162,7 @@
 /* Tinted glass: a sheen, an inner highlight and a glowing edge over a deep
    translucent violet, without a live backdrop blur. */
 
-:root.space :is(.fallback, .card-container, .honor-card, .skeleton-card) {
+:root.space :is(.fallback, .card-container, .number-card) {
   background:
     linear-gradient(140deg, oklch(1 0 0 / 0.1), transparent 40%), var(--card-bg);
   box-shadow:
@@ -412,8 +473,8 @@
     .book-item,
     .card-link,
     .fallback,
-    .honor-card,
-    .skill-chip,
+    .filter-chip,
+    .number-card,
     .timeline-row > .card-container,
     .year-watermark
   ) {
@@ -421,7 +482,7 @@
     var(--drift-delay, 0s) infinite;
 }
 
-:root.space :is(.action-link, .back-link, .skill-chip) {
+:root.space :is(.action-link, .back-link, .filter-chip) {
   animation-name: cosmos-drift-small;
 }
 
@@ -441,8 +502,8 @@
     .book-item,
     .card-link,
     .fallback,
-    .honor-card,
-    .skill-chip,
+    .filter-chip,
+    .number-card,
     .timeline-row > .card-container,
     .year-watermark,
     .hex,

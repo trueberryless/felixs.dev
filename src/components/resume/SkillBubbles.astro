@@ -1,0 +1,245 @@
+---
+import BubbleChart from "@/components/charts/BubbleChart.astro";
+import { getSkillBubbles } from "@/lib/stories";
+
+interface Props {
+  skills: { name: string }[];
+  /** How many positions use each skill, by lowercase name. */
+  usage: Map<string, number>;
+}
+
+const { skills, usage } = Astro.props;
+const bubbles = getSkillBubbles(skills, usage);
+const label = `${skills.length} skills, bigger the more positions use them`;
+---
+
+<div class="skills">
+  <p class="skills-hint">Bigger bubbles show up in more of my positions.</p>
+  {/* The chart is a picture to screen readers, so the skills are listed. */}
+  <ul class="sr-only">
+    {bubbles.map((bubble) => (
+      <li>{bubble.title}</li>
+    ))}
+  </ul>
+  {/* Phones get a tall chart so the names stay readable. */}
+  <div class="skills-wide">
+    <BubbleChart
+      bubbles={bubbles}
+      label={label}
+      fill
+      showValues={false}
+      width={760}
+      height={420}
+    />
+  </div>
+  <div class="skills-tall">
+    <BubbleChart
+      bubbles={bubbles}
+      label={label}
+      fill
+      showValues={false}
+      width={380}
+      height={720}
+    />
+  </div>
+</div>
+
+<script>
+  // The skill bubbles react to the pointer: the one under it leans after it,
+  // the ones around it make way, and they bump into each other before they
+  // spring back to their places. Only for a mouse, and not for people who
+  // prefer less motion.
+  const SPRING = 0.006;
+  const DAMPING = 0.92;
+  const FOLLOW = 0.012;
+  const REACH = 56;
+  const PUSH = 0.45;
+  const SWEEP = 0.05;
+  const GAP = 3;
+  const BOUNCE = 0.3;
+  // How much of an overlap is resolved per frame: less is squishier.
+  const GIVE = 0.35;
+  // The forces follow a smoothed pointer, so a jerky mouse moves them softly.
+  const POINTER_EASE = 0.18;
+
+  interface Body {
+    group: SVGGElement;
+    homeX: number;
+    homeY: number;
+    r: number;
+    vx: number;
+    vy: number;
+    x: number;
+    y: number;
+  }
+
+  function enableSkillPhysics(svg: SVGSVGElement) {
+    if (svg.dataset.physics !== undefined) return;
+    svg.dataset.physics = "";
+
+    const bodies: Body[] = [];
+    for (const group of svg.querySelectorAll<SVGGElement>(".bubble-group")) {
+      const circle = group.querySelector("circle");
+      if (!circle) continue;
+      // The slow entrance slide of the chart would lag behind every frame.
+      group.style.transition = "opacity 0.35s ease";
+      bodies.push({
+        group,
+        homeX: circle.cx.baseVal.value,
+        homeY: circle.cy.baseVal.value,
+        r: circle.r.baseVal.value,
+        vx: 0,
+        vy: 0,
+        x: 0,
+        y: 0,
+      });
+    }
+
+    let pointer: { x: number; y: number } | undefined;
+    let smoothed: { vx: number; vy: number; x: number; y: number } | undefined;
+    let frame = 0;
+
+    const step = () => {
+      if (pointer) {
+        smoothed ??= { ...pointer, vx: 0, vy: 0 };
+        const vx = (pointer.x - smoothed.x) * POINTER_EASE;
+        const vy = (pointer.y - smoothed.y) * POINTER_EASE;
+        smoothed = { vx, vy, x: smoothed.x + vx, y: smoothed.y + vy };
+      }
+
+      for (const body of bodies) {
+        body.vx -= body.x * SPRING;
+        body.vy -= body.y * SPRING;
+        if (!pointer || !smoothed) continue;
+        const dx = smoothed.x - (body.homeX + body.x);
+        const dy = smoothed.y - (body.homeY + body.y);
+        const distance = Math.hypot(dx, dy) || 1;
+        if (distance < body.r) {
+          body.vx += dx * FOLLOW;
+          body.vy += dy * FOLLOW;
+        } else if (distance < body.r + REACH) {
+          // Eased in and out, so a bubble starts and stops making way softly.
+          const t = (body.r + REACH - distance) / REACH;
+          const push = t * t * (3 - 2 * t) * PUSH;
+          body.vx -= (dx / distance) * push - smoothed.vx * SWEEP * t;
+          body.vy -= (dy / distance) * push - smoothed.vy * SWEEP * t;
+        }
+      }
+
+      for (const [index, a] of bodies.entries()) {
+        for (const b of bodies.slice(index + 1)) {
+          const dx = b.homeX + b.x - (a.homeX + a.x);
+          const dy = b.homeY + b.y - (a.homeY + a.y);
+          const distance = Math.hypot(dx, dy) || 1;
+          const overlap = a.r + b.r + GAP - distance;
+          if (overlap <= 0) continue;
+          const nx = dx / distance;
+          const ny = dy / distance;
+          // Bigger bubbles are heavier and give way less.
+          const share = b.r / (a.r + b.r);
+          const give = overlap * GIVE;
+          a.x -= nx * give * share;
+          a.y -= ny * give * share;
+          b.x += nx * give * (1 - share);
+          b.y += ny * give * (1 - share);
+          const closing = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+          if (closing > 0) {
+            const impulse = closing * (1 + BOUNCE);
+            a.vx -= nx * impulse * share;
+            a.vy -= ny * impulse * share;
+            b.vx += nx * impulse * (1 - share);
+            b.vy += ny * impulse * (1 - share);
+          }
+        }
+      }
+
+      let isMoving = false;
+      for (const body of bodies) {
+        body.vx *= DAMPING;
+        body.vy *= DAMPING;
+        body.x += body.vx;
+        body.y += body.vy;
+        body.group.style.translate = `${body.x.toFixed(2)}px ${body.y.toFixed(2)}px`;
+        if (
+          Math.abs(body.vx) + Math.abs(body.vy) > 0.01 ||
+          Math.abs(body.x) + Math.abs(body.y) > 0.05
+        ) {
+          isMoving = true;
+        }
+      }
+      if (!isMoving && !pointer) {
+        for (const body of bodies) {
+          Object.assign(body, { vx: 0, vy: 0, x: 0, y: 0 });
+          body.group.style.translate = "";
+        }
+      }
+      frame = isMoving || pointer ? requestAnimationFrame(step) : 0;
+    };
+    const wake = () => {
+      if (!frame) frame = requestAnimationFrame(step);
+    };
+
+    svg.addEventListener("pointermove", (event) => {
+      const matrix = svg.getScreenCTM()?.inverse();
+      if (!matrix) return;
+      const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(
+        matrix
+      );
+      pointer = { x: point.x, y: point.y };
+      wake();
+    });
+    svg.addEventListener("pointerleave", () => {
+      pointer = undefined;
+      smoothed = undefined;
+      wake();
+    });
+  }
+
+  function enableAll() {
+    if (
+      !matchMedia("(hover: hover) and (pointer: fine)").matches ||
+      matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+    for (const svg of document.querySelectorAll<SVGSVGElement>(
+      ".skills .bubble-chart"
+    )) {
+      enableSkillPhysics(svg);
+    }
+  }
+  enableAll();
+  document.addEventListener("astro:page-load", enableAll);
+  // The resume arrives after the page, as a server island.
+  new MutationObserver(enableAll).observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+</script>
+
+<style>
+  .skills {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .skills-hint {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .skills-tall {
+    display: none;
+  }
+
+  @media (max-width: 640px) {
+    .skills-wide {
+      display: none;
+    }
+
+    .skills-tall {
+      display: block;
+    }
+  }
+</style>

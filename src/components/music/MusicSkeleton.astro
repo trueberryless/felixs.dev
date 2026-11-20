@@ -1,75 +1,108 @@
-<div class="ms-skeleton" aria-busy="true" aria-label="Loading music stats">
-  <div class="ms-skeleton-row">
-    {Array.from({ length: 5 }).map(() => (
-      <span class="ms-skeleton-pill" />
+---
+import MusicBones from "@/components/music/MusicBones.astro";
+
+// The music page itself, with the same classes, while its stats load.
+const ranges = ["4 weeks", "6 months", "12 months", "All time"];
+const numbers = ["minutes listened", "plays", "artists", "tracks"];
+---
+
+<div class="skeleton ms" aria-hidden="true">
+  <div class="ms-ranges">
+    {ranges.map((range) => (
+      <span class="ms-range">
+        <span>{range}</span>
+      </span>
+    ))}
+    <span class="ms-range-toggle">By year</span>
+  </div>
+
+  <div class="ms-numbers">
+    {numbers.map((label) => (
+      <div class="ms-number">
+        <span class="ms-number-value">
+          <span class="bone">000</span>
+        </span>
+        <span class="ms-number-label">{label}</span>
+      </div>
     ))}
   </div>
-  <div class="ms-skeleton-numbers">
-    {Array.from({ length: 4 }).map(() => (
-      <span class="ms-skeleton-number" />
-    ))}
-  </div>
-  {Array.from({ length: 6 }).map((_, index) => (
-    <span class="ms-skeleton-bar" style={`--width: ${90 - index * 11}%`} />
-  ))}
+
+  <section class="ms-section">
+    <h2 class="ms-title">Top artists</h2>
+    <div class="ms-artists">
+      <MusicBones part="artists" />
+    </div>
+  </section>
+
+  <section class="ms-section">
+    <h2 class="ms-title">Top tracks</h2>
+    <div class="ms-tracks">
+      <MusicBones part="tracks" />
+    </div>
+  </section>
+
+  <section class="ms-section ms-currents-section">
+    <div class="ms-section-head is-row">
+      <div class="ms-section-text">
+        <h2 class="ms-title">Currents</h2>
+        <p class="ms-subtitle">
+          How my favourite artists rise and fall over time. Hover an artist to
+          follow it.
+        </p>
+      </div>
+    </div>
+    <div class="ms-currents">
+      <MusicBones part="currents" />
+    </div>
+  </section>
+
+  <section class="ms-section ms-rhythm">
+    <div class="ms-section-head">
+      <h2 class="ms-title">Rhythm</h2>
+      <p class="ms-subtitle">When I listen, in CET.</p>
+    </div>
+    <div class="ms-rhythm-grid">
+      <div class="ms-clock">
+        <MusicBones part="clock" />
+      </div>
+      <div class="ms-weekdays">
+        <MusicBones part="weekdays" />
+      </div>
+    </div>
+  </section>
+
+  <section class="ms-section">
+    <div class="ms-section-head">
+      <h2 class="ms-title">Every day</h2>
+      <p class="ms-subtitle">
+        <span class="bone">
+          000 plays on 00 days over the last year. Pick a day to see just that
+          day.
+        </span>
+      </p>
+    </div>
+    <div class="ms-calendar">
+      <MusicBones part="calendar" />
+    </div>
+  </section>
+
+  <section class="ms-section">
+    <h2 class="ms-title">Highlights</h2>
+    <div class="ms-highlights">
+      <MusicBones part="highlights" />
+    </div>
+  </section>
+
+  <section class="ms-section">
+    <div class="ms-section-head">
+      <h2 class="ms-title">Recently played</h2>
+      <p class="ms-subtitle">
+        Every new song joins the track on the right and drifts along as time
+        goes by.
+      </p>
+    </div>
+    <div class="ms-recent">
+      <MusicBones part="recent" />
+    </div>
+  </section>
 </div>
-
-<style>
-  .ms-skeleton {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .ms-skeleton-row,
-  .ms-skeleton-numbers {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .ms-skeleton-numbers {
-    gap: 16px;
-    margin-block: 16px 24px;
-  }
-
-  .ms-skeleton-pill,
-  .ms-skeleton-number,
-  .ms-skeleton-bar {
-    display: block;
-    background: var(--border);
-    border-radius: var(--radius-pill);
-    animation: ms-pulse 1.6s ease-in-out infinite;
-  }
-
-  .ms-skeleton-pill {
-    width: 84px;
-    height: 32px;
-  }
-
-  .ms-skeleton-number {
-    flex: 1 1 120px;
-    height: 72px;
-    border-radius: var(--radius-card);
-  }
-
-  .ms-skeleton-bar {
-    width: var(--width);
-    height: 28px;
-    border-radius: 8px;
-  }
-
-  @keyframes ms-pulse {
-    50% {
-      opacity: 0.45;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .ms-skeleton-pill,
-    .ms-skeleton-number,
-    .ms-skeleton-bar {
-      animation: none;
-    }
-  }
-</style>

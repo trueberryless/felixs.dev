@@ -1,4 +1,6 @@
 ---
+import NumberCards from "@/components/utils/NumberCards.astro";
+import FilterChip from "@/components/utils/FilterChip.astro";
 import Book from "@/components/books/Book.astro";
 import Fallback from "@/components/utils/Fallback.astro";
 import {
@@ -34,18 +36,7 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
 
 {hasData ? (
   <books-shelf class="shelf">
-    {numbers.length > 0 && (
-      <ul class="shelf-numbers">
-        {numbers.map((number, index) => (
-          <li class="shelf-number" style={`--i: ${index}`}>
-            <span class="shelf-number-value">
-              {numberFormat.format(number.value)}
-            </span>
-            <span class="shelf-number-label">{number.label}</span>
-          </li>
-        ))}
-      </ul>
-    )}
+    {numbers.length > 0 && <NumberCards numbers={numbers} />}
 
     {perYear.length > 1 && (
       <figure class="shelf-years">
@@ -59,11 +50,13 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
                 type="button"
                 class="shelf-year-button"
                 aria-pressed="false"
-                aria-label={`${year.count} books in ${year.year}`}
                 data-year={year.year}
               >
                 <span class="shelf-year-count" data-count>
                   {year.count}
+                </span>
+                <span class="sr-only" data-books>
+                  {year.count === 1 ? " book in" : " books in"}
                 </span>
                 <span class="shelf-year-bar" aria-hidden="true" />
                 <span class="shelf-year-label">{year.year}</span>
@@ -77,15 +70,13 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
     {shelfAuthors.length > 0 && (
       <div class="shelf-authors" role="group" aria-label="Show books by">
         {shelfAuthors.map((author) => (
-          <button
-            type="button"
+          <FilterChip
             class="shelf-author"
-            aria-pressed="false"
+            count={author.count}
             data-author={author.name}
           >
             {author.name}
-            <span class="shelf-author-count">{author.count}</span>
-          </button>
+          </FilterChip>
         ))}
       </div>
     )}
@@ -167,9 +158,10 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
           String(count / most)
         );
         button.setAttribute("aria-pressed", String(year === this.#year));
-        button.setAttribute("aria-label", `${count} books in ${year}`);
         const label = button.querySelector("[data-count]");
         if (label) label.textContent = String(count);
+        const books = button.querySelector("[data-books]");
+        if (books) books.textContent = count === 1 ? " book in" : " books in";
       }
       for (const button of this.querySelectorAll<HTMLElement>(
         ".shelf-author"
@@ -219,38 +211,6 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
 <style>
   .shelf {
     display: block;
-  }
-
-  .shelf-numbers {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
-    gap: 16px;
-    margin-bottom: 40px;
-    padding: 0;
-    list-style: none;
-  }
-
-  .shelf-number {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 20px clamp(14px, 4vw, 22px);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-card);
-    background: var(--card-bg);
-  }
-
-  .shelf-number-value {
-    font-family: var(--font-family-heading);
-    font-size: clamp(1.8rem, 6vw, 2.6rem);
-    line-height: 1.1;
-    color: var(--text);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .shelf-number-label {
-    color: var(--text-muted);
-    font-size: 0.9rem;
   }
 
   .shelf-years {
@@ -344,44 +304,6 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
     margin-bottom: 48px;
   }
 
-  .shelf-author {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 6px 4px 14px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-pill);
-    background: var(--badge-bg);
-    color: var(--text);
-    font: inherit;
-    font-size: 0.88rem;
-    cursor: pointer;
-    transition:
-      background 0.25s ease,
-      color 0.25s ease,
-      border-color 0.25s ease;
-  }
-
-  .shelf-author[aria-pressed="true"] {
-    border-color: var(--text);
-    background: var(--text);
-    color: var(--card-bg);
-  }
-
-  .shelf-author:focus-visible {
-    outline: 2px solid var(--text);
-    outline-offset: 2px;
-  }
-
-  .shelf-author-count {
-    padding: 0 7px;
-    border-radius: var(--radius-pill);
-    background: var(--card-bg);
-    color: var(--text);
-    font-size: 0.78rem;
-    font-variant-numeric: tabular-nums;
-  }
-
   .books-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
@@ -395,11 +317,6 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .shelf-number {
-      animation: shelf-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
-      animation-delay: calc(var(--i) * 70ms);
-    }
-
     .shelf-year-bar {
       animation: shelf-grow 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
       animation-delay: calc(0.2s + var(--i) * 50ms);

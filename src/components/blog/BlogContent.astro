@@ -1,4 +1,5 @@
 ---
+import FilterChip from "@/components/utils/FilterChip.astro";
 import Fallback from "@/components/utils/Fallback.astro";
 import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
 import { fetchPosts } from "@/lib/data";
@@ -49,7 +50,6 @@ for (const post of posts ?? []) {
 const topics = [...topicCounts]
   .toSorted((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
   .map(([name, count]) => ({ count, name }));
-const most = topics[0]?.count ?? 1;
 const TOP_TOPICS = 12;
 const total = posts?.length ?? 0;
 ---
@@ -82,18 +82,15 @@ const total = posts?.length ?? 0;
       {topics.length > 0 && (
         <div class="blog-topics" role="group" aria-label="Topics">
           {topics.map((topic, index) => (
-            <button
-              type="button"
+            <FilterChip
               class="blog-topic"
+              count={topic.count}
               hidden={index >= TOP_TOPICS}
               data-extra={index >= TOP_TOPICS || undefined}
-              aria-pressed="false"
               data-topic={topic.name}
-              style={`--weight: ${(topic.count / most).toFixed(2)}`}
             >
               {topic.name}
-              <span class="blog-topic-count">{topic.count}</span>
-            </button>
+            </FilterChip>
           ))}
           {topics.length > TOP_TOPICS && (
             <button
@@ -118,7 +115,7 @@ const total = posts?.length ?? 0;
           </h2>
           <div class="year-track" aria-hidden="true">
             <div class="year-depth">
-              <div class="year-watermark">{year}</div>
+              <div class="year-watermark" data-label={year} />
             </div>
           </div>
           <ol class="post-list">
@@ -225,59 +222,12 @@ const total = posts?.length ?? 0;
   .blog-topics {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
-    gap: 6px 14px;
-  }
-
-  .blog-topic {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 4px;
-    padding: 2px 0;
-    border: 0;
-    border-bottom: 1px solid transparent;
-    background: none;
-    color: color-mix(
-      in oklch,
-      var(--text) calc(78% + var(--weight) * 22%),
-      transparent
-    );
-    font-family: var(--font-family-mono);
-    font-size: calc(0.78rem + var(--weight) * 0.55rem);
-    cursor: pointer;
-    transition:
-      color 0.25s ease,
-      border-color 0.25s ease;
-  }
-
-  .blog-topic:hover,
-  .blog-topic[aria-pressed="true"] {
-    color: var(--text);
-    border-bottom-color: currentColor;
-  }
-
-  .blog-topic[aria-pressed="true"] {
-    color: var(--accent);
-  }
-
-  .blog-topic:focus-visible {
-    outline: 2px solid var(--text);
-    outline-offset: 3px;
-    border-radius: 4px;
-  }
-
-  .blog-topic[hidden] {
-    display: none;
+    align-items: center;
+    gap: 8px;
   }
 
   .blog-more {
     align-self: center;
-  }
-
-  .blog-topic-count {
-    font-size: 0.7em;
-    color: var(--text-muted);
-    font-variant-numeric: tabular-nums;
   }
 
   .blog-empty {
@@ -311,6 +261,12 @@ const total = posts?.length ?? 0;
     z-index: -1;
     container-type: size;
     pointer-events: none;
+  }
+
+  /* Drawn by CSS rather than written as text: the faint year only
+     decorates the list, and the heading above already names it. */
+  .year-watermark::before {
+    content: attr(data-label);
   }
 
   .year-watermark {

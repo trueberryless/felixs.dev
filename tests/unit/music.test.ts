@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { computeDayStats, computeMusicStats, recordToPlay } from '../../src/lib/music'
+import { computeDayStats, computeMusicStats, groupRepeats, recordToPlay } from '../../src/lib/music'
 import type { Play } from '../../src/lib/music'
 
 const NOW = Date.parse('2026-11-19T12:00:00Z')
@@ -95,5 +95,26 @@ describe('computeMusicStats', () => {
     expect(stats.daily.counts.reduce((sum, count) => sum + count, 0)).toBe(5)
     expect(stats.months.at(-1)).toMatchObject({ month: '2026-11', plays: 4 })
     expect(stats.months.at(-1)?.artists[0]).toEqual({ name: 'Alpha', plays: 3 })
+  })
+})
+
+describe('groupRepeats', () => {
+  const minute = 60_000
+  const play = (key: string, at: number, title = 'Song') => ({ artist: 'Artist', at, key, title })
+
+  test('groups a song played back to back and keeps its first play', () => {
+    const groups = groupRepeats([play('c', 8 * minute), play('b', 4 * minute), play('a', 0)])
+    expect(groups).toHaveLength(1)
+    expect(groups[0]).toMatchObject({ at: 8 * minute, count: 3, key: 'a' })
+  })
+
+  test('starts over after a long pause', () => {
+    const morning = 10 * 60 * minute
+    const groups = groupRepeats([play('d', morning + 4 * minute), play('c', morning), play('b', 4 * minute), play('a', 0)])
+    expect(groups.map((group) => group.count)).toEqual([2, 2])
+  })
+
+  test('keeps different songs apart', () => {
+    expect(groupRepeats([play('b', 4 * minute, 'Other'), play('a', 0)])).toHaveLength(2)
   })
 })

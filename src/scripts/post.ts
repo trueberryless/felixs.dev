@@ -14,8 +14,9 @@ export function setUpPost() {
 }
 
 function setUpImageSkeletons() {
+  // The cover is the first thing to load and should show the moment it does.
   for (const image of document.querySelectorAll<HTMLImageElement>(
-    ".post-zoom img"
+    ".post-image:not(.post-cover) .post-zoom img"
   )) {
     if (image.complete) continue;
     const button = image.parentElement;
@@ -122,6 +123,18 @@ function setUpLightbox() {
   const open = (image: HTMLImageElement) => {
     source = image;
     zoomed.src = image.currentSrc || image.src;
+    // Phones show the smaller copy in the post; the zoom swaps in the full
+    // one once it has loaded.
+    if (image.currentSrc && image.currentSrc !== image.src) {
+      const full = new Image();
+      full.src = image.src;
+      void full
+        .decode()
+        .then(() => {
+          if (source === image) zoomed.src = image.src;
+        })
+        .catch(() => undefined);
+    }
     zoomed.alt = image.alt;
     zoomed.width = image.naturalWidth || image.width;
     zoomed.height = image.naturalHeight || image.height;
@@ -129,11 +142,24 @@ function setUpLightbox() {
     caption.hidden = !image.alt;
 
     dialog.showModal();
-    if (reducedMotion()) return;
+    // A copy that hasn't decoded yet has no size, which made the very first
+    // zoom start from a wild scale. Its size comes from the image in the post
+    // instead, which is always laid out.
     const from = image.getBoundingClientRect();
+    fitZoomed(from.width / from.height);
+    if (reducedMotion()) return;
     const to = zoomed.getBoundingClientRect();
     image.style.visibility = "hidden";
     zoomed.animate(flip(from, to), { duration: ZOOM_MS, easing: ZOOM_EASING });
+  };
+
+  const fitZoomed = (ratio: number) => {
+    const padding = Number.parseFloat(getComputedStyle(dialog).paddingLeft);
+    const maxWidth = Math.min(dialog.clientWidth - padding * 2, 1400);
+    const maxHeight = window.innerHeight - 140;
+    const width = Math.min(maxWidth, maxHeight * ratio);
+    zoomed.style.width = `${width}px`;
+    zoomed.style.height = `${width / ratio}px`;
   };
 
   // The image flies back to wherever its spot in the post is right now, so
