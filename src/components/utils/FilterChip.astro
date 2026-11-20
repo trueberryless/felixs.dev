@@ -37,6 +37,9 @@ const {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    text-align: start;
     padding: 4px 6px 4px 14px;
     border: 1px solid var(--border);
     border-radius: var(--radius-pill);
@@ -87,6 +90,7 @@ const {
   }
 
   .filter-chip-count {
+    flex-shrink: 0;
     min-width: 1.8em;
     padding: 0 7px;
     border-radius: var(--radius-pill);
