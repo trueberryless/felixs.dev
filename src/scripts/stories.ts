@@ -8,9 +8,12 @@
 const STAGE_QUERY =
   "(min-width: 860px) and (min-height: 620px) and (prefers-reduced-motion: no-preference)";
 const REDUCED_QUERY = "(prefers-reduced-motion: reduce)";
-// Share of the screen over which the stage eases into and out of its pinned
-// place, so it slows down like a page settling instead of stopping dead.
-const EASE_SHARE = 0.4;
+// Before and after the stage, a section's middle sits this share of the screen
+// from the edge of the stories, so the first one follows right after the intro.
+const FLOW_GAP = 0.32;
+// How far, as a share of the screen, a section glides while it slows down into
+// the middle of the screen, and while it speeds up again to leave.
+const GLIDE = 0.25;
 
 function setup() {
   const root = document.querySelector<HTMLElement>("[data-stories]");
@@ -85,18 +88,12 @@ function setup() {
     const passed = -rect.top;
     const progress = Math.min(Math.max(passed / travel, 0), 0.9999);
     // The first section is already on stage as it scrolls into view.
-    setActive(rect.top > view ? -1 : Math.floor(progress * frames.length));
+    setActive(rect.top >= view ? -1 : Math.floor(progress * frames.length));
 
-    // Easing in: the stage keeps moving with the page when it pins and only
-    // slows to a stop over a little more scrolling. Easing out mirrors it.
-    const ease = view * EASE_SHARE;
-    let shift = 0;
-    if (passed < 0) shift = ease / 2;
-    else if (passed < ease) shift = (ease / 2) * (1 - passed / ease) ** 2;
-    else if (passed > travel) shift = -ease / 2;
-    else if (passed > travel - ease)
-      shift = -(ease / 2) * ((passed - (travel - ease)) / ease) ** 2;
-    root.style.setProperty("--stage-shift", `${shift.toFixed(1)}px`);
+    root.style.setProperty(
+      "--stage-shift",
+      `${getStageShift(passed, travel, view).toFixed(1)}px`
+    );
   };
   const schedule = () => {
     pending ||= requestAnimationFrame(update);
@@ -112,8 +109,18 @@ function setup() {
 
   // Keyboard users tab through every section: focusing a link in a section
   // that isn't on stage scrolls it onto the stage.
+  // Only a Tab press counts: coming back to the browser tab refocuses the last
+  // focused link, which must not scroll anywhere.
+  let tabbedAt = 0;
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      if (event.key === "Tab") tabbedAt = performance.now();
+    },
+    { signal }
+  );
   root.addEventListener("focusin", (event) => {
-    if (!staged.matches) return;
+    if (!staged.matches || performance.now() - tabbedAt > 500) return;
     const frame = (event.target as Element).closest<HTMLElement>(
       ".story-frame"
     );
@@ -134,3 +141,33 @@ function setup() {
 
 setup();
 document.addEventListener("astro:page-load", setup);
+
+/**
+ * How far the stage moves away from its pinned place, so a section never stops
+ * dead. It follows the page right after the intro, glides into the middle of
+ * the screen and slows down until it rests there, and at the end it speeds up
+ * the same way until it moves with the page again and the footer follows.
+ */
+function getStageShift(passed: number, travel: number, view: number) {
+  const middle = view / 2;
+  const glide = view * GLIDE;
+  const length = glide * 2;
+  const enterEnd = view * FLOW_GAP - middle - glide + length;
+  const leaveEnd = travel + middle - view * FLOW_GAP + glide;
+  const stageTop = passed < 0 ? -passed : passed > travel ? travel - passed : 0;
+
+  let centre = middle;
+  if (passed < enterEnd - length) {
+    centre = view * FLOW_GAP - passed;
+  } else if (passed < enterEnd) {
+    const u = (passed - (enterEnd - length)) / length;
+    centre = middle + glide - glide * (1 - (1 - u) ** 2);
+  } else if (passed > leaveEnd) {
+    centre = middle - glide - (passed - leaveEnd);
+  } else if (passed > leaveEnd - length) {
+    const w = (passed - (leaveEnd - length)) / length;
+    centre = middle - glide * w ** 2;
+  }
+
+  return centre - (stageTop + middle);
+}

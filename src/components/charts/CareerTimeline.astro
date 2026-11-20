@@ -190,14 +190,15 @@ const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
     background: color-mix(in oklch, var(--accent) 60%, transparent);
   }
 
-  .is-open-source .career-bar,
-  .career-key.is-open-source::before {
+  .is-open-source .career-bar {
     fill: color-mix(in oklch, var(--accent) 22%, transparent);
-    background: color-mix(in oklch, var(--accent) 22%, transparent);
     stroke: var(--accent);
     stroke-dasharray: 4 3;
-    outline: 1px dashed var(--accent);
-    outline-offset: -1px;
+  }
+
+  .career-key.is-open-source::before {
+    border: 1px dashed var(--accent);
+    background: color-mix(in oklch, var(--accent) 22%, transparent);
   }
 
   .is-education :is(.career-bar, .career-marker),
