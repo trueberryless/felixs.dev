@@ -158,12 +158,17 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
     :global(.story-frame:not([data-active="true"])) .story-visual {
       opacity: 0;
       translate: 0 1.5rem;
-      filter: blur(6px);
       transition:
         opacity 0.45s cubic-bezier(0.4, 0, 1, 1),
         translate 0.5s cubic-bezier(0.4, 0, 1, 1),
         filter 0.45s ease;
       transition-delay: calc(var(--k, 0) * 30ms);
+    }
+
+    /* Only the text blurs: blurring a whole chart or the shelf would redraw
+       it on every frame of the transition. */
+    :global(.story-frame:not([data-active="true"])) .story-copy > :global(*) {
+      filter: blur(6px);
     }
 
     :global(.story-frame:not([data-active="true"])[data-side="before"])

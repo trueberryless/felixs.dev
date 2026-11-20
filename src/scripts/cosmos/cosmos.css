@@ -93,6 +93,13 @@
   text-shadow: 0 1px 14px oklch(0.06 0.03 285 / 0.9);
 }
 
+/* Blurring the landing sections in and out would redraw every glowing
+   letter on every frame over the moving sky, so in space they only fade
+   and drift, which stays on the compositor. */
+:root.space .story-frame :is(.story-copy > *, .story-visual) {
+  filter: none !important;
+}
+
 :root.space :focus-visible {
   outline: 2px solid oklch(0.86 0.12 200);
   outline-offset: 3px;
