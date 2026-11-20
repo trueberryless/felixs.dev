@@ -81,9 +81,11 @@ const [topAuthor, topAuthorBooks = 0] =
 
   /* The script below moves the books like the Dock. The whole shelf is the
      hover area, gaps included, so gliding across never drops a book back. */
-  .reading-shelf {
-    padding: 48px 32px 28px;
-    margin: -48px -32px 0;
+  @media (hover: hover) and (pointer: fine) and (min-width: 860px) {
+    .reading-shelf {
+      padding: 48px 32px 28px;
+      margin: -48px -32px 0;
+    }
   }
 
   /* A soft light follows the pointer along the shelf. */
@@ -119,7 +121,7 @@ const [topAuthor, topAuthorBooks = 0] =
 
   @media (max-width: 600px) {
     .reading-book {
-      margin-inline: -4px;
+      margin-inline: -10px;
       zoom: 0.48;
     }
   }
