@@ -43,13 +43,18 @@ const label = `${skills.length} skills, bigger the more positions use them`;
   // the ones around it make way, and they bump into each other before they
   // spring back to their places. Only for a mouse, and not for people who
   // prefer less motion.
-  const SPRING = 0.012;
-  const DAMPING = 0.86;
-  const FOLLOW = 0.035;
-  const REACH = 42;
-  const PUSH = 0.9;
+  const SPRING = 0.006;
+  const DAMPING = 0.92;
+  const FOLLOW = 0.012;
+  const REACH = 56;
+  const PUSH = 0.45;
+  const SWEEP = 0.05;
   const GAP = 3;
-  const BOUNCE = 0.5;
+  const BOUNCE = 0.3;
+  // How much of an overlap is resolved per frame: less is squishier.
+  const GIVE = 0.35;
+  // The forces follow a smoothed pointer, so a jerky mouse moves them softly.
+  const POINTER_EASE = 0.18;
 
   interface Body {
     group: SVGGElement;
@@ -85,23 +90,33 @@ const label = `${skills.length} skills, bigger the more positions use them`;
     }
 
     let pointer: { x: number; y: number } | undefined;
+    let smoothed: { vx: number; vy: number; x: number; y: number } | undefined;
     let frame = 0;
 
     const step = () => {
+      if (pointer) {
+        smoothed ??= { ...pointer, vx: 0, vy: 0 };
+        const vx = (pointer.x - smoothed.x) * POINTER_EASE;
+        const vy = (pointer.y - smoothed.y) * POINTER_EASE;
+        smoothed = { vx, vy, x: smoothed.x + vx, y: smoothed.y + vy };
+      }
+
       for (const body of bodies) {
         body.vx -= body.x * SPRING;
         body.vy -= body.y * SPRING;
-        if (!pointer) continue;
-        const dx = pointer.x - (body.homeX + body.x);
-        const dy = pointer.y - (body.homeY + body.y);
+        if (!pointer || !smoothed) continue;
+        const dx = smoothed.x - (body.homeX + body.x);
+        const dy = smoothed.y - (body.homeY + body.y);
         const distance = Math.hypot(dx, dy) || 1;
         if (distance < body.r) {
           body.vx += dx * FOLLOW;
           body.vy += dy * FOLLOW;
         } else if (distance < body.r + REACH) {
-          const push = ((body.r + REACH - distance) / REACH) * PUSH;
-          body.vx -= (dx / distance) * push;
-          body.vy -= (dy / distance) * push;
+          // Eased in and out, so a bubble starts and stops making way softly.
+          const t = (body.r + REACH - distance) / REACH;
+          const push = t * t * (3 - 2 * t) * PUSH;
+          body.vx -= (dx / distance) * push - smoothed.vx * SWEEP * t;
+          body.vy -= (dy / distance) * push - smoothed.vy * SWEEP * t;
         }
       }
 
@@ -116,10 +131,11 @@ const label = `${skills.length} skills, bigger the more positions use them`;
           const ny = dy / distance;
           // Bigger bubbles are heavier and give way less.
           const share = b.r / (a.r + b.r);
-          a.x -= nx * overlap * share;
-          a.y -= ny * overlap * share;
-          b.x += nx * overlap * (1 - share);
-          b.y += ny * overlap * (1 - share);
+          const give = overlap * GIVE;
+          a.x -= nx * give * share;
+          a.y -= ny * give * share;
+          b.x += nx * give * (1 - share);
+          b.y += ny * give * (1 - share);
           const closing = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
           if (closing > 0) {
             const impulse = closing * (1 + BOUNCE);
@@ -168,6 +184,7 @@ const label = `${skills.length} skills, bigger the more positions use them`;
     });
     svg.addEventListener("pointerleave", () => {
       pointer = undefined;
+      smoothed = undefined;
       wake();
     });
   }
