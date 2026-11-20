@@ -5,7 +5,9 @@
  * edge. We lean on Netlify's Durable CDN cache (`Netlify-CDN-Cache-Control`)
  * with a long `stale-while-revalidate`, so the very first visitor after a
  * deploy pays the fetch cost while everyone else gets an instant edge hit and
- * revalidation happens in the background.
+ * revalidation happens in the background. Pages whose data is slow to fetch,
+ * like the projects from GitHub, are built ahead instead and need none of
+ * this.
  *
  * - `Cache-Control`      -> the browser: reuse a response for a minute, then
  *                            show it while fetching a fresh copy in the
@@ -30,23 +32,16 @@ const cdn = (maxAge: number, swr: number, sie: number) =>
   `public, durable, s-maxage=${maxAge}, stale-while-revalidate=${swr}, stale-if-error=${sie}`;
 
 /**
- * For infrequently-changing, successfully-fetched data. Served instantly from
- * the edge for up to six months while revalidating in the background, so a
- * weekly deploy is more than enough to keep it fresh.
+ * For everything fetched from other services, which changes a few times a
+ * day at most. The edge treats it as fresh for a day. After that it keeps
+ * answering instantly with the copy it has for up to two weeks while it
+ * fetches a new one in the background, and if the service is down it falls
+ * back on its last good copy for up to eight weeks. Browsers reuse it for a
+ * few minutes and then refresh it in the background too.
  */
-export const longLivedCache: CacheProfile = {
-  browser: `public, max-age=${ONE_MINUTE}, stale-while-revalidate=${ONE_WEEK}`,
-  cdn: cdn(ONE_MINUTE, SIX_MONTHS, SIX_MONTHS),
-};
-
-/**
- * For data that may be a day old. The edge serves it for a day, then keeps
- * serving it for up to two weeks while it fetches a fresh copy in the
- * background, so nobody waits for a slow upstream.
- */
-export const dailyCache: CacheProfile = {
+export const dataCache: CacheProfile = {
   browser: `public, max-age=${5 * ONE_MINUTE}, stale-while-revalidate=${ONE_DAY}`,
-  cdn: cdn(ONE_DAY, 2 * ONE_WEEK, 2 * ONE_WEEK),
+  cdn: cdn(ONE_DAY, 2 * ONE_WEEK, 8 * ONE_WEEK),
 };
 
 /**
@@ -71,7 +66,7 @@ export const degradedCache: CacheProfile = {
  */
 export function applyCache(
   response: { headers: Headers },
-  profile: CacheProfile = longLivedCache
+  profile: CacheProfile = dataCache
 ) {
   response.headers.set("Cache-Control", profile.browser);
   response.headers.set("CDN-Cache-Control", profile.cdn);

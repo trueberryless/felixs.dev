@@ -1,7 +1,7 @@
 ---
 import RadarChart from "@/components/charts/RadarChart.astro";
 import Story from "@/components/story/Story.astro";
-import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { applyCache, dataCache, degradedCache } from "@/lib/cache";
 import { actorDid } from "@/lib/const";
 import { fetchGitHubActivity } from "@/lib/data";
 import { getRepoRecords } from "@/lib/repo";
@@ -11,7 +11,7 @@ const [records, github] = await Promise.all([
   getRepoRecords().catch(() => null),
   fetchGitHubActivity(),
 ]);
-applyCache(Astro.response, records ? longLivedCache : degradedCache);
+applyCache(Astro.response, records ? dataCache : degradedCache);
 
 const activities = records ? getSocialActivity(records, github) : [];
 const top = activities.toSorted((a, b) => b.value - a.value)[0];

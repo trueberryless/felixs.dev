@@ -9,11 +9,11 @@ import {
   getBooksPerYear,
   getPagesRead,
 } from "@/lib/books";
-import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { applyCache, dataCache, degradedCache } from "@/lib/cache";
 import { fetchBooks } from "@/lib/data";
 
 const books = await fetchBooks().catch(() => null);
-applyCache(Astro.response, books ? longLivedCache : degradedCache);
+applyCache(Astro.response, books ? dataCache : degradedCache);
 const hasData = Boolean(books && books.length > 0);
 
 const nowMs = Date.now();
