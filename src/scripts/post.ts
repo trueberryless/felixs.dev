@@ -142,11 +142,24 @@ function setUpLightbox() {
     caption.hidden = !image.alt;
 
     dialog.showModal();
-    if (reducedMotion()) return;
+    // A copy that hasn't decoded yet has no size, which made the very first
+    // zoom start from a wild scale. Its size comes from the image in the post
+    // instead, which is always laid out.
     const from = image.getBoundingClientRect();
+    fitZoomed(from.width / from.height);
+    if (reducedMotion()) return;
     const to = zoomed.getBoundingClientRect();
     image.style.visibility = "hidden";
     zoomed.animate(flip(from, to), { duration: ZOOM_MS, easing: ZOOM_EASING });
+  };
+
+  const fitZoomed = (ratio: number) => {
+    const padding = Number.parseFloat(getComputedStyle(dialog).paddingLeft);
+    const maxWidth = Math.min(dialog.clientWidth - padding * 2, 1400);
+    const maxHeight = window.innerHeight - 140;
+    const width = Math.min(maxWidth, maxHeight * ratio);
+    zoomed.style.width = `${width}px`;
+    zoomed.style.height = `${width / ratio}px`;
   };
 
   // The image flies back to wherever its spot in the post is right now, so
