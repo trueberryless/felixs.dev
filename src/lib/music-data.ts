@@ -15,7 +15,7 @@ import { getRepoRecords } from "./repo";
 
 // Bump this whenever the shape of the stats changes, so a deploy never reads
 // stats an older version saved.
-const STATS_VERSION = 2;
+const STATS_VERSION = 3;
 const STORE_NAME = "music";
 
 async function getPlays(): Promise<Play[]> {

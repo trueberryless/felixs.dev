@@ -290,31 +290,29 @@ function setShown(element: HTMLElement, shown: boolean, animate: boolean) {
     return;
   }
 
-  if (shown) {
-    element.hidden = false;
-    const width = element.scrollWidth;
-    folds.set(
-      element,
-      element.animate(
-        [
-          { opacity: 0, width: "0px" },
-          { opacity: 1, width: `${width}px` },
-        ],
-        { duration: FOLD_MS, easing: FOLD_EASING }
-      )
-    );
-    return;
-  }
-
-  const width = element.offsetWidth;
-  const fold = element.animate(
-    [
-      { opacity: 1, width: `${width}px` },
-      { opacity: 0, width: "0px" },
-    ],
-    { duration: FOLD_MS * 0.85, easing: FOLD_EASING, fill: "forwards" }
-  );
+  // The padding folds along with the width, so nothing is left to jump when
+  // the element is finally hidden.
+  element.hidden = false;
+  const style = getComputedStyle(element);
+  const open = {
+    opacity: 1,
+    paddingLeft: style.paddingLeft,
+    paddingRight: style.paddingRight,
+    width: `${element.scrollWidth}px`,
+  };
+  const closed = {
+    opacity: 0,
+    paddingLeft: "0px",
+    paddingRight: "0px",
+    width: "0px",
+  };
+  const fold = element.animate(shown ? [closed, open] : [open, closed], {
+    duration: shown ? FOLD_MS : FOLD_MS * 0.85,
+    easing: FOLD_EASING,
+    fill: shown ? "none" : "forwards",
+  });
   folds.set(element, fold);
+  if (shown) return;
   fold.onfinish = () => {
     element.hidden = true;
     fold.cancel();

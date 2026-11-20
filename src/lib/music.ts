@@ -233,7 +233,7 @@ function computeRange(
 
     addTo(
       tracks,
-      play.url ?? `${normalize(play.track)}\u0000${normalize(primary)}`,
+      getTrackKey(play),
       () => ({
         artist: primary,
         minutes: 0,
@@ -361,8 +361,7 @@ function computeHighlights(plays: Play[], toLocal: LocalTime): RangeHighlights {
   for (const play of plays) {
     const { day } = toLocal(play.at);
     const artist = play.artists[0] ?? "";
-    const trackKey =
-      play.url ?? `${normalize(play.track)}\u0000${normalize(artist)}`;
+    const trackKey = getTrackKey(play);
     perDay.set(day, (perDay.get(day) ?? 0) + 1);
 
     const key = `${day}\u0000${trackKey}`;
@@ -530,6 +529,12 @@ function getTop<T extends Ranked>(map: Map<string, T>, limit: number): T[] {
     .map((entry) =>
       Object.assign(entry, { minutes: Math.round(entry.minutes) })
     );
+}
+
+// Spotify sometimes plays the same song under another track id, for example a
+// relinked release, so a track is known by its name and main artist.
+function getTrackKey(play: Play) {
+  return `${normalize(play.track)}\u0000${normalize(play.artists[0] ?? "")}`;
 }
 
 function normalize(value: string) {
