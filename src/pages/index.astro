@@ -1,4 +1,5 @@
 ---
+import { actorDid } from "@/lib/const";
 import Hero from "@/components/landing/Hero.astro";
 import Intro from "@/components/landing/Intro.astro";
 import BuildingStory from "@/components/landing/stories/BuildingStory.astro";
@@ -34,21 +35,84 @@ export const prerender = true;
     <div class="stories" data-stories>
       <div class="stories-stage">
         <WritingStory server:defer>
-          <StorySkeleton slot="fallback" />
+          <StorySkeleton
+            slot="fallback"
+            kicker="Writing"
+            href="/blog"
+            linkText="Read the blog"
+            title={[{ bone: "33" }, " posts, mostly notes to my future self"]}
+            text={[
+              [
+                "Recipes, small fixes I don't want to look up twice, and the odd longer thought.",
+              ],
+              ["Every dot is a post. Pick one."],
+            ]}
+            visual={368 / 448}
+          />
         </WritingStory>
         <BuildingStory />
         <ReadingStory server:defer>
-          <StorySkeleton slot="fallback" />
+          <StorySkeleton
+            slot="fallback"
+            kicker="Reading"
+            href="/books"
+            linkText="Browse the bookshelf"
+            title={[{ bone: "30" }, " books, mostly fantasy"]}
+            text={[
+              ["Right now I'm reading ", { bone: "a book with a title" }, "."],
+              ["Lately a lot of ", { bone: "an author" }, ", apparently."],
+            ]}
+            visual={368 / 167}
+          />
         </ReadingStory>
         <ListeningStory server:defer>
-          <StorySkeleton slot="fallback" />
+          <StorySkeleton
+            slot="fallback"
+            kicker="Listening"
+            href="/music"
+            linkText="Dig into my music"
+            title={[{ bone: "1,000" }, " plays and counting"]}
+            text={[
+              [
+                "Unusual taste, I know. ",
+                { bone: "Lately it's mostly a few artists and another one." },
+              ],
+            ]}
+            visual={368 / 158}
+          />
         </ListeningStory>
         <WorkingStory server:defer>
-          <StorySkeleton slot="fallback" />
+          <StorySkeleton
+            slot="fallback"
+            kicker="Working"
+            href="/resume"
+            linkText="Read the resume"
+            title={["Shipping software since ", { bone: "2019" }]}
+            text={[
+              [
+                {
+                  bone: "A job title at a company, studying a field at a school.",
+                },
+              ],
+            ]}
+            visual={368 / 316}
+          />
         </WorkingStory>
         <MeetingStory server:defer />
         <SocialStory server:defer>
-          <StorySkeleton slot="fallback" />
+          <StorySkeleton
+            slot="fallback"
+            kicker="Hanging out"
+            href={`https://bsky.app/profile/${actorDid}`}
+            linkText="Find me on Bluesky"
+            title={["Mostly ", { bone: "posting" }]}
+            text={[
+              [
+                "What I actually do on Bluesky, GitHub and Tangled, from posts and replies to stars and follows.",
+              ],
+            ]}
+            visual={368 / 333}
+          />
         </SocialStory>
       </div>
     </div>

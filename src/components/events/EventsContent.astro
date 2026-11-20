@@ -1,4 +1,5 @@
 ---
+import NumberCards from "@/components/utils/NumberCards.astro";
 import FilterChip from "@/components/utils/FilterChip.astro";
 import EventCard from "@/components/events/EventCard.astro";
 import Fallback from "@/components/utils/Fallback.astro";
@@ -49,14 +50,7 @@ const afterPeople =
     class="events"
     style={`--people-step: ${peopleStep.toFixed(1)}ms; --after-people: ${afterPeople.toFixed(0)}ms`}
   >
-    <ul class="events-numbers">
-      {numbers.map((number, index) => (
-        <li class="events-number" style={`--i: ${index}`}>
-          <span class="events-number-value">{number.value}</span>
-          <span class="events-number-label">{number.label}</span>
-        </li>
-      ))}
-    </ul>
+    <NumberCards numbers={numbers} />
 
     {people.length > 0 && (
       <Section title="People I met">
@@ -139,42 +133,9 @@ const afterPeople =
 )}
 
 <style>
-  .events-numbers {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
-    gap: 16px;
-    margin-bottom: 56px;
-    padding: 0;
-    list-style: none;
-  }
-
-  .events-number {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 20px clamp(14px, 4vw, 22px);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-card);
-    background: var(--card-bg);
-  }
-
-  .events-number-value {
-    font-family: var(--font-family-heading);
-    font-size: clamp(1.8rem, 6vw, 2.6rem);
-    line-height: 1.1;
-    color: var(--text);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .events-number-label,
-  .events-lede {
-    color: var(--text-muted);
-    font-size: 0.9rem;
-  }
-
   .events-lede {
     margin-bottom: 20px;
-    font-size: 1rem;
+    color: var(--text-muted);
   }
 
   .people {
@@ -232,11 +193,6 @@ const afterPeople =
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .events-number {
-      animation: events-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
-      animation-delay: calc(var(--i) * 70ms);
-    }
-
     .people li {
       animation: events-pop 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
       animation-delay: calc(0.2s + var(--i) * var(--people-step));

@@ -1,74 +1,55 @@
-<div class="story-frame">
-  <section class="story-skeleton" aria-busy="true" aria-label="Loading">
-    <div class="story-skeleton-copy">
-      <span class="line short"></span>
-      <span class="line title"></span>
-      <span class="line"></span>
-      <span class="line"></span>
-    </div>
-    <span class="story-skeleton-visual"></span>
-  </section>
-</div>
+---
+import Story from "@/components/story/Story.astro";
+
+type Part = string | { bone: string };
+
+interface Props {
+  href: string;
+  kicker: string;
+  linkText: string;
+  /** The text under the title, one paragraph per entry. */
+  text: Part[][];
+  /** The title, with bones for the parts that come from data. */
+  title: Part[];
+  /** Width over height of the story's chart. */
+  visual: number;
+}
+
+// A story as it will look, with the same copy and bones where its data goes.
+const { href, kicker, linkText, text, title, visual } = Astro.props;
+---
+
+<Story kicker={kicker} href={href} linkText={linkText}>
+  <Fragment slot="title">
+    {title.map((part) =>
+      typeof part === "string" ? part : <em class="bone">{part.bone}</em>
+    )}
+  </Fragment>
+  <Fragment slot="text">
+    {text.map((paragraph) => (
+      <p>
+        {paragraph.map((part) =>
+          typeof part === "string" ? (
+            part
+          ) : (
+            <span class="bone is-text">{part.bone}</span>
+          )
+        )}
+      </p>
+    ))}
+  </Fragment>
+  <div
+    slot="visual"
+    class="skeleton story-skeleton-visual bone"
+    style={`aspect-ratio: ${visual}`}
+    aria-hidden="true"
+  />
+</Story>
 
 <style>
-  .story-skeleton {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    align-items: center;
-    gap: 48px;
-    min-height: min(78svh, 760px);
-    padding-block: 10vh;
-  }
-
-  @media (min-width: 860px) {
-    .story-skeleton {
-      grid-template-columns: 5fr 7fr;
-    }
-  }
-
-  .story-skeleton-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .line,
   .story-skeleton-visual {
     display: block;
-    border-radius: 8px;
-    background: var(--border);
-    animation: story-pulse 1.6s ease-in-out infinite;
-  }
-
-  .line {
-    height: 14px;
-    width: 90%;
-  }
-
-  .line.short {
-    width: 30%;
-  }
-
-  .line.title {
-    height: 44px;
-    width: 70%;
-  }
-
-  .story-skeleton-visual {
-    height: 260px;
+    width: 100%;
     border-radius: var(--radius-card);
-  }
-
-  @keyframes story-pulse {
-    50% {
-      opacity: 0.45;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .line,
-    .story-skeleton-visual {
-      animation: none;
-    }
   }
 </style>

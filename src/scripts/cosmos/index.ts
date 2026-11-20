@@ -35,9 +35,9 @@ const DRIFT_SELECTOR = [
   ".book-item",
   ".card-link",
   ".fallback",
+  ".filter-chip",
   ".hex",
-  ".honor-card",
-  ".skill-chip",
+  ".number-card",
   ".timeline-row > .card-container",
   ".year-watermark",
 ].join(",");

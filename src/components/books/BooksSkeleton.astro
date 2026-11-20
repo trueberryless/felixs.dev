@@ -1,24 +1,105 @@
 ---
-import OverviewSkeleton from "@/components/utils/OverviewSkeleton.astro";
+import FilterChip from "@/components/utils/FilterChip.astro";
+import NumberCards from "@/components/utils/NumberCards.astro";
 
-const count = 12;
+// The same blocks as the shelf, in the same sizes, so nothing jumps when the
+// books arrive.
+const years = [0.2, 0.4, 0.1, 0.1, 0.3, 0.6, 1, 0.1, 0.3, 0.1, 0.1, 0.2];
+const authors = [
+  "Rick Riordan",
+  "J.K. Rowling",
+  "Sarah J. Maas",
+  "Suzanne Collins",
+  "Rachel Ward",
+];
+const books = 12;
 ---
 
-<OverviewSkeleton bars chips={4} />
-<div class="skeleton-shelf">
-  {Array.from({ length: count }).map(() => (
-    <div class="skeleton-book">
-      <div class="skeleton-cover" />
-      <div class="skeleton-line title" />
-      <div class="skeleton-line author" />
-    </div>
-  ))}
+<div class="skeleton" aria-hidden="true">
+  <NumberCards
+    numbers={[
+      { label: "books" },
+      { label: "pages, that I know of" },
+      { label: "authors" },
+      { label: "books this year" },
+    ]}
+  />
+
+  <ol class="skeleton-years">
+    {years.map((value) => (
+      <li style={`--value: ${value}`}>
+        <span class="bone">0</span>
+        <span class="bone skeleton-bar" />
+        <span class="bone">0000</span>
+      </li>
+    ))}
+  </ol>
+
+  <div class="skeleton-authors">
+    {authors.map((name) => (
+      <FilterChip skeleton count={10}>
+        {name}
+      </FilterChip>
+    ))}
+  </div>
+
+  <div class="skeleton-shelf">
+    {Array.from({ length: books }, () => (
+      <div class="skeleton-book">
+        <span class="bone skeleton-cover" />
+        <div>
+          <p class="skeleton-title">
+            <span class="bone">A book title</span>
+          </p>
+          <p class="skeleton-author">
+            <span class="bone">An author</span>
+          </p>
+        </div>
+      </div>
+    ))}
+  </div>
 </div>
 
 <style>
+  .skeleton-years {
+    display: flex;
+    align-items: flex-end;
+    gap: clamp(6px, 2vw, 16px);
+    height: 150px;
+    margin: 0 0 40px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .skeleton-years li {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    min-width: 0;
+    height: 100%;
+    font-size: 0.78rem;
+  }
+
+  .skeleton-bar {
+    width: 100%;
+    max-width: 44px;
+    height: calc(var(--value) * 90px + 3px);
+    border-radius: 8px 8px 3px 3px;
+  }
+
+  .skeleton-authors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 48px;
+  }
+
   .skeleton-shelf {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
     gap: 4rem 2.5rem;
     padding-top: 1rem;
     padding-bottom: 2rem;
@@ -28,41 +109,30 @@ const count = 12;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 1.25rem;
+    text-align: center;
   }
 
   .skeleton-cover {
     width: 140px;
     height: 210px;
-    background: var(--card-bg);
     border-radius: 2px 4px 4px 2px;
-    border: 1px solid var(--border);
-    animation: skeleton-pulse 1.5s ease-in-out infinite;
   }
 
-  .skeleton-line {
-    background: var(--border);
-    border-radius: 4px;
-    animation: skeleton-pulse 1.5s ease-in-out infinite;
+  .skeleton-title {
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+    line-height: 1.3;
   }
 
-  .skeleton-line.title {
-    height: 14px;
-    width: 80%;
+  .skeleton-author {
+    font-size: 0.85rem;
   }
 
-  .skeleton-line.author {
-    height: 12px;
-    width: 60%;
-  }
-
-  @keyframes skeleton-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.4;
+  /* The 3D books are scaled down on the narrowest screens. */
+  @media (max-width: 200px) {
+    .skeleton-cover {
+      zoom: 0.7;
     }
   }
 </style>

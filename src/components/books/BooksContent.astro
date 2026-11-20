@@ -1,4 +1,5 @@
 ---
+import NumberCards from "@/components/utils/NumberCards.astro";
 import FilterChip from "@/components/utils/FilterChip.astro";
 import Book from "@/components/books/Book.astro";
 import Fallback from "@/components/utils/Fallback.astro";
@@ -35,18 +36,7 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
 
 {hasData ? (
   <books-shelf class="shelf">
-    {numbers.length > 0 && (
-      <ul class="shelf-numbers">
-        {numbers.map((number, index) => (
-          <li class="shelf-number" style={`--i: ${index}`}>
-            <span class="shelf-number-value">
-              {numberFormat.format(number.value)}
-            </span>
-            <span class="shelf-number-label">{number.label}</span>
-          </li>
-        ))}
-      </ul>
-    )}
+    {numbers.length > 0 && <NumberCards numbers={numbers} />}
 
     {perYear.length > 1 && (
       <figure class="shelf-years">
@@ -220,38 +210,6 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
     display: block;
   }
 
-  .shelf-numbers {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
-    gap: 16px;
-    margin-bottom: 40px;
-    padding: 0;
-    list-style: none;
-  }
-
-  .shelf-number {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 20px clamp(14px, 4vw, 22px);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-card);
-    background: var(--card-bg);
-  }
-
-  .shelf-number-value {
-    font-family: var(--font-family-heading);
-    font-size: clamp(1.8rem, 6vw, 2.6rem);
-    line-height: 1.1;
-    color: var(--text);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .shelf-number-label {
-    color: var(--text-muted);
-    font-size: 0.9rem;
-  }
-
   .shelf-years {
     margin: 0 0 40px;
   }
@@ -356,11 +314,6 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .shelf-number {
-      animation: shelf-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
-      animation-delay: calc(var(--i) * 70ms);
-    }
-
     .shelf-year-bar {
       animation: shelf-grow 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
       animation-delay: calc(0.2s + var(--i) * 50ms);

@@ -3,20 +3,34 @@ import type { HTMLAttributes } from "astro/types";
 
 interface Props extends HTMLAttributes<"button"> {
   count?: number;
+  /** Draws the chip as a skeleton bone of the same size. */
+  skeleton?: boolean;
 }
 
-const { class: className, count, ...attributes } = Astro.props;
+const {
+  class: className,
+  count,
+  skeleton = false,
+  ...attributes
+} = Astro.props;
 ---
 
-<button
-  type="button"
-  class:list={["filter-chip", className]}
-  aria-pressed="false"
-  {...attributes}
->
-  <slot />
-  {count !== undefined && <span class="filter-chip-count">{count}</span>}
-</button>
+{skeleton ? (
+  <span class:list={["filter-chip", "bone", className]}>
+    <slot />
+    {count !== undefined && <span class="filter-chip-count">{count}</span>}
+  </span>
+) : (
+  <button
+    type="button"
+    class:list={["filter-chip", className]}
+    aria-pressed="false"
+    {...attributes}
+  >
+    <slot />
+    {count !== undefined && <span class="filter-chip-count">{count}</span>}
+  </button>
+)}
 
 <style>
   .filter-chip {
@@ -54,6 +68,18 @@ const { class: className, count, ...attributes } = Astro.props;
   .filter-chip:focus-visible {
     outline: 2px solid var(--text);
     outline-offset: 2px;
+  }
+
+  .filter-chip.bone {
+    border-color: transparent;
+    background: var(--border);
+    color: transparent;
+    cursor: default;
+  }
+
+  .filter-chip.bone .filter-chip-count {
+    background: none;
+    color: transparent;
   }
 
   .filter-chip[hidden] {

@@ -58,7 +58,7 @@
   color: var(--text-muted);
 }
 
-.ms:not(.is-enhanced)
+@media (scripting: none) {
   .ms-section:has(
     .ms-currents,
     .ms-clock,
@@ -66,13 +66,19 @@
     .ms-highlights,
     .ms-recent
   ) {
-  display: none;
+    display: none;
+  }
 }
 
+/* The plain lists stay for screen readers and search engines until the
+   charts replace them; the bones next to them hold the charts' space. */
 .ms-fallback-list {
-  padding-left: 1.4em;
-  display: grid;
-  gap: 4px;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* Entrance: every re-render fades and drifts in, staggered by `--i`, and
