@@ -112,13 +112,12 @@
   --glow-pr: oklch(0.8 0.15 310);
   --accent: oklch(0.84 0.13 195);
   --accent-glow: oklch(0.84 0.13 195 / 0.55);
+  /* One cool white with a soft sheen, like starlight. */
   --text-gradient: linear-gradient(
-    100deg,
-    oklch(0.9 0.1 200) 0%,
-    oklch(0.88 0.1 290) 30%,
-    oklch(0.84 0.14 330) 50%,
-    oklch(0.88 0.1 290) 70%,
-    oklch(0.9 0.1 200) 100%
+    180deg,
+    oklch(0.99 0.01 285) 0%,
+    oklch(0.93 0.03 285) 55%,
+    oklch(0.86 0.05 285) 100%
   );
 
   /* Painted before the lazily loaded nebula canvas fades in, and kept as the
