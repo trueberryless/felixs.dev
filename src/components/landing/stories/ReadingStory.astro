@@ -34,7 +34,7 @@ const [topAuthor, topAuthorBooks = 0] =
       <p>Lately a lot of {topAuthor}, apparently.</p>
     )}
   </Fragment>
-  <div slot="visual" class="reading-shelf">
+  <div slot="visual" class="reading-shelf" data-shelf>
     {shelf.map((book) => (
       <div class="reading-book">
         <Book
@@ -79,42 +79,47 @@ const [topAuthor, topAuthorBooks = 0] =
     z-index: -1;
   }
 
-  /* Like the Dock: the book you point at lifts, and every other book moves
-     aside far enough that nothing overlaps it, so it never has to jump in
-     front of the others. */
+  /* The script below moves the books like the Dock. The whole shelf is the
+     hover area, gaps included, so gliding across never drops a book back. */
+  .reading-shelf {
+    padding: 48px 32px 28px;
+    margin: -48px -32px 0;
+  }
+
+  /* A soft light follows the pointer along the shelf. */
+  .reading-shelf::before {
+    content: "";
+    position: absolute;
+    left: var(--spot-x, 50%);
+    bottom: 0;
+    width: 260px;
+    height: 220px;
+    translate: -50% 0;
+    border-radius: 50%;
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklch, var(--accent) 30%, transparent),
+      transparent
+    );
+    opacity: var(--spot, 0);
+    pointer-events: none;
+    z-index: -1;
+  }
+
   .reading-book {
     position: relative;
-    margin-inline: -14px;
+    z-index: var(--z, 0);
+    margin-inline: 4px;
     zoom: 0.66;
-    transition: translate 0.55s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  @media (hover: hover) {
-    .reading-book:is(:hover, :focus-within) {
-      translate: 0 -14px;
-    }
-
-    .reading-book:has(~ .reading-book:is(:hover, :focus-within)) {
-      translate: -46px 0;
-    }
-
-    .reading-book:is(:hover, :focus-within) ~ .reading-book {
-      translate: 46px 0;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .reading-book,
-    .reading-book:hover,
-    .reading-book:focus-within {
-      translate: none;
-      transition: none;
-    }
+    transform-origin: 50% 100%;
+    translate: var(--x, 0px) var(--lift, 0px);
+    scale: var(--scale, 1);
+    rotate: var(--tilt, 0deg);
   }
 
   @media (max-width: 600px) {
     .reading-book {
-      margin-inline: -18px;
+      margin-inline: -4px;
       zoom: 0.48;
     }
   }
@@ -130,3 +135,183 @@ const [topAuthor, topAuthorBooks = 0] =
     }
   }
 </style>
+
+<script>
+  // The shelf works like the Dock. Books near the pointer grow and rise,
+  // the one right under it turns towards you, the others slide apart so
+  // nothing overlaps and lean away a little, and a soft light follows along.
+  // Every value eases on its own spring, so gliding across feels continuous.
+  const STIFFNESS = 0.09;
+  const DAMPING = 0.74;
+  const REACH = 1.3;
+  const GROW = 0.3;
+  const RISE = 26;
+  const LEAN = 5;
+  const SPREAD = 0.62;
+
+  type Value = "lift" | "scale" | "tilt" | "x";
+
+  interface ShelfBook {
+    current: Record<Value, number>;
+    element: HTMLElement;
+    link: HTMLElement | null;
+    velocity: Record<Value, number>;
+  }
+
+  function enableShelf(shelf: HTMLElement) {
+    if (shelf.dataset.dock !== undefined) return;
+    shelf.dataset.dock = "";
+
+    const books: ShelfBook[] = [
+      ...shelf.querySelectorAll<HTMLElement>(".reading-book"),
+    ].map((element) => {
+      const link = element.querySelector<HTMLElement>(".book-item");
+      link?.classList.add("is-steered");
+      return {
+        current: { lift: 0, scale: 1, tilt: 0, x: 0 },
+        element,
+        link,
+        velocity: { lift: 0, scale: 0, tilt: 0, x: 0 },
+      };
+    });
+
+    let pointer = 0;
+    let presence = 0;
+    let presenceTarget = 0;
+    let spot = 0;
+    let frame = 0;
+
+    const step = () => {
+      presence += (presenceTarget - presence) * 0.12;
+      const shelfBox = shelf.getBoundingClientRect();
+      const zoom = Number(getComputedStyle(books[0]!.element).zoom) || 1;
+
+      // Where each book stands at rest, in screen pixels. Scaling happens
+      // around the bottom centre, so only the slide has to be taken out.
+      const homes = books.map((book) => {
+        const box = book.element.getBoundingClientRect();
+        return {
+          center: box.left + box.width / 2 - book.current.x * zoom,
+          width: box.width / book.current.scale,
+        };
+      });
+      const focus = homes.map(({ center, width }) => {
+        const distance = (pointer - center) / width;
+        return presence * Math.exp(-(distance * distance) / REACH);
+      });
+      const grow = focus.map((value) => value * GROW);
+
+      let settled = Math.abs(presenceTarget - presence) < 0.002;
+      let lifted = -1;
+      books.forEach((book, index) => {
+        const { center, width } = homes[index]!;
+        const side = Math.sign(center - pointer) || 1;
+        // Every growing book pushes the others away from itself.
+        const slide = grow.reduce(
+          (sum, value, other) =>
+            other === index
+              ? sum
+              : sum + Math.sign(index - other) * value * width * SPREAD,
+          0
+        );
+        const target: Record<Value, number> = {
+          lift: -RISE * focus[index]!,
+          scale: 1 + grow[index]!,
+          tilt:
+            side *
+            LEAN *
+            presence *
+            (1 - focus[index]!) *
+            Math.min(1, Math.abs(center - pointer) / width),
+          x: slide / zoom,
+        };
+        for (const key of Object.keys(target) as Value[]) {
+          book.velocity[key] += (target[key] - book.current[key]) * STIFFNESS;
+          book.velocity[key] *= DAMPING;
+          book.current[key] += book.velocity[key];
+          if (
+            Math.abs(book.velocity[key]) > 0.002 ||
+            Math.abs(target[key] - book.current[key]) > 0.01
+          ) {
+            settled = false;
+          }
+        }
+        const style = book.element.style;
+        style.setProperty("--x", `${book.current.x.toFixed(2)}px`);
+        style.setProperty(
+          "--lift",
+          `${(book.current.lift / zoom).toFixed(2)}px`
+        );
+        style.setProperty("--scale", book.current.scale.toFixed(4));
+        style.setProperty("--tilt", `${book.current.tilt.toFixed(2)}deg`);
+        style.setProperty("--z", String(Math.round(focus[index]! * 10)));
+        if (
+          focus[index]! > 0.5 &&
+          (lifted === -1 || focus[index]! > focus[lifted]!)
+        ) {
+          lifted = index;
+        }
+      });
+      books.forEach((book, index) =>
+        book.link?.classList.toggle("is-lifted", index === lifted)
+      );
+
+      spot += (pointer - shelfBox.left - spot) * 0.14;
+      shelf.style.setProperty("--spot-x", `${spot.toFixed(1)}px`);
+      shelf.style.setProperty("--spot", presence.toFixed(3));
+
+      frame = settled && presenceTarget === 0 ? 0 : requestAnimationFrame(step);
+    };
+    const wake = () => {
+      frame ||= requestAnimationFrame(step);
+    };
+
+    shelf.addEventListener("pointermove", (event) => {
+      if (event.pointerType !== "mouse") return;
+      if (presenceTarget === 0) {
+        spot = event.clientX - shelf.getBoundingClientRect().left;
+      }
+      pointer = event.clientX;
+      presenceTarget = 1;
+      wake();
+    });
+    shelf.addEventListener("pointerleave", () => {
+      presenceTarget = 0;
+      wake();
+    });
+    // Moving through the books with the keyboard lifts them the same way.
+    shelf.addEventListener("focusin", (event) => {
+      const book = (event.target as Element).closest(".reading-book");
+      if (!book) return;
+      const box = book.getBoundingClientRect();
+      pointer = box.left + box.width / 2;
+      presenceTarget = 1;
+      wake();
+    });
+    shelf.addEventListener("focusout", () => {
+      presenceTarget = 0;
+      wake();
+    });
+  }
+
+  function enableShelves() {
+    if (
+      !matchMedia("(hover: hover) and (pointer: fine)").matches ||
+      matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+    for (const shelf of document.querySelectorAll<HTMLElement>(
+      "[data-shelf]"
+    )) {
+      enableShelf(shelf);
+    }
+  }
+  enableShelves();
+  document.addEventListener("astro:page-load", enableShelves);
+  // The story arrives after the page, as a server island.
+  new MutationObserver(enableShelves).observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+</script>

@@ -79,8 +79,10 @@ const {
     transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
+  /* A shelf can steer the lift itself: `is-steered` turns off the plain
+     hover and `is-lifted` lifts the book. */
   @media (hover: hover) {
-    .book-item:hover .book-3d {
+    .book-item:is(:hover:not(.is-steered), .is-lifted) .book-3d {
       transform: translateY(-16px) translateX(8px)
         rotateZ(calc(var(--rot) + 6deg)) rotateY(-35deg) rotateX(15deg);
     }
@@ -125,7 +127,7 @@ const {
     transition: box-shadow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  .book-item:hover .back-cover {
+  .book-item:is(:hover:not(.is-steered), .is-lifted) .back-cover {
     box-shadow: -10px 20px 25px rgba(0, 0, 0, 0.2);
   }
 
@@ -133,7 +135,9 @@ const {
     box-shadow: -4px 8px 15px rgba(0, 0, 0, 0.5);
   }
 
-  :global(.dark) .book-item:hover .back-cover {
+  :global(.dark)
+    .book-item:is(:hover:not(.is-steered), .is-lifted)
+    .back-cover {
     box-shadow: -10px 20px 25px rgba(0, 0, 0, 0.7);
   }
 
@@ -197,15 +201,17 @@ const {
       transition: none;
     }
 
-    .book-item:hover .book-3d {
+    .book-item:is(:hover:not(.is-steered), .is-lifted) .book-3d {
       transform: rotateZ(var(--rot)) rotateY(-22deg) rotateX(12deg);
     }
 
-    .book-item:hover .back-cover {
+    .book-item:is(:hover:not(.is-steered), .is-lifted) .back-cover {
       box-shadow: -4px 8px 15px rgba(0, 0, 0, 0.15);
     }
 
-    :global(.dark) .book-item:hover .back-cover {
+    :global(.dark)
+      .book-item:is(:hover:not(.is-steered), .is-lifted)
+      .back-cover {
       box-shadow: -4px 8px 15px rgba(0, 0, 0, 0.5);
     }
   }
