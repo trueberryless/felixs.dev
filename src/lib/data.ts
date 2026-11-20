@@ -530,6 +530,10 @@ async function fetchProfile(did: string): Promise<any | null> {
   ).catch(() => null);
 }
 
+function isGoing(status: unknown): boolean {
+  return typeof status === "string" && status.endsWith("#going");
+}
+
 async function fetchBacklinks(subject: string): Promise<string[]> {
   const url = new URL(
     "/xrpc/blue.microcosm.links.getBacklinks",
@@ -552,6 +556,8 @@ async function fetchBacklinks(subject: string): Promise<string[]> {
 
 export interface Event {
   id: string;
+  /** Whether I'm going or only interested. */
+  isGoing: boolean;
   data: any;
   startDate: string;
   endDate: string;
@@ -586,10 +592,28 @@ export async function fetchEvents(): Promise<Event[] | null> {
     ),
   ] as string[];
 
-  const [records, backlinks] = await Promise.all([
+  const myStatus = new Map<string, string>();
+  for (const rsvp of rsvps) {
+    const ref = rsvp.data?.event || rsvp.data?.subject;
+    const uri = typeof ref === "string" ? ref : ref?.uri;
+    if (typeof uri === "string") myStatus.set(uri, String(rsvp.data?.status));
+  }
+
+  const [records, allBacklinks] = await Promise.all([
     batchAll(uris, 10, fetchRecord),
     batchAll(uris, 10, fetchBacklinks),
   ]);
+  // Only people who said they're going count as going, so each of their
+  // answers is read too.
+  const answers = await batchAll(allBacklinks.flat(), 10, fetchRecord);
+  const isGoingAnswer = new Map(
+    allBacklinks
+      .flat()
+      .map((link, index) => [link, isGoing(answers[index]?.status)])
+  );
+  const backlinks = allBacklinks.map((links) =>
+    links.filter((link) => isGoingAnswer.get(link))
+  );
 
   const dids = new Set<string>();
   uris.forEach((u) => {
@@ -667,8 +691,16 @@ export async function fetchEvents(): Promise<Event[] | null> {
           imageUrl = `https://cdn.bsky.app/img/feed_thumbnail/plain/${did}/${thumb.content.ref.$link}@jpeg`;
       }
 
+      // Past events only count when I went, upcoming ones also when I'm
+      // interested, and never when I said no.
+      const status = myStatus.get(uri) ?? "";
+      const going = isGoing(status);
+      if (status.endsWith("#notgoing")) return null;
+      if (!going && Date.parse(endDate) < Date.now()) return null;
+
       return {
         id: uri,
+        isGoing: going,
         data: value,
         startDate,
         endDate,

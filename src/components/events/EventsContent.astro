@@ -35,10 +35,19 @@ const numbers = [
   { label: "coming up", value: upcoming.length },
 ];
 const mostMet = people[0]?.count ?? 1;
+// Every face pops in one after another within about a second and a half,
+// however many there are, and the rest of the page follows the last one.
+const PEOPLE_MS = 1500;
+const peopleStep = Math.min(25, PEOPLE_MS / Math.max(people.length, 1));
+const afterPeople =
+  people.length > 0 ? 200 + people.length * peopleStep + 250 : 0;
 ---
 
 {hasData ? (
-  <>
+  <div
+    class="events"
+    style={`--people-step: ${peopleStep.toFixed(1)}ms; --after-people: ${afterPeople.toFixed(0)}ms`}
+  >
     <ul class="events-numbers">
       {numbers.map((number, index) => (
         <li class="events-number" style={`--i: ${index}`}>
@@ -57,7 +66,7 @@ const mostMet = people[0]?.count ?? 1;
         <ul class="people">
           {people.map((person, index) => (
             <li
-              style={`--size: ${32 + Math.round((person.count / mostMet) * 32)}px; --i: ${Math.min(index, 40)}`}
+              style={`--size: ${32 + Math.round((person.count / mostMet) * 32)}px; --i: ${index}`}
             >
               <a
                 class="person"
@@ -97,24 +106,26 @@ const mostMet = people[0]?.count ?? 1;
       </Section>
     )}
 
-    <Section title="Every event">
-      <div class="timeline-container">
-        {upcoming.map((event) => (
-          <EventCard event={event} />
-        ))}
+    <div class="events-later">
+      <Section title="Every event">
+        <div class="timeline-container">
+          {upcoming.map((event) => (
+            <EventCard event={event} />
+          ))}
 
-        {upcoming.length > 0 && past.length > 0 && (
-          <div class="today-divider">
-            <span class="today-text">Today</span>
-          </div>
-        )}
+          {upcoming.length > 0 && past.length > 0 && (
+            <div class="today-divider">
+              <span class="today-text">Today</span>
+            </div>
+          )}
 
-        {past.map((event) => (
-          <EventCard event={event} />
-        ))}
-      </div>
-    </Section>
-  </>
+          {past.map((event) => (
+            <EventCard event={event} />
+          ))}
+        </div>
+      </Section>
+    </div>
+  </div>
 ) : (
   <Fallback
     description="My RSVPs live on ATproto and aren't reachable right now. You can view them directly on atmo.rsvp."
@@ -232,7 +243,13 @@ const mostMet = people[0]?.count ?? 1;
 
     .people li {
       animation: events-pop 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-      animation-delay: calc(0.2s + var(--i) * 25ms);
+      animation-delay: calc(0.2s + var(--i) * var(--people-step));
+    }
+
+    .places,
+    .events-later {
+      animation: events-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: var(--after-people);
     }
   }
 
