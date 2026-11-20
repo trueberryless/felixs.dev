@@ -30,6 +30,7 @@ export function processPost(post: AugmentedPost) {
     firstTag: post.data.tags?.[0],
     otherTags: post.data.tags?.slice(1).join("  ") || "",
     postUrl: constructUrl(),
+    localUrl: `/blog/${post.id.split("/").at(-1)}`,
   };
 }
 

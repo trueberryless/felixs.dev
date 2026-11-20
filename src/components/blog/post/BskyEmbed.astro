@@ -1,0 +1,100 @@
+---
+export interface EmbeddedPost {
+  author: { avatar?: string; displayName?: string; handle: string };
+  createdAt: string;
+  likeCount: number;
+  text: string;
+  url: string;
+}
+
+interface Props {
+  post: EmbeddedPost;
+}
+
+const { post } = Astro.props;
+const date = new Date(post.createdAt).toLocaleDateString("en-US", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+---
+
+<a class="bsky-embed" href={post.url}>
+  <span class="bsky-author">
+    {post.author.avatar && (
+      <img
+        src={post.author.avatar}
+        alt=""
+        width="36"
+        height="36"
+        loading="lazy"
+      />
+    )}
+    <span class="bsky-names">
+      <span class="bsky-name">
+        {post.author.displayName || post.author.handle}
+      </span>
+      <span class="bsky-handle">@{post.author.handle}</span>
+    </span>
+  </span>
+  <span class="bsky-text">{post.text}</span>
+  <span class="bsky-meta">
+    {date} · ♥&#xFE0E; {post.likeCount}
+  </span>
+</a>
+
+<style>
+  .bsky-embed {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-block: 8px;
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--card-bg);
+    color: var(--text);
+    text-decoration: none;
+    transition:
+      translate 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  .bsky-embed:hover {
+    translate: 0 -2px;
+    box-shadow: var(--lift-shadow);
+  }
+
+  .bsky-author {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .bsky-author img {
+    border-radius: 50%;
+  }
+
+  .bsky-names {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+    min-width: 0;
+  }
+
+  .bsky-name {
+    font-weight: 600;
+  }
+
+  .bsky-handle,
+  .bsky-meta {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
+  }
+
+  .bsky-text {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+</style>
