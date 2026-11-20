@@ -237,19 +237,20 @@ const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
     }
   }
 
-  .bubble-label,
-  .bubble-value {
+  /* Repacked bubbles get their labels from a script, so these styles reach
+     past this component's scope. */
+  .bubble-chart :global(:is(.bubble-label, .bubble-value)) {
     text-anchor: middle;
     dominant-baseline: central;
     pointer-events: none;
   }
 
-  .bubble-label {
+  .bubble-chart :global(.bubble-label) {
     font-weight: 600;
     fill: var(--text);
   }
 
-  .bubble-value {
+  .bubble-chart :global(.bubble-value) {
     font-size: 10px;
     fill: var(--text);
     opacity: 0.8;
