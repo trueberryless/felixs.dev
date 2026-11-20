@@ -8,6 +8,8 @@
 const STAGE_QUERY =
   "(min-width: 860px) and (min-height: 620px) and (prefers-reduced-motion: no-preference)";
 const REDUCED_QUERY = "(prefers-reduced-motion: reduce)";
+// Browsers with scroll timelines move the stage in CSS, off the main thread.
+const HAS_SCROLL_TIMELINE = CSS.supports("animation-timeline: view()");
 // Before and after the stage, a section's middle sits this share of the screen
 // from the edge of the stories, so the first one follows right after the intro.
 const FLOW_GAP = 0.32;
@@ -90,10 +92,12 @@ function setup() {
     // The first section is already on stage as it scrolls into view.
     setActive(rect.top >= view ? -1 : Math.floor(progress * frames.length));
 
-    root.style.setProperty(
-      "--stage-shift",
-      `${getStageShift(passed, travel, view).toFixed(1)}px`
-    );
+    if (!HAS_SCROLL_TIMELINE) {
+      root.style.setProperty(
+        "--stage-shift",
+        `${getStageShift(passed, travel, view).toFixed(1)}px`
+      );
+    }
   };
   const schedule = () => {
     pending ||= requestAnimationFrame(update);
