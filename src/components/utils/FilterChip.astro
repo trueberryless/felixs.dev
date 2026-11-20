@@ -1,0 +1,73 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"button"> {
+  count?: number;
+}
+
+const { class: className, count, ...attributes } = Astro.props;
+---
+
+<button
+  type="button"
+  class:list={["filter-chip", className]}
+  aria-pressed="false"
+  {...attributes}
+>
+  <slot />
+  {count !== undefined && <span class="filter-chip-count">{count}</span>}
+</button>
+
+<style>
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px 4px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--badge-bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition:
+      background 0.25s ease,
+      color 0.25s ease,
+      border-color 0.25s ease;
+  }
+
+  .filter-chip:not(:has(.filter-chip-count)) {
+    padding-right: 14px;
+  }
+
+  .filter-chip:hover {
+    border-color: var(--text-muted);
+  }
+
+  .filter-chip[aria-pressed="true"] {
+    border-color: var(--text);
+    background: var(--text);
+    color: var(--card-bg);
+  }
+
+  .filter-chip:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
+  }
+
+  .filter-chip[hidden] {
+    display: none;
+  }
+
+  .filter-chip-count {
+    min-width: 1.8em;
+    padding: 0 7px;
+    border-radius: var(--radius-pill);
+    background: var(--card-bg);
+    color: var(--text);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+</style>

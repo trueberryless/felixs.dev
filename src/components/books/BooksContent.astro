@@ -1,4 +1,5 @@
 ---
+import FilterChip from "@/components/utils/FilterChip.astro";
 import Book from "@/components/books/Book.astro";
 import Fallback from "@/components/utils/Fallback.astro";
 import {
@@ -77,15 +78,13 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
     {shelfAuthors.length > 0 && (
       <div class="shelf-authors" role="group" aria-label="Show books by">
         {shelfAuthors.map((author) => (
-          <button
-            type="button"
+          <FilterChip
             class="shelf-author"
-            aria-pressed="false"
+            count={author.count}
             data-author={author.name}
           >
             {author.name}
-            <span class="shelf-author-count">{author.count}</span>
-          </button>
+          </FilterChip>
         ))}
       </div>
     )}
@@ -342,44 +341,6 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
     flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 48px;
-  }
-
-  .shelf-author {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 6px 4px 14px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-pill);
-    background: var(--badge-bg);
-    color: var(--text);
-    font: inherit;
-    font-size: 0.88rem;
-    cursor: pointer;
-    transition:
-      background 0.25s ease,
-      color 0.25s ease,
-      border-color 0.25s ease;
-  }
-
-  .shelf-author[aria-pressed="true"] {
-    border-color: var(--text);
-    background: var(--text);
-    color: var(--card-bg);
-  }
-
-  .shelf-author:focus-visible {
-    outline: 2px solid var(--text);
-    outline-offset: 2px;
-  }
-
-  .shelf-author-count {
-    padding: 0 7px;
-    border-radius: var(--radius-pill);
-    background: var(--card-bg);
-    color: var(--text);
-    font-size: 0.78rem;
-    font-variant-numeric: tabular-nums;
   }
 
   .books-grid {

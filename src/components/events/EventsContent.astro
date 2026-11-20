@@ -1,4 +1,5 @@
 ---
+import FilterChip from "@/components/utils/FilterChip.astro";
 import EventCard from "@/components/events/EventCard.astro";
 import Fallback from "@/components/utils/Fallback.astro";
 import Section from "@/components/utils/Section.astro";
@@ -90,39 +91,42 @@ const afterPeople =
             </li>
           ))}
         </ul>
-        {places.length > 0 && (
-          <p class="places">
-            <span class="places-label">Where:</span>
-            {places.map((place) => (
-              <span class="place">
-                {place.name}
-                {place.count > 1 && (
-                  <span class="place-count">{place.count}</span>
-                )}
-              </span>
-            ))}
-          </p>
-        )}
       </Section>
     )}
 
     <div class="events-later">
       <Section title="Every event">
-        <div class="timeline-container">
-          {upcoming.map((event) => (
-            <EventCard event={event} />
-          ))}
-
-          {upcoming.length > 0 && past.length > 0 && (
-            <div class="today-divider">
-              <span class="today-text">Today</span>
+        <events-timeline>
+          {places.length > 1 && (
+            <div class="places" role="group" aria-label="Show events at">
+              {places.map((place) => (
+                <FilterChip
+                  class="place"
+                  count={place.count}
+                  data-place={place.name}
+                >
+                  {place.name}
+                </FilterChip>
+              ))}
             </div>
           )}
+          <p class="sr-only" aria-live="polite" data-status />
+          <div class="timeline-container">
+            {upcoming.map((event) => (
+              <EventCard event={event} />
+            ))}
 
-          {past.map((event) => (
-            <EventCard event={event} />
-          ))}
-        </div>
+            {upcoming.length > 0 && past.length > 0 && (
+              <div class="today-divider" data-today>
+                <span class="today-text">Today</span>
+              </div>
+            )}
+
+            {past.map((event) => (
+              <EventCard event={event} />
+            ))}
+          </div>
+        </events-timeline>
       </Section>
     </div>
   </div>
@@ -212,27 +216,19 @@ const afterPeople =
   .places {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 8px;
-    margin-top: 24px;
-    color: var(--text-muted);
-    font-size: 0.9rem;
+    gap: 8px;
+    margin-bottom: 40px;
   }
 
-  .place {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 2px 10px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-pill);
-    background: var(--badge-bg);
-    color: var(--text);
+  .timeline-container :global(.timeline-row[hidden]),
+  .today-divider[hidden] {
+    display: none;
   }
 
-  .place-count {
-    color: var(--text-muted);
-    font-size: 0.8em;
+  @media (prefers-reduced-motion: no-preference) {
+    .timeline-container :global(.timeline-row.is-returning) {
+      animation: events-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
   }
 
   @media (prefers-reduced-motion: no-preference) {
@@ -246,7 +242,6 @@ const afterPeople =
       animation-delay: calc(0.2s + var(--i) * var(--people-step));
     }
 
-    .places,
     .events-later {
       animation: events-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
       animation-delay: var(--after-people);
@@ -296,3 +291,65 @@ const afterPeople =
     letter-spacing: 0.1em;
   }
 </style>
+
+<script>
+  // A place narrows the timeline down to the events there. The "Today"
+  // divider only stays while events on both sides of it are shown.
+  class EventsTimeline extends HTMLElement {
+    #place: string | undefined;
+
+    connectedCallback() {
+      if (this.dataset.ready !== undefined) return;
+      this.dataset.ready = "";
+      this.addEventListener("click", (event) => {
+        const chip = (event.target as Element).closest<HTMLElement>(".place");
+        if (!chip) return;
+        const name = chip.dataset.place;
+        this.#place = this.#place === name ? undefined : name;
+        this.#apply();
+      });
+    }
+
+    #apply() {
+      for (const chip of this.querySelectorAll<HTMLElement>(".place")) {
+        chip.setAttribute(
+          "aria-pressed",
+          String(chip.dataset.place === this.#place)
+        );
+      }
+      const rows = [...this.querySelectorAll<HTMLElement>(".timeline-row")];
+      for (const row of rows) {
+        const wasHidden = row.hidden;
+        row.hidden = Boolean(this.#place) && row.dataset.place !== this.#place;
+        if (wasHidden && !row.hidden) {
+          row.classList.remove("is-returning");
+          void row.offsetWidth;
+          row.classList.add("is-returning");
+        }
+      }
+      const today = this.querySelector<HTMLElement>("[data-today]");
+      if (today) {
+        const isShown = (row: Element | null) =>
+          row instanceof HTMLElement && !row.hidden;
+        const before = rows.filter(
+          (row) =>
+            today.compareDocumentPosition(row) &
+            Node.DOCUMENT_POSITION_PRECEDING
+        );
+        const after = rows.filter((row) => !before.includes(row));
+        today.hidden = !before.some(isShown) || !after.some(isShown);
+      }
+      const status = this.querySelector("[data-status]");
+      if (status) {
+        const shown = rows.filter((row) => !row.hidden).length;
+        status.textContent = this.#place
+          ? `${shown} ${shown === 1 ? "event" : "events"} at ${this.#place}.`
+          : "All events.";
+      }
+    }
+  }
+
+  if (!customElements.get("events-timeline")) {
+    customElements.define("events-timeline", EventsTimeline);
+  }
+</script>
