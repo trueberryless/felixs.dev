@@ -162,6 +162,73 @@
   display: none;
 }
 
+/* On a narrow screen the ranges scroll sideways, so the edges fade out
+   wherever there is more to scroll to. The scroll position drives the
+   fades, and a picker that fits shows none. */
+.ms-ranges::before,
+.ms-ranges::after {
+  content: "";
+  position: sticky;
+  z-index: 1;
+  flex: none;
+  align-self: stretch;
+  width: 28px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ms-ranges::before {
+  left: 0;
+  margin-right: -32px;
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
+  background: linear-gradient(to right, var(--header-bg-solid), transparent);
+}
+
+.ms-ranges::after {
+  right: 0;
+  margin-left: -32px;
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+  background: linear-gradient(to left, var(--header-bg-solid), transparent);
+}
+
+@supports (animation-timeline: scroll()) {
+  .ms-ranges::before {
+    animation: ms-edge-start linear both;
+  }
+
+  .ms-ranges::after {
+    animation: ms-edge-end linear both;
+  }
+
+  /* Separate on purpose, see the parallax in `Hero.astro`. */
+  .ms-ranges::before,
+  .ms-ranges::after {
+    animation-timeline: scroll(nearest inline);
+  }
+}
+
+@keyframes ms-edge-start {
+  0% {
+    opacity: 0;
+  }
+
+  12%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes ms-edge-end {
+  0%,
+  88% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
 .ms-range-group {
   display: flex;
   flex-shrink: 0;
