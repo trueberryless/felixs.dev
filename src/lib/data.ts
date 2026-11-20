@@ -453,6 +453,8 @@ export interface Book {
   rotation: string;
   thickness: number;
   finishedAt?: string;
+  /** The real page count, when Bookhive knows it. */
+  pages?: number;
   startedAt?: string;
   stars?: number;
 }
@@ -463,7 +465,8 @@ async function processBook(raw: any): Promise<Book> {
   const catalogBook = raw.data.hiveBookUri
     ? await fetchRecord(raw.data.hiveBookUri)
     : null;
-  let pages = catalogBook?.numPages || raw.data.bookProgress?.totalPages;
+  const knownPages = catalogBook?.numPages || raw.data.bookProgress?.totalPages;
+  let pages = knownPages;
   if (!pages) {
     let hash = 0;
     const text = raw.data.title || raw.id;
@@ -485,6 +488,7 @@ async function processBook(raw: any): Promise<Book> {
     rotation: (Math.random() * 8 - 4).toFixed(2),
     thickness: getBookThickness(pages),
     finishedAt: raw.data.finishedAt,
+    pages: typeof knownPages === "number" ? knownPages : undefined,
     startedAt: raw.data.startedAt,
     stars: raw.data.stars,
   };
