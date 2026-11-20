@@ -18,8 +18,8 @@ const LOGOS: LogoPrint[] = [
   { mode: "alpha", name: "astro", pitch: 0.12, yaw: -0.16 },
   // The cat is the dark part of the badge.
   { mode: "dark", name: "catppuccin", pitch: 0.1, yaw: 0.14 },
-  // The dot and the star stand out from the tile's pink.
-  { crop: 0.12, mode: "bright", name: "bombshell", pitch: -0.1, yaw: -0.14 },
+  // The white dot and star. Pink is bright too, so only white counts.
+  { crop: 0.12, mode: "white", name: "bombshell", pitch: -0.1, yaw: -0.14 },
   // The two halves of the circle stand out from the black tile.
   { crop: 0.14, mode: "bright", name: "diglot", pitch: 0.1, yaw: -0.1 },
   { mode: "alpha", name: "forges", pitch: -0.06, yaw: 0.12 },
@@ -80,7 +80,9 @@ async function readInk({ crop = 0, mode, name }: LogoPrint) {
         ? a
         : mode === "dark"
           ? a * clamp((0.32 - luminance) / 0.12)
-          : a * clamp((brightest - 0.5) / 0.16);
+          : mode === "white"
+            ? a * clamp((Math.min(r, g, b) - 0.6) / 0.2)
+            : a * clamp((brightest - 0.5) / 0.16);
   }
 
   return ink;
@@ -149,7 +151,7 @@ interface LogoPrint {
   /** The share cut from every side first, to drop a tile's frame. */
   crop?: number;
   /** Which pixels count as ink. */
-  mode: "alpha" | "bright" | "dark";
+  mode: "alpha" | "bright" | "dark" | "white";
   name: string;
   pitch: number;
   yaw: number;
