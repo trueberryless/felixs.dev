@@ -1,3 +1,5 @@
+import { groupRepeats } from "@/lib/music";
+
 import { formatRelative, html, svg } from "./dom";
 
 const PLAY_LIMIT = 10;
@@ -443,33 +445,17 @@ async function fetchPlays(pds: string, did: string): Promise<TrackPlay[]> {
     };
 
     // A song played several times in a row becomes one stop on the track.
-    const plays: TrackPlay[] = [];
-    for (const { uri, value } of records) {
-      const artist =
-        value.artists?.map((entry) => entry.artistName).join(", ") ||
-        "Unknown artist";
-      const previous = plays.at(-1);
-      const same =
-        previous &&
-        (value.originUri
-          ? previous.url === value.originUri
-          : previous.title === value.trackName && previous.artist === artist);
-      // The group is known by its first play, so it stays the same stop
-      // when the song plays once more.
-      if (same) {
-        previous.count++;
-        previous.key = uri;
-        continue;
-      }
-      plays.push({
-        artist,
+    const plays = groupRepeats(
+      records.map(({ uri, value }) => ({
+        artist:
+          value.artists?.map((entry) => entry.artistName).join(", ") ||
+          "Unknown artist",
         at: Date.parse(value.playedTime),
-        count: 1,
         key: uri,
         title: value.trackName,
         url: value.originUri,
-      });
-    }
+      }))
+    );
     return plays.slice(0, PLAY_LIMIT);
   } catch {
     return [];
