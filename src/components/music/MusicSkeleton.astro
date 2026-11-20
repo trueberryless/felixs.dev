@@ -1,0 +1,75 @@
+<div class="ms-skeleton" aria-busy="true" aria-label="Loading music stats">
+  <div class="ms-skeleton-row">
+    {Array.from({ length: 5 }).map(() => (
+      <span class="ms-skeleton-pill" />
+    ))}
+  </div>
+  <div class="ms-skeleton-numbers">
+    {Array.from({ length: 4 }).map(() => (
+      <span class="ms-skeleton-number" />
+    ))}
+  </div>
+  {Array.from({ length: 6 }).map((_, index) => (
+    <span class="ms-skeleton-bar" style={`--width: ${90 - index * 11}%`} />
+  ))}
+</div>
+
+<style>
+  .ms-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .ms-skeleton-row,
+  .ms-skeleton-numbers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ms-skeleton-numbers {
+    gap: 16px;
+    margin-block: 16px 24px;
+  }
+
+  .ms-skeleton-pill,
+  .ms-skeleton-number,
+  .ms-skeleton-bar {
+    display: block;
+    background: var(--border);
+    border-radius: var(--radius-pill);
+    animation: ms-pulse 1.6s ease-in-out infinite;
+  }
+
+  .ms-skeleton-pill {
+    width: 84px;
+    height: 32px;
+  }
+
+  .ms-skeleton-number {
+    flex: 1 1 120px;
+    height: 72px;
+    border-radius: var(--radius-card);
+  }
+
+  .ms-skeleton-bar {
+    width: var(--width);
+    height: 28px;
+    border-radius: 8px;
+  }
+
+  @keyframes ms-pulse {
+    50% {
+      opacity: 0.45;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ms-skeleton-pill,
+    .ms-skeleton-number,
+    .ms-skeleton-bar {
+      animation: none;
+    }
+  }
+</style>

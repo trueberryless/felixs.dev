@@ -1,5 +1,7 @@
 import { getStore } from "@netlify/blobs";
 
+import { isOnNetlify } from "./netlify";
+
 const STORE_NAME = "presence";
 
 export interface PresenceStore {
@@ -32,14 +34,6 @@ export function getPresenceStore(): PresenceStore {
       await store.set(key, "");
     },
   };
-}
-
-// Netlify passes the Blobs credentials to functions in this variable or global.
-function isOnNetlify() {
-  return Boolean(
-    process.env.NETLIFY_BLOBS_CONTEXT ||
-    (globalThis as { netlifyBlobsContext?: unknown }).netlifyBlobsContext
-  );
 }
 
 function createMemoryStore(): PresenceStore {
