@@ -85,7 +85,7 @@ const socialLinks = [
 
   @media (max-width: 768px) {
     footer {
-      padding: 32px 24px;
+      padding: 48px 24px 32px;
     }
   }
 
@@ -121,6 +121,15 @@ const socialLinks = [
       @media (max-width: 768px) {
         .footer-container {
           animation-name: footer-reveal-compact;
+        }
+      }
+
+      /* On phones the links stack into a tall column, and trailing the page
+         would keep the first row behind the divider until the very end. */
+      @media (max-width: 480px) {
+        .footer-container {
+          animation: none;
+          will-change: auto;
         }
       }
     }
