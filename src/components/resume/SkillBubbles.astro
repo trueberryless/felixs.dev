@@ -15,6 +15,12 @@ const label = `${skills.length} skills, bigger the more positions use them`;
 
 <div class="skills">
   <p class="skills-hint">Bigger bubbles show up in more of my positions.</p>
+  {/* The chart is a picture to screen readers, so the skills are listed. */}
+  <ul class="sr-only">
+    {bubbles.map((bubble) => (
+      <li>{bubble.title}</li>
+    ))}
+  </ul>
   {/* Phones get a tall chart so the names stay readable. */}
   <div class="skills-wide">
     <BubbleChart
