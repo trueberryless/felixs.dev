@@ -46,6 +46,11 @@ const coverIndex = coverCid
 const blocks = allBlocks.filter((_, index) => index !== coverIndex);
 const coverAlt =
   coverIndex === -1 ? "" : String(allBlocks[coverIndex]?.alt ?? "");
+const coverRatio =
+  coverIndex === -1
+    ? undefined
+    : (allBlocks[coverIndex]?.aspectRatio as
+        { height?: number; width?: number } | undefined);
 
 const publication = record
   ? await getPublication(String(record.site ?? ""))
@@ -218,7 +223,13 @@ async function getEmbeds(documentBlocks: unknown[]) {
     </header>
 
     {record?.coverImage && (
-      <PostImage alt={coverAlt} blob={record.coverImage} isCover />
+      <PostImage
+        alt={coverAlt}
+        blob={record.coverImage}
+        height={coverRatio?.height}
+        isCover
+        width={coverRatio?.width}
+      />
     )}
 
     <div class="post-body">

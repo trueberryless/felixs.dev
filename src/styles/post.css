@@ -186,6 +186,7 @@ h4.post-heading {
 }
 
 .post-zoom {
+  position: relative;
   display: block;
   width: 100%;
   padding: 0;
@@ -193,6 +194,45 @@ h4.post-heading {
   border-radius: var(--radius-card);
   background: none;
   cursor: zoom-in;
+}
+
+/* Until an image arrives, its space pulses like the other skeletons, so
+   nothing below it moves. Images without a known size borrow the usual
+   cover shape meanwhile. */
+.post-zoom::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-card);
+  background: var(--border);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.post-zoom[data-loading]::before {
+  opacity: 1;
+  animation: post-skeleton 1.5s ease-in-out infinite;
+}
+
+.post-zoom img {
+  transition: opacity 0.4s ease;
+}
+
+.post-zoom[data-loading] img {
+  opacity: 0;
+}
+
+.post-zoom[data-loading] img:not([width]),
+.post-cover img:not([width]) {
+  aspect-ratio: 1.91;
+  object-fit: cover;
+}
+
+@keyframes post-skeleton {
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .post-zoom:focus-visible {
@@ -308,6 +348,10 @@ h4.post-heading {
 
 .post-back {
   align-self: flex-start;
+}
+
+.post-header .post-back {
+  margin-bottom: 28px;
 }
 
 .post-lightbox-close {
@@ -554,8 +598,6 @@ h4.post-heading {
   justify-content: space-between;
   gap: 12px;
   margin-block: 64px 24px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border);
 }
 
 :root.space .post-title {
