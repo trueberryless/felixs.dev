@@ -80,9 +80,7 @@ class BlogExplorer extends HTMLElement {
       if (status) {
         const total = this.querySelectorAll(".post").length;
         status.textContent =
-          shown === total
-            ? `${total} posts, newest first.`
-            : `${shown} of ${total} posts.`;
+          shown === total ? "" : `${shown} of ${total} posts.`;
       }
     };
 
