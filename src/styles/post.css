@@ -186,6 +186,7 @@ h4.post-heading {
 }
 
 .post-zoom {
+  position: relative;
   display: block;
   width: 100%;
   padding: 0;
@@ -193,6 +194,45 @@ h4.post-heading {
   border-radius: var(--radius-card);
   background: none;
   cursor: zoom-in;
+}
+
+/* Until an image arrives, its space pulses like the other skeletons, so
+   nothing below it moves. Images without a known size borrow the usual
+   cover shape meanwhile. */
+.post-zoom::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-card);
+  background: var(--border);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.post-zoom[data-loading]::before {
+  opacity: 1;
+  animation: post-skeleton 1.5s ease-in-out infinite;
+}
+
+.post-zoom img {
+  transition: opacity 0.4s ease;
+}
+
+.post-zoom[data-loading] img {
+  opacity: 0;
+}
+
+.post-zoom[data-loading] img:not([width]),
+.post-cover img:not([width]) {
+  aspect-ratio: 1.91;
+  object-fit: cover;
+}
+
+@keyframes post-skeleton {
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .post-zoom:focus-visible {
@@ -310,6 +350,10 @@ h4.post-heading {
   align-self: flex-start;
 }
 
+.post-header .post-back {
+  margin-bottom: 28px;
+}
+
 .post-lightbox-close {
   position: fixed;
   top: 16px;
@@ -397,16 +441,23 @@ h4.post-heading {
   display: inline-flex;
   align-items: center;
   gap: 0.3em;
-  padding: 0.05em 0.55em 0.05em 0.2em;
+  box-sizing: border-box;
+  /* A fixed height, centred on the text, with margins that take it back out,
+     so a line with a badge is exactly as tall as any other line. */
+  height: 1.6em;
+  margin-block: -0.4em;
+  padding: 0 0.55em 0 0.2em;
   border: 1px solid color-mix(in oklch, var(--accent) 55%, transparent);
   border-radius: var(--radius-pill);
   background: color-mix(in oklch, var(--accent) 14%, transparent);
   color: inherit;
   font-size: 0.92em;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1;
   text-decoration: none;
-  vertical-align: baseline;
+  vertical-align: middle;
+  /* Middle sits on the x-height, a little below the centre of the text. */
+  translate: 0 -0.12em;
   white-space: nowrap;
   transition:
     background 0.2s ease,
@@ -418,8 +469,8 @@ h4.post-heading {
 }
 
 .post-badge img {
-  width: 1.35em;
-  height: 1.35em;
+  width: 1.25em;
+  height: 1.25em;
   border-radius: 50%;
   object-fit: cover;
 }
@@ -547,8 +598,6 @@ h4.post-heading {
   justify-content: space-between;
   gap: 12px;
   margin-block: 64px 24px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border);
 }
 
 :root.space .post-title {

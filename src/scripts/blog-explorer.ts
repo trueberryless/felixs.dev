@@ -80,17 +80,19 @@ class BlogExplorer extends HTMLElement {
       if (status) {
         const total = this.querySelectorAll(".post").length;
         status.textContent =
-          shown === total
-            ? `${total} posts, newest first.`
-            : `${shown} of ${total} posts.`;
+          shown === total ? "" : `${shown} of ${total} posts.`;
       }
     };
 
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if ("startViewTransition" in document && !reduced.matches) {
-      document.startViewTransition(change);
-    } else {
-      change();
+    // A view transition would freeze the header's live blur for a moment, so
+    // posts that come back simply fade in.
+    const hiddenBefore = this.querySelectorAll<HTMLElement>(".post[hidden]");
+    change();
+    for (const post of hiddenBefore) {
+      if (post.hidden) continue;
+      post.classList.remove("is-returning");
+      void post.offsetWidth;
+      post.classList.add("is-returning");
     }
   }
 
@@ -108,6 +110,7 @@ class BlogExplorer extends HTMLElement {
     let tilt = 0;
     let frame = 0;
     let active: HTMLElement | undefined;
+    let request = 0;
 
     const step = () => {
       const dx = target.x - position.x;
@@ -125,6 +128,24 @@ class BlogExplorer extends HTMLElement {
       frame = settled ? 0 : requestAnimationFrame(step);
     };
 
+    const hide = () => {
+      active = undefined;
+      preview.classList.remove("is-visible");
+    };
+
+    // The previous cover blurs away at once, so it never stands in for the
+    // next post. Until the next one has loaded, a glow shows in its place.
+    const show = async (cover: string) => {
+      const current = ++request;
+      image.classList.add("is-loading");
+      const next = new Image();
+      next.src = cover;
+      await next.decode().catch(() => undefined);
+      if (current !== request) return;
+      image.src = cover;
+      image.classList.remove("is-loading");
+    };
+
     this.addEventListener(
       "pointermove",
       (event) => {
@@ -134,8 +155,7 @@ class BlogExplorer extends HTMLElement {
         );
         const cover = link?.dataset.cover;
         if (!link || !cover) {
-          active = undefined;
-          preview.classList.remove("is-visible");
+          hide();
           return;
         }
         target = {
@@ -145,21 +165,28 @@ class BlogExplorer extends HTMLElement {
         if (link !== active) {
           if (!active) position = { ...target };
           active = link;
-          image.src = cover;
+          void show(cover);
           preview.classList.add("is-visible");
         }
         frame ||= requestAnimationFrame(step);
       },
       { signal }
     );
-    this.addEventListener(
-      "pointerleave",
-      () => {
-        active = undefined;
-        preview.classList.remove("is-visible");
-      },
-      { signal }
-    );
+    this.addEventListener("pointerleave", hide, { signal });
+    // The page moves under a resting pointer while scrolling, so the preview
+    // waits for the pointer to move again.
+    window.addEventListener("scroll", hide, { passive: true, signal });
+
+    // Covers are small, so they load ahead while the page is idle.
+    if (fine.matches) {
+      const preload = () => {
+        for (const link of this.querySelectorAll<HTMLElement>("[data-cover]")) {
+          new Image().src = link.dataset.cover ?? "";
+        }
+      };
+      if ("requestIdleCallback" in window) requestIdleCallback(preload);
+      else setTimeout(preload, 1500);
+    }
   }
 }
 
