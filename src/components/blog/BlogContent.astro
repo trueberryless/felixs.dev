@@ -115,7 +115,7 @@ const total = posts?.length ?? 0;
           </h2>
           <div class="year-track" aria-hidden="true">
             <div class="year-depth">
-              <div class="year-watermark">{year}</div>
+              <div class="year-watermark" data-label={year} />
             </div>
           </div>
           <ol class="post-list">
@@ -261,6 +261,12 @@ const total = posts?.length ?? 0;
     z-index: -1;
     container-type: size;
     pointer-events: none;
+  }
+
+  /* Drawn by CSS rather than written as text: the faint year only
+     decorates the list, and the heading above already names it. */
+  .year-watermark::before {
+    content: attr(data-label);
   }
 
   .year-watermark {

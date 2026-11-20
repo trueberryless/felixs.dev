@@ -14,8 +14,9 @@ export function setUpPost() {
 }
 
 function setUpImageSkeletons() {
+  // The cover is the first thing to load and should show the moment it does.
   for (const image of document.querySelectorAll<HTMLImageElement>(
-    ".post-zoom img"
+    ".post-image:not(.post-cover) .post-zoom img"
   )) {
     if (image.complete) continue;
     const button = image.parentElement;
