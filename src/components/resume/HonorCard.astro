@@ -99,9 +99,14 @@ const { link, text } = splitTrailingLink(honor.description);
     line-height: 1.7;
   }
 
+  /* Hosts can be long, so on the narrowest screens they wrap inside the
+     button instead of pushing it past the edge. */
   .honor-link {
     align-self: flex-start;
+    max-width: 100%;
     margin-top: 6px;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   @media (max-width: 640px) {
