@@ -1,7 +1,12 @@
 ---
 import Book from "@/components/books/Book.astro";
 import Fallback from "@/components/utils/Fallback.astro";
-import { getAuthors, getBooksPerYear, getPagesRead } from "@/lib/books";
+import {
+  getAuthors,
+  getBookYear,
+  getBooksPerYear,
+  getPagesRead,
+} from "@/lib/books";
 import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
 import { fetchBooks } from "@/lib/data";
 
@@ -50,9 +55,19 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
               class="shelf-year"
               style={`--value: ${year.count / busiestYear}; --i: ${index}`}
             >
-              <span class="shelf-year-count">{year.count}</span>
-              <span class="shelf-year-bar" aria-hidden="true" />
-              <span class="shelf-year-label">{year.year}</span>
+              <button
+                type="button"
+                class="shelf-year-button"
+                aria-pressed="false"
+                aria-label={`${year.count} books in ${year.year}`}
+                data-year={year.year}
+              >
+                <span class="shelf-year-count" data-count>
+                  {year.count}
+                </span>
+                <span class="shelf-year-bar" aria-hidden="true" />
+                <span class="shelf-year-label">{year.year}</span>
+              </button>
             </li>
           ))}
         </ol>
@@ -78,7 +93,11 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
 
     <div class="books-grid">
       {books!.map((book) => (
-        <div class="shelf-book" data-author={book.authors}>
+        <div
+          class="shelf-book"
+          data-author={book.authors}
+          data-year={getBookYear(book)}
+        >
           <Book
             title={book.title}
             authors={book.authors}
@@ -100,44 +119,95 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
 )}
 
 <script>
+  // Authors and years narrow the shelf down together. The years keep their
+  // place and only their counts follow the author.
   class BooksShelf extends HTMLElement {
+    #author: string | undefined;
+    #year: string | undefined;
+
     connectedCallback() {
       if (this.dataset.ready !== undefined) return;
       this.dataset.ready = "";
       this.addEventListener("click", (event) => {
-        const button = (event.target as Element).closest<HTMLButtonElement>(
-          "[data-author].shelf-author"
-        );
-        if (!button) return;
-        const isPicked = button.getAttribute("aria-pressed") !== "true";
-        for (const other of this.querySelectorAll(".shelf-author")) {
-          other.setAttribute("aria-pressed", "false");
-        }
-        button.setAttribute("aria-pressed", String(isPicked));
-        const author = isPicked ? button.dataset.author : undefined;
-
-        const change = () => {
-          let shown = 0;
-          for (const book of this.querySelectorAll<HTMLElement>(
-            ".shelf-book"
-          )) {
-            book.hidden = Boolean(author) && book.dataset.author !== author;
-            if (!book.hidden) shown++;
-          }
-          const status = this.querySelector("[data-status]");
-          if (status) {
-            status.textContent = author
-              ? `${shown} books by ${author}.`
-              : "All books.";
-          }
-        };
-        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-        if ("startViewTransition" in document && !reduced.matches) {
-          document.startViewTransition(change);
+        const target = event.target as Element;
+        const author = target.closest<HTMLElement>(".shelf-author");
+        const year = target.closest<HTMLElement>(".shelf-year-button");
+        if (author) {
+          const name = author.dataset.author;
+          this.#author = this.#author === name ? undefined : name;
+        } else if (year) {
+          const value = year.dataset.year;
+          this.#year = this.#year === value ? undefined : value;
         } else {
-          change();
+          return;
         }
+        this.#apply();
       });
+    }
+
+    #apply() {
+      const books = [...this.querySelectorAll<HTMLElement>(".shelf-book")];
+      const byAuthor = books.filter(
+        (book) => !this.#author || book.dataset.author === this.#author
+      );
+
+      const counts = new Map<string, number>();
+      for (const book of byAuthor) {
+        const year = book.dataset.year ?? "";
+        counts.set(year, (counts.get(year) ?? 0) + 1);
+      }
+      const most = Math.max(...counts.values(), 1);
+      for (const button of this.querySelectorAll<HTMLElement>(
+        ".shelf-year-button"
+      )) {
+        const year = button.dataset.year ?? "";
+        const count = counts.get(year) ?? 0;
+        button.parentElement?.style.setProperty(
+          "--value",
+          String(count / most)
+        );
+        button.setAttribute("aria-pressed", String(year === this.#year));
+        button.setAttribute("aria-label", `${count} books in ${year}`);
+        const label = button.querySelector("[data-count]");
+        if (label) label.textContent = String(count);
+      }
+      for (const button of this.querySelectorAll<HTMLElement>(
+        ".shelf-author"
+      )) {
+        button.setAttribute(
+          "aria-pressed",
+          String(button.dataset.author === this.#author)
+        );
+      }
+
+      let shown = 0;
+      for (const book of books) {
+        const wasHidden = book.hidden;
+        book.hidden =
+          !byAuthor.includes(book) ||
+          (Boolean(this.#year) && book.dataset.year !== this.#year);
+        if (!book.hidden) shown++;
+        if (wasHidden && !book.hidden) {
+          book.classList.remove("is-returning");
+          void book.offsetWidth;
+          book.classList.add("is-returning");
+        }
+      }
+      this.toggleAttribute(
+        "data-filtered",
+        Boolean(this.#author || this.#year)
+      );
+
+      const status = this.querySelector("[data-status]");
+      if (status) {
+        const parts = [
+          this.#author && `by ${this.#author}`,
+          this.#year && `in ${this.#year}`,
+        ].filter(Boolean);
+        status.textContent = parts.length
+          ? `${shown} books ${parts.join(" ")}.`
+          : "All books.";
+      }
     }
   }
 
@@ -207,6 +277,47 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
     height: 100%;
   }
 
+  .shelf-year-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition: opacity 0.35s ease;
+  }
+
+  .shelf-year-button:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 4px;
+    border-radius: 8px;
+  }
+
+  .shelf-years-plot:has([aria-pressed="true"])
+    .shelf-year-button:not([aria-pressed="true"]) {
+    opacity: 0.4;
+  }
+
+  .shelf-year-button:hover .shelf-year-bar,
+  .shelf-year-button[aria-pressed="true"] .shelf-year-bar {
+    background: var(--accent);
+  }
+
+  .shelf-year-button[aria-pressed="true"] .shelf-year-label {
+    color: var(--text);
+  }
+
+  .shelf-book.is-returning {
+    animation: shelf-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
   .shelf-year-bar {
     width: 100%;
     max-width: 44px;
@@ -214,6 +325,9 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
     border-radius: 8px 8px 3px 3px;
     background: color-mix(in oklch, var(--accent) 50%, transparent);
     transform-origin: bottom;
+    transition:
+      height 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+      background 0.25s ease;
   }
 
   .shelf-year-count,

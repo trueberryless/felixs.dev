@@ -1,7 +1,10 @@
 ---
+import OverviewSkeleton from "@/components/utils/OverviewSkeleton.astro";
+
 const count = 12;
 ---
 
+<OverviewSkeleton bars chips={4} />
 <div class="skeleton-shelf">
   {Array.from({ length: count }).map(() => (
     <div class="skeleton-book">

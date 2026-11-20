@@ -59,6 +59,12 @@ export function getBooksPerYear(
   }));
 }
 
+/** The year I finished a book, or started it when there is no end date. */
+export function getBookYear(book: BookLike): number | undefined {
+  const time = Date.parse(book.finishedAt ?? book.startedAt ?? "");
+  return Number.isNaN(time) ? undefined : new Date(time).getUTCFullYear();
+}
+
 /** Authors by how many of their books I read, most first. */
 export function getAuthors(
   books: BookLike[]
