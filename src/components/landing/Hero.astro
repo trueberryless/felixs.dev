@@ -116,112 +116,121 @@ const hexagons = [
   },
 ];
 
-// Two rings of logos around the name, each spaced evenly on an ellipse and
-// scrolling at its own depth: the planets close by, the moons further out.
-// Angles start at the right and turn clockwise.
-const RINGS = {
-  inner: { count: 8, depth: 0.76, rx: 33, ry: 31, start: 22.5 },
-  outer: { count: 10, depth: 0.7, rx: 45, ry: 39, start: 18 },
-} as const;
-
-function placeOnRing(ring: keyof typeof RINGS, slot: number) {
-  const { count, rx, ry, start } = RINGS[ring];
-  const angle = ((start + (slot * 360) / count) * Math.PI) / 180;
-  return {
-    left: `${(50 + rx * Math.cos(angle)).toFixed(2)}%`,
-    top: `${(50 + ry * Math.sin(angle)).toFixed(2)}%`,
-  };
-}
+// The logos float on the corners of a loose triangular grid around the
+// name, each row half a step off the next so no four of them line up in a
+// rectangle. Spots are percentages of the logo area, a little off the grid
+// on purpose. The planets take the rows next to the name, the moons the
+// rows further out, and each group scrolls at its own depth. Phones show
+// only the logos with a spot of their own, and the two beside the name on
+// the edges wait for a wide screen.
+const DEPTH = { moon: 0.7, planet: 0.76 };
 
 const planets = [
   {
+    at: [79, 71],
     dark: nuxtDark,
     delay: "-2.2s",
     duration: "6.8s",
     href: "https://nuxt.com",
     light: nuxtLight,
     name: "Nuxt",
+    phone: [82, 70],
     planet: "earth",
     print: nuxtPrint,
   },
   {
+    at: [62, 74],
     dark: npmxDark,
     delay: "0s",
     duration: "6s",
     href: "https://npmx.dev",
     light: npmxLight,
     name: "npmx",
+    phone: [48, 66],
     planet: "neptune",
     print: npmxPrint,
   },
   {
+    at: [70, 25],
     dark: starlightDark,
     delay: "-4.5s",
     duration: "7.2s",
     href: "https://starlight.astro.build",
     light: starlightLight,
     name: "Starlight",
+    phone: [67, 36],
     planet: "mercury",
     print: starlightPrint,
   },
   {
+    at: [30, 75],
     dark: forgesDark,
     delay: "-3.6s",
     duration: "6.4s",
     href: "https://forges.link",
     light: forgesLight,
     name: "forges",
+    phone: [31, 81],
     planet: "uranus",
     print: forgesPrint,
   },
   {
+    at: [22, 26],
     dark: catppuccinDark,
     delay: "-4.8s",
     duration: "6.6s",
     href: "https://catppuccin.com",
     light: catppuccinLight,
     name: "Catppuccin",
+    phone: [23, 22],
     planet: "saturn",
     print: catppuccinPrint,
   },
   {
+    at: [38, 28],
     dark: astroDark,
     delay: "-0.8s",
     duration: "5.9s",
     href: "https://astro.build",
     light: astroLight,
     name: "Astro",
+    phone: [35, 35],
     planet: "mars",
     print: astroPrint,
   },
   {
+    at: [14, 72],
     dark: diglotDark,
     delay: "-1.4s",
     duration: "5.6s",
     href: "https://diglot.sh",
     light: diglotLight,
     name: "diglot",
+    phone: [15, 69],
     planet: "venus",
     print: diglotPrint,
   },
   {
+    at: [87, 29],
     dark: bombshellDark,
     delay: "-3.1s",
     duration: "5.2s",
     href: "https://bomb.sh",
     light: bombshellLight,
     name: "bombshell",
+    phone: [79, 19],
     planet: "jupiter",
     print: bombshellPrint,
   },
 ];
 
-// Phones only have room for the moons above and below the name.
 const moons = [
   {
+    at: [5, 38],
     dark: rosePineDark,
     delay: "-2.7s",
     duration: "6.2s",
+    edge: true,
     href: "https://rosepinetheme.com",
     light: rosePineLight,
     name: "Rosé Pine",
@@ -229,6 +238,7 @@ const moons = [
     print: rosePinePrint,
   },
   {
+    at: [27, 10],
     dark: changesetsDark,
     delay: "-2.2s",
     duration: "6.8s",
@@ -239,6 +249,7 @@ const moons = [
     print: changesetsPrint,
   },
   {
+    at: [39, 93],
     dark: madeInCommonDark,
     delay: "0s",
     duration: "6s",
@@ -246,10 +257,11 @@ const moons = [
     light: madeInCommonLight,
     name: "Made in Common",
     hue: 60,
-    onPhones: true,
+    phone: [65, 84],
     print: madeInCommonPrint,
   },
   {
+    at: [24, 90],
     dark: e18eDark,
     delay: "-4.5s",
     duration: "7.2s",
@@ -260,9 +272,11 @@ const moons = [
     print: e18ePrint,
   },
   {
+    at: [95, 63],
     dark: lunariaDark,
     delay: "-3.6s",
     duration: "6.4s",
+    edge: true,
     href: "https://lunaria.dev",
     light: lunariaLight,
     name: "Lunaria",
@@ -270,6 +284,7 @@ const moons = [
     print: lunariaPrint,
   },
   {
+    at: [80, 8],
     dark: zizmorDark,
     delay: "-4.8s",
     duration: "6.6s",
@@ -280,6 +295,7 @@ const moons = [
     print: zizmorPrint,
   },
   {
+    at: [55, 89],
     dark: singiLabsDark,
     delay: "-0.8s",
     duration: "5.9s",
@@ -290,6 +306,7 @@ const moons = [
     print: singiLabsPrint,
   },
   {
+    at: [46, 7],
     dark: knipDark,
     delay: "-5.3s",
     duration: "7s",
@@ -297,10 +314,11 @@ const moons = [
     light: knipLight,
     name: "Knip",
     hue: 45,
-    onPhones: true,
+    phone: [50, 13],
     print: knipPrint,
   },
   {
+    at: [63, 11],
     dark: monkeytypeDark,
     delay: "-1.4s",
     duration: "5.6s",
@@ -311,6 +329,7 @@ const moons = [
     print: monkeytypePrint,
   },
   {
+    at: [72, 92],
     dark: astroliciousDark,
     delay: "-3.1s",
     duration: "5.2s",
@@ -323,17 +342,14 @@ const moons = [
 ];
 
 const logos = [
-  ...moons.map((moon, slot) =>
-    Object.assign({}, moon, placeOnRing("outer", slot), {
-      depth: RINGS.outer.depth,
-      planet: "moon",
-    })
+  ...moons.map((moon) =>
+    Object.assign({}, moon, { depth: DEPTH.moon, planet: "moon" })
   ),
-  ...planets.map((planet, slot) =>
-    Object.assign({}, planet, placeOnRing("inner", slot), {
-      depth: RINGS.inner.depth,
+  ...planets.map((planet) =>
+    Object.assign({}, planet, {
+      depth: DEPTH.planet,
+      edge: false,
       hue: undefined,
-      onPhones: true,
     })
   ),
 ];
@@ -366,9 +382,9 @@ const prints = await Promise.all(
       <div
         class:list={[
           "logo-parallax parallax",
-          { "is-wide-only": !logo.onPhones },
+          { "is-edge": logo.edge, "is-wide-only": !logo.phone },
         ]}
-        style={`top: ${logo.top}; left: ${logo.left}; --depth: ${logo.depth};`}
+        style={`--x: ${logo.at[0]}%; --y: ${logo.at[1]}%;${logo.phone ? ` --phone-x: ${logo.phone[0]}%; --phone-y: ${logo.phone[1]}%;` : ""} --depth: ${logo.depth};`}
       >
         <a
           href={logo.href}
@@ -492,6 +508,8 @@ const prints = await Promise.all(
   /* Each logo is centred on its spot on the ring. */
   .logo-parallax {
     position: absolute;
+    top: var(--y);
+    left: var(--x);
     translate: -50% -50%;
     pointer-events: auto;
   }
@@ -691,7 +709,18 @@ const prints = await Promise.all(
     border-radius: 14px;
   }
 
+  @media (max-width: 1000px) {
+    .logo-parallax.is-edge {
+      display: none;
+    }
+  }
+
   @media (max-width: 600px) {
+    .logo-parallax {
+      top: var(--phone-y);
+      left: var(--phone-x);
+    }
+
     .logo-parallax.is-wide-only {
       display: none;
     }
