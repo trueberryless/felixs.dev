@@ -29,6 +29,18 @@ const LOGOS: LogoPrint[] = [
   { mode: "alpha", name: "nuxt", pitch: 0.1, yaw: -0.08 },
   { mode: "alpha", name: "npmx", pitch: 0.08, yaw: 0.16 },
   { mode: "alpha", name: "starlight", pitch: -0.12, yaw: -0.12 },
+  // The second ring: small moons around the planets.
+  { mode: "alpha", name: "astrolicious", pitch: -0.08, yaw: 0.1 },
+  { mode: "alpha", name: "changesets", pitch: 0.06, yaw: -0.12 },
+  { mode: "alpha", name: "e18e", pitch: 0.1, yaw: 0.08 },
+  { mode: "alpha", name: "knip", pitch: -0.1, yaw: -0.06 },
+  // Lunaria is a whole moon already, so only its face is printed.
+  { mode: "dark", name: "lunaria", pitch: 0.04, yaw: 0.12 },
+  { mode: "alpha", name: "monkeytype", pitch: 0.08, yaw: -0.1 },
+  // The dark middle of the badge, which leaves the flower bare.
+  { mode: "dark", name: "rose-pine", pitch: -0.06, yaw: 0.06 },
+  { mode: "alpha", name: "singi-labs", pitch: 0.1, yaw: 0.12 },
+  { mode: "alpha", name: "zizmor", pitch: -0.12, yaw: -0.08 },
 ];
 
 const logosDir = new URL("../src/assets/logos/", import.meta.url);
