@@ -161,8 +161,8 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
         button.setAttribute("aria-pressed", String(year === this.#year));
         const label = button.querySelector("[data-count]");
         if (label) label.textContent = String(count);
-        const books = button.querySelector("[data-books]");
-        if (books) books.textContent = count === 1 ? " book in" : " books in";
+        const unit = button.querySelector("[data-books]");
+        if (unit) unit.textContent = count === 1 ? " book in" : " books in";
       }
       for (const button of this.querySelectorAll<HTMLElement>(
         ".shelf-author"
