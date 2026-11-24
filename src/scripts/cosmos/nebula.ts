@@ -1,14 +1,15 @@
 import type { Bodies } from "./bodies";
 import { createProgram, watchContext } from "./gl";
 
-// A single full-screen fragment shader paints the nebula, the gas giant with
-// its atmosphere and the moon. That is all three.js would do here as well, so
+// A single full-screen fragment shader paints the nebula and the gas giant
+// with its atmosphere. That is all three.js would do here as well, so
 // raw WebGL keeps the scene a few kilobytes instead of a ~150 KB dependency.
 // Once the sky needs real geometry (rings as meshes, models, post-processing),
 // switching to three.js is the better trade.
 //
-// The soft content renders below native resolution and is scaled up.
-const MAX_PIXELS = 600_000;
+// The soft content renders well below native resolution and is scaled up:
+// every pixel runs a few dozen noise lookups, on every frame of scrolling.
+const MAX_PIXELS = 380_000;
 
 const VERTEX_SHADER = `
 attribute vec2 aPosition;
@@ -31,7 +32,6 @@ uniform float uDim;
 uniform vec2 uNebulaOffset;
 // Centre (xy) and radius (z), in units of the viewport height, y up.
 uniform vec3 uPlanet;
-uniform vec3 uMoon;
 
 // normalize(vec3(-0.45, 0.85, -0.35)): backlit from the upper left.
 const vec3 LIGHT = vec3(-0.4397, 0.8305, -0.342);
@@ -57,7 +57,8 @@ float fbm(vec2 p) {
   float value = 0.0;
   float amplitude = 0.5;
   mat2 rotation = mat2(1.6, 1.2, -1.2, 1.6);
-  for (int i = 0; i < 5; i++) {
+  // Four octaves: a fifth one only adds detail too fine to see in the fog.
+  for (int i = 0; i < 4; i++) {
     value += amplitude * noise(p);
     p = rotation * p;
     amplitude *= 0.5;
@@ -160,18 +161,6 @@ void main() {
     color += atmosphere * (pow(rays, 1.6) * 0.42 + dust * 0.22) * fade;
   }
 
-  vec2 md = p - uMoon.xy;
-  float mr = length(md);
-  float moonInside = smoothstep(uMoon.z, uMoon.z - pixel, mr);
-  if (moonInside > 0.0) {
-    vec3 normal = vec3(md, sqrt(max(uMoon.z * uMoon.z - mr * mr, 0.0))) / uMoon.z;
-    float diffuse = max(dot(normal, normalize(vec3(-0.6, 0.5, 0.25))), 0.0);
-    float craters = fbm(md / uMoon.z * 3.0);
-    vec3 moon = mix(vec3(0.55, 0.5, 0.75), vec3(0.85, 0.82, 0.95), craters) * (0.04 + 1.1 * diffuse);
-    color = mix(color, moon, moonInside);
-  }
-  color += vec3(0.6, 0.55, 1.0) * limbGlow((mr - uMoon.z) / uMoon.z, 2.0, 13.0) * 0.12;
-
   color += vec3(0.55, 0.45, 1.0) * uWarp * 0.3 * exp(-length(p) * 2.5);
   color *= 1.0 - uDim;
   color *= 1.0 - dot(frag - 0.5, frag - 0.5) * 0.7;
@@ -236,7 +225,6 @@ export function createNebula(canvas: HTMLCanvasElement): Nebula | undefined {
       -nebulaOffset.y / cssHeight
     );
     setBody(uniforms.planet, bodies.planet);
-    setBody(uniforms.moon, bodies.moon);
     gl!.drawArrays(gl!.TRIANGLES, 0, 3);
   }
 
@@ -280,7 +268,6 @@ function createState(gl: WebGLRenderingContext) {
   return {
     uniforms: {
       dim: gl.getUniformLocation(program, "uDim"),
-      moon: gl.getUniformLocation(program, "uMoon"),
       nebulaOffset: gl.getUniformLocation(program, "uNebulaOffset"),
       planet: gl.getUniformLocation(program, "uPlanet"),
       resolution: gl.getUniformLocation(program, "uResolution"),
