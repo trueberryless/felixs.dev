@@ -178,8 +178,15 @@ export const prerender = true;
       min-height: 0;
     }
 
-    .stories :global(.story-frame:not([data-active="true"])) {
+    /* The stage fills the screen and starts out over the end of the intro,
+       so only the section on stage takes the pointer, not the empty stage
+       around it. That keeps the intro text selectable. */
+    .stories-stage {
       pointer-events: none;
+    }
+
+    .stories :global(.story-frame[data-active="true"] > *) {
+      pointer-events: auto;
     }
 
     /* Where scroll timelines work, the stage glides in and out on the
