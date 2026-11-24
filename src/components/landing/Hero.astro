@@ -3,11 +3,15 @@ import { Image, getImage } from "astro:assets";
 
 import astroLight from "@/assets/logos/light/astro.png";
 import astroliciousLight from "@/assets/logos/light/astrolicious.png";
+import biomeLight from "@/assets/logos/light/biome.png";
 import bombshellLight from "@/assets/logos/light/bombshell.png";
+import bruitsLight from "@/assets/logos/light/bruits.png";
 import catppuccinLight from "@/assets/logos/light/catppuccin.png";
 import changesetsLight from "@/assets/logos/light/changesets.png";
+import colibriLight from "@/assets/logos/light/colibri.png";
 import diglotLight from "@/assets/logos/light/diglot.png";
 import e18eLight from "@/assets/logos/light/e18e.png";
+import expressiveCodeLight from "@/assets/logos/light/expressive-code.png";
 import forgesLight from "@/assets/logos/light/forges.png";
 import knipLight from "@/assets/logos/light/knip.png";
 import lunariaLight from "@/assets/logos/light/lunaria.png";
@@ -15,17 +19,23 @@ import madeInCommonLight from "@/assets/logos/light/made-in-common.png";
 import monkeytypeLight from "@/assets/logos/light/monkeytype.png";
 import npmxLight from "@/assets/logos/light/npmx.png";
 import nuxtLight from "@/assets/logos/light/nuxt.png";
+import refinedGithubLight from "@/assets/logos/light/refined-github.png";
+import releaseItLight from "@/assets/logos/light/release-it.png";
 import rosePineLight from "@/assets/logos/light/rose-pine.png";
 import singiLabsLight from "@/assets/logos/light/singi-labs.png";
 import starlightLight from "@/assets/logos/light/starlight.png";
 import zizmorLight from "@/assets/logos/light/zizmor.png";
 import astroDark from "@/assets/logos/dark/astro.png";
 import astroliciousDark from "@/assets/logos/dark/astrolicious.png";
+import biomeDark from "@/assets/logos/dark/biome.png";
 import bombshellDark from "@/assets/logos/dark/bombshell.png";
+import bruitsDark from "@/assets/logos/dark/bruits.png";
 import catppuccinDark from "@/assets/logos/dark/catppuccin.png";
 import changesetsDark from "@/assets/logos/dark/changesets.png";
+import colibriDark from "@/assets/logos/dark/colibri.png";
 import diglotDark from "@/assets/logos/dark/diglot.png";
 import e18eDark from "@/assets/logos/dark/e18e.png";
+import expressiveCodeDark from "@/assets/logos/dark/expressive-code.png";
 import forgesDark from "@/assets/logos/dark/forges.png";
 import knipDark from "@/assets/logos/dark/knip.png";
 import lunariaDark from "@/assets/logos/dark/lunaria.png";
@@ -33,17 +43,23 @@ import madeInCommonDark from "@/assets/logos/dark/made-in-common.png";
 import monkeytypeDark from "@/assets/logos/dark/monkeytype.png";
 import npmxDark from "@/assets/logos/dark/npmx.png";
 import nuxtDark from "@/assets/logos/dark/nuxt.png";
+import refinedGithubDark from "@/assets/logos/dark/refined-github.png";
+import releaseItDark from "@/assets/logos/dark/release-it.png";
 import rosePineDark from "@/assets/logos/dark/rose-pine.png";
 import singiLabsDark from "@/assets/logos/dark/singi-labs.png";
 import starlightDark from "@/assets/logos/dark/starlight.png";
 import zizmorDark from "@/assets/logos/dark/zizmor.png";
 import astroPrint from "@/assets/logos/planets/astro.png";
 import astroliciousPrint from "@/assets/logos/planets/astrolicious.png";
+import biomePrint from "@/assets/logos/planets/biome.png";
 import bombshellPrint from "@/assets/logos/planets/bombshell.png";
+import bruitsPrint from "@/assets/logos/planets/bruits.png";
 import catppuccinPrint from "@/assets/logos/planets/catppuccin.png";
 import changesetsPrint from "@/assets/logos/planets/changesets.png";
+import colibriPrint from "@/assets/logos/planets/colibri.png";
 import diglotPrint from "@/assets/logos/planets/diglot.png";
 import e18ePrint from "@/assets/logos/planets/e18e.png";
+import expressiveCodePrint from "@/assets/logos/planets/expressive-code.png";
 import forgesPrint from "@/assets/logos/planets/forges.png";
 import knipPrint from "@/assets/logos/planets/knip.png";
 import lunariaPrint from "@/assets/logos/planets/lunaria.png";
@@ -51,6 +67,8 @@ import madeInCommonPrint from "@/assets/logos/planets/made-in-common.png";
 import monkeytypePrint from "@/assets/logos/planets/monkeytype.png";
 import npmxPrint from "@/assets/logos/planets/npmx.png";
 import nuxtPrint from "@/assets/logos/planets/nuxt.png";
+import refinedGithubPrint from "@/assets/logos/planets/refined-github.png";
+import releaseItPrint from "@/assets/logos/planets/release-it.png";
 import rosePinePrint from "@/assets/logos/planets/rose-pine.png";
 import singiLabsPrint from "@/assets/logos/planets/singi-labs.png";
 import starlightPrint from "@/assets/logos/planets/starlight.png";
@@ -117,227 +135,292 @@ const hexagons = [
 ];
 
 // The logos float on the corners of a loose triangular grid around the
-// name, each row half a step off the next so no four of them line up in a
-// rectangle. Spots are percentages of the logo area, a little off the grid
-// on purpose. The planets take the rows next to the name, the moons the
-// rows further out, and each group scrolls at its own depth. Phones show
-// only the logos with a spot of their own, and the two beside the name on
-// the edges wait for a wide screen.
+// name. Rows sit evenly above and below it, each half a step off the next,
+// so no four logos line up in a rectangle, and every spot is nudged a little
+// off the grid. `x` is a share of the width, `row` counts rows from the name
+// and `dy` nudges a logo up or down in pixels. The projects I work on most
+// are the planets close to the name, the smaller ones moons further out, and
+// each group scrolls at its own depth. Phones only show the logos with a
+// spot of their own.
 const DEPTH = { moon: 0.7, planet: 0.76 };
 
 const planets = [
   {
-    at: [79, 71],
-    dark: nuxtDark,
-    delay: "-2.2s",
-    duration: "6.8s",
-    href: "https://nuxt.com",
-    light: nuxtLight,
-    name: "Nuxt",
-    phone: [82, 70],
-    planet: "earth",
-    print: nuxtPrint,
-  },
-  {
-    at: [62, 74],
-    dark: npmxDark,
-    delay: "0s",
-    duration: "6s",
-    href: "https://npmx.dev",
-    light: npmxLight,
-    name: "npmx",
-    phone: [48, 66],
-    planet: "neptune",
-    print: npmxPrint,
-  },
-  {
-    at: [70, 25],
-    dark: starlightDark,
-    delay: "-4.5s",
-    duration: "7.2s",
-    href: "https://starlight.astro.build",
-    light: starlightLight,
-    name: "Starlight",
-    phone: [67, 36],
-    planet: "mercury",
-    print: starlightPrint,
-  },
-  {
-    at: [30, 75],
-    dark: forgesDark,
-    delay: "-3.6s",
-    duration: "6.4s",
-    href: "https://forges.link",
-    light: forgesLight,
-    name: "forges",
-    phone: [31, 81],
-    planet: "uranus",
-    print: forgesPrint,
-  },
-  {
-    at: [22, 26],
-    dark: catppuccinDark,
-    delay: "-4.8s",
-    duration: "6.6s",
-    href: "https://catppuccin.com",
-    light: catppuccinLight,
-    name: "Catppuccin",
-    phone: [23, 22],
-    planet: "saturn",
-    print: catppuccinPrint,
-  },
-  {
-    at: [38, 28],
-    dark: astroDark,
-    delay: "-0.8s",
-    duration: "5.9s",
-    href: "https://astro.build",
-    light: astroLight,
-    name: "Astro",
-    phone: [35, 35],
-    planet: "mars",
-    print: astroPrint,
-  },
-  {
-    at: [14, 72],
-    dark: diglotDark,
-    delay: "-1.4s",
-    duration: "5.6s",
-    href: "https://diglot.sh",
-    light: diglotLight,
-    name: "diglot",
-    phone: [15, 69],
-    planet: "venus",
-    print: diglotPrint,
-  },
-  {
-    at: [87, 29],
-    dark: bombshellDark,
-    delay: "-3.1s",
-    duration: "5.2s",
-    href: "https://bomb.sh",
-    light: bombshellLight,
-    name: "bombshell",
-    phone: [79, 19],
-    planet: "jupiter",
-    print: bombshellPrint,
-  },
-];
-
-const moons = [
-  {
-    at: [5, 38],
-    dark: rosePineDark,
-    delay: "-2.7s",
-    duration: "6.2s",
-    edge: true,
-    href: "https://rosepinetheme.com",
-    light: rosePineLight,
-    name: "Rosé Pine",
-    hue: 340,
-    print: rosePinePrint,
-  },
-  {
-    at: [27, 10],
     dark: changesetsDark,
     delay: "-2.2s",
     duration: "6.8s",
     href: "https://github.com/changesets/changesets",
     light: changesetsLight,
     name: "Changesets",
-    hue: 240,
+    phone: [23, 22],
+    planet: "saturn",
     print: changesetsPrint,
+    spot: { dy: 6, row: -2, x: 28 },
   },
   {
-    at: [39, 93],
-    dark: madeInCommonDark,
+    dark: bombshellDark,
     delay: "0s",
     duration: "6s",
+    href: "https://bomb.sh",
+    light: bombshellLight,
+    name: "bombshell",
+    phone: [79, 19],
+    planet: "jupiter",
+    print: bombshellPrint,
+    spot: { dy: -8, row: -2, x: 61.5 },
+  },
+  {
+    dark: astroDark,
+    delay: "-4.5s",
+    duration: "7.2s",
+    href: "https://astro.build",
+    light: astroLight,
+    name: "Astro",
+    phone: [35, 35],
+    planet: "mars",
+    print: astroPrint,
+    spot: { dy: -6, row: -1, x: 43.5 },
+  },
+  {
+    dark: starlightDark,
+    delay: "-3.6s",
+    duration: "6.4s",
+    href: "https://starlight.astro.build",
+    light: starlightLight,
+    name: "Starlight",
+    phone: [67, 36],
+    planet: "mercury",
+    print: starlightPrint,
+    spot: { dy: 8, row: -1, x: 78.5 },
+  },
+  {
+    dark: diglotDark,
+    delay: "-4.8s",
+    duration: "6.6s",
+    href: "https://diglot.sh",
+    light: diglotLight,
+    name: "diglot",
+    phone: [15, 69],
+    planet: "venus",
+    print: diglotPrint,
+    spot: { dy: 4, row: 1, x: 21.5 },
+  },
+  {
+    dark: npmxDark,
+    delay: "-0.8s",
+    duration: "5.9s",
+    href: "https://npmx.dev",
+    light: npmxLight,
+    name: "npmx",
+    phone: [48, 66],
+    planet: "neptune",
+    print: npmxPrint,
+    spot: { dy: -6, row: 1, x: 56 },
+  },
+  {
+    dark: forgesDark,
+    delay: "-1.4s",
+    duration: "5.6s",
+    href: "https://forges.link",
+    light: forgesLight,
+    name: "forges",
+    phone: [31, 81],
+    planet: "uranus",
+    print: forgesPrint,
+    spot: { dy: 8, row: 2, x: 38 },
+  },
+  {
+    dark: madeInCommonDark,
+    delay: "-3.1s",
+    duration: "5.2s",
     href: "https://made-in-common.dev",
     light: madeInCommonLight,
     name: "Made in Common",
-    hue: 60,
-    phone: [65, 84],
+    phone: [82, 70],
+    planet: "earth",
     print: madeInCommonPrint,
+    spot: { dy: -4, row: 2, x: 83.5 },
   },
+];
+
+const moons = [
   {
-    at: [24, 90],
-    dark: e18eDark,
-    delay: "-4.5s",
-    duration: "7.2s",
-    href: "https://e18e.dev",
-    light: e18eLight,
-    name: "e18e",
-    hue: 130,
-    print: e18ePrint,
-  },
-  {
-    at: [95, 63],
-    dark: lunariaDark,
-    delay: "-3.6s",
-    duration: "6.4s",
-    edge: true,
-    href: "https://lunaria.dev",
-    light: lunariaLight,
-    name: "Lunaria",
-    hue: 300,
-    print: lunariaPrint,
-  },
-  {
-    at: [80, 8],
-    dark: zizmorDark,
-    delay: "-4.8s",
-    duration: "6.6s",
-    href: "https://zizmor.sh",
-    light: zizmorLight,
-    name: "zizmor",
-    hue: 25,
-    print: zizmorPrint,
-  },
-  {
-    at: [55, 89],
-    dark: singiLabsDark,
-    delay: "-0.8s",
-    duration: "5.9s",
-    href: "https://singi.dev",
-    light: singiLabsLight,
-    name: "Singi Labs",
-    hue: 185,
-    print: singiLabsPrint,
-  },
-  {
-    at: [46, 7],
-    dark: knipDark,
+    dark: refinedGithubDark,
     delay: "-5.3s",
     duration: "7s",
+    href: "https://github.com/refined-github/refined-github",
+    hue: 275,
+    light: refinedGithubLight,
+    name: "Refined GitHub",
+    print: refinedGithubPrint,
+    spot: { dy: 10, row: -3, x: 12.5 },
+  },
+  {
+    dark: knipDark,
+    delay: "-2.7s",
+    duration: "6.2s",
     href: "https://knip.dev",
+    hue: 45,
     light: knipLight,
     name: "Knip",
-    hue: 45,
-    phone: [50, 13],
+    phone: [50, 14],
     print: knipPrint,
+    spot: { dy: -4, row: -3, x: 33 },
   },
   {
-    at: [63, 11],
     dark: monkeytypeDark,
-    delay: "-1.4s",
-    duration: "5.6s",
+    delay: "-2.2s",
+    duration: "6.8s",
     href: "https://monkeytype.com",
+    hue: 90,
     light: monkeytypeLight,
     name: "Monkeytype",
-    hue: 90,
     print: monkeytypePrint,
+    spot: { dy: 6, row: -3, x: 67.5 },
   },
   {
-    at: [72, 92],
-    dark: astroliciousDark,
+    dark: rosePineDark,
+    delay: "0s",
+    duration: "6s",
+    href: "https://rosepinetheme.com",
+    hue: 340,
+    light: rosePineLight,
+    name: "Rosé Pine",
+    print: rosePinePrint,
+    spot: { dy: -8, row: -3, x: 87.5 },
+  },
+  {
+    dark: biomeDark,
+    delay: "-4.5s",
+    duration: "7.2s",
+    href: "https://biomejs.dev",
+    hue: 235,
+    light: biomeLight,
+    name: "Biome",
+    print: biomePrint,
+    spot: { dy: -10, row: -2, x: 6.5 },
+  },
+  {
+    dark: zizmorDark,
+    delay: "-3.6s",
+    duration: "6.4s",
+    href: "https://zizmor.sh",
+    hue: 25,
+    light: zizmorLight,
+    name: "zizmor",
+    print: zizmorPrint,
+    spot: { dy: 4, row: -2, x: 93.5 },
+  },
+  {
+    dark: catppuccinDark,
+    delay: "-4.8s",
+    duration: "6.6s",
+    href: "https://catppuccin.com",
+    hue: 305,
+    light: catppuccinLight,
+    name: "Catppuccin",
+    print: catppuccinPrint,
+    spot: { dy: 8, row: -1, x: 11 },
+  },
+  {
+    dark: bruitsDark,
+    delay: "-0.8s",
+    duration: "5.9s",
+    href: "https://bruits.org",
+    hue: 15,
+    light: bruitsLight,
+    name: "Bruits",
+    print: bruitsPrint,
+    spot: { dy: -14, row: 0, x: 5 },
+  },
+  {
+    dark: lunariaDark,
+    delay: "-1.4s",
+    duration: "5.6s",
+    href: "https://lunaria.dev",
+    hue: 300,
+    light: lunariaLight,
+    name: "Lunaria",
+    print: lunariaPrint,
+    spot: { dy: 12, row: 0, x: 95 },
+  },
+  {
+    dark: e18eDark,
     delay: "-3.1s",
     duration: "5.2s",
+    href: "https://e18e.dev",
+    hue: 130,
+    light: e18eLight,
+    name: "e18e",
+    print: e18ePrint,
+    spot: { dy: -8, row: 1, x: 89 },
+  },
+  {
+    dark: nuxtDark,
+    delay: "-5.3s",
+    duration: "7s",
+    href: "https://nuxt.com",
+    hue: 155,
+    light: nuxtLight,
+    name: "Nuxt",
+    print: nuxtPrint,
+    spot: { dy: 6, row: 2, x: 7 },
+  },
+  {
+    dark: colibriDark,
+    delay: "-2.7s",
+    duration: "6.2s",
+    href: "https://colibri.social",
+    hue: 285,
+    light: colibriLight,
+    name: "Colibri",
+    phone: [65, 84],
+    print: colibriPrint,
+    spot: { dy: 10, row: 2, x: 71.5 },
+  },
+  {
+    dark: releaseItDark,
+    delay: "-2.2s",
+    duration: "6.8s",
+    href: "https://github.com/release-it/release-it",
+    hue: 5,
+    light: releaseItLight,
+    name: "release-it",
+    print: releaseItPrint,
+    spot: { dy: -6, row: 3, x: 22 },
+  },
+  {
+    dark: expressiveCodeDark,
+    delay: "0s",
+    duration: "6s",
+    href: "https://expressive-code.com",
+    hue: 200,
+    light: expressiveCodeLight,
+    name: "Expressive Code",
+    print: expressiveCodePrint,
+    spot: { dy: 8, row: 3, x: 45 },
+  },
+  {
+    dark: singiLabsDark,
+    delay: "-4.5s",
+    duration: "7.2s",
+    href: "https://singi.dev",
+    hue: 185,
+    light: singiLabsLight,
+    name: "Singi Labs",
+    print: singiLabsPrint,
+    spot: { dy: -4, row: 3, x: 77 },
+  },
+  {
+    dark: astroliciousDark,
+    delay: "-3.6s",
+    duration: "6.4s",
     href: "https://github.com/astrolicious",
+    hue: 350,
     light: astroliciousLight,
     name: "Astrolicious",
-    hue: 350,
     print: astroliciousPrint,
+    spot: { dy: 6, row: 3, x: 88.5 },
   },
 ];
 
@@ -346,11 +429,7 @@ const logos = [
     Object.assign({}, moon, { depth: DEPTH.moon, planet: "moon" })
   ),
   ...planets.map((planet) =>
-    Object.assign({}, planet, {
-      depth: DEPTH.planet,
-      edge: false,
-      hue: undefined,
-    })
+    Object.assign({}, planet, { depth: DEPTH.planet, hue: undefined })
   ),
 ];
 
@@ -382,9 +461,13 @@ const prints = await Promise.all(
       <div
         class:list={[
           "logo-parallax parallax",
-          { "is-edge": logo.edge, "is-wide-only": !logo.phone },
+          {
+            "is-beside": logo.spot.row === 0,
+            "is-far": Math.abs(logo.spot.row) === 3,
+            "is-wide-only": !logo.phone,
+          },
         ]}
-        style={`--x: ${logo.at[0]}%; --y: ${logo.at[1]}%;${logo.phone ? ` --phone-x: ${logo.phone[0]}%; --phone-y: ${logo.phone[1]}%;` : ""} --depth: ${logo.depth};`}
+        style={`--x: ${logo.spot.x}%; --row: ${logo.spot.row}; --dy: ${logo.spot.dy}px;${logo.phone ? ` --phone-x: ${logo.phone[0]}%; --phone-y: ${logo.phone[1]}%;` : ""} --depth: ${logo.depth};`}
       >
         <a
           href={logo.href}
@@ -394,15 +477,21 @@ const prints = await Promise.all(
           aria-label={logo.name}
         >
           <span class="planet-print" />
+          {/* The logos show at about 43px, so they ship small with sharper
+              copies for denser screens. */}
           <Image
             src={logo.light}
             alt={`${logo.name} Logo`}
             class="tech-logo light-logo"
+            width={52}
+            densities={[1, 2, 3]}
           />
           <Image
             src={logo.dark}
             alt={`${logo.name} Logo`}
             class="tech-logo dark-logo"
+            width={52}
+            densities={[1, 2, 3]}
           />
         </a>
       </div>
@@ -486,13 +575,17 @@ const prints = await Promise.all(
     transform: rotate(120deg);
   }
 
+  /* The logos keep clear of the header above and of the bottom edge, so they
+     stay on screen a little longer while scrolling. Rows sit a fixed gap
+     apart, within limits, so the closest ones never touch the name. */
   .floating-logos {
+    --gap: clamp(92px, 15%, 132px);
+
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: min(100%, 1180px);
-    height: min(100%, 860px);
-    transform: translate(-50%, -50%);
+    inset: 96px 0;
+    width: min(100% - 32px, 1680px);
+    height: min(100% - 192px, 860px);
+    margin: auto;
     z-index: 40;
     pointer-events: none;
   }
@@ -505,10 +598,10 @@ const prints = await Promise.all(
     display: none;
   }
 
-  /* Each logo is centred on its spot on the ring. */
+  /* Each logo is centred on its spot on the grid. */
   .logo-parallax {
     position: absolute;
-    top: var(--y);
+    top: calc(50% + var(--row) * var(--gap) + var(--dy));
     left: var(--x);
     translate: -50% -50%;
     pointer-events: auto;
@@ -709,13 +802,28 @@ const prints = await Promise.all(
     border-radius: 14px;
   }
 
+  /* The name fills the width of narrower screens. */
   @media (max-width: 1000px) {
-    .logo-parallax.is-edge {
+    .logo-parallax.is-beside {
+      display: none;
+    }
+  }
+
+  /* Short screens have no room for the outermost rows. Phones place their
+     few logos on their own. */
+  @media (min-width: 601px) and (max-height: 815px) {
+    .logo-parallax.is-far {
       display: none;
     }
   }
 
   @media (max-width: 600px) {
+    .floating-logos {
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
     .logo-parallax {
       top: var(--phone-y);
       left: var(--phone-x);
