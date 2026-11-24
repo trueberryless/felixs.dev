@@ -140,93 +140,53 @@
   z-index: 20;
   align-self: flex-start;
   display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 4px;
   max-width: 100%;
   margin: 0;
-  padding: 4px;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   background: var(--header-bg);
   -webkit-backdrop-filter: blur(17px) saturate(180%);
   backdrop-filter: blur(17px) saturate(180%);
   box-shadow: 0 8px 30px var(--header-shadow);
-  overflow-x: auto;
-  scrollbar-width: none;
+  overflow: hidden;
   /* Fieldsets refuse to shrink below their content by default. */
   min-inline-size: 0;
 }
 
-.ms-ranges::-webkit-scrollbar {
+/* On a narrow screen the ranges scroll sideways inside the pill, and they
+   fade out at each edge with more to scroll to. */
+.ms-ranges-track {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ms-ranges-track::-webkit-scrollbar {
   display: none;
 }
 
-/* On a narrow screen the ranges scroll sideways, so the edges fade out
-   wherever there is more to scroll to. The scroll position drives the
-   fades, and a picker that fits shows none. */
-.ms-ranges::before,
-.ms-ranges::after {
-  content: "";
-  position: sticky;
-  z-index: 1;
-  flex: none;
-  align-self: stretch;
-  width: 36px;
-  opacity: 0;
-  pointer-events: none;
+.ms-ranges-track[data-scroll~="start"] {
+  mask-image: linear-gradient(to right, transparent, black 48px);
 }
 
-.ms-ranges::before {
-  left: 0;
-  margin-right: -40px;
-  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
-  background: linear-gradient(to right, var(--header-bg-solid), transparent);
+.ms-ranges-track[data-scroll~="end"] {
+  mask-image: linear-gradient(to left, transparent, black 48px);
 }
 
-.ms-ranges::after {
-  right: 0;
-  margin-left: -40px;
-  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
-  background: linear-gradient(to left, var(--header-bg-solid), transparent);
-}
-
-@supports (animation-timeline: scroll()) {
-  .ms-ranges::before {
-    animation: ms-edge-start linear both;
-  }
-
-  .ms-ranges::after {
-    animation: ms-edge-end linear both;
-  }
-
-  /* Separate on purpose, see the parallax in `Hero.astro`. */
-  .ms-ranges::before,
-  .ms-ranges::after {
-    animation-timeline: scroll(nearest inline);
-  }
-}
-
-@keyframes ms-edge-start {
-  0% {
-    opacity: 0;
-  }
-
-  12%,
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes ms-edge-end {
-  0%,
-  88% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-  }
+.ms-ranges-track[data-scroll~="start"][data-scroll~="end"] {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 48px,
+    black calc(100% - 48px),
+    transparent
+  );
 }
 
 .ms-range-group {

@@ -1,7 +1,7 @@
 import type { MusicStats, RangeStats } from "@/lib/music";
 import { countTo } from "@/scripts/count-up";
 
-import { formatDate, reveal } from "./dom";
+import { formatDate, markScrollEdges, reveal } from "./dom";
 import { renderTrack } from "./track";
 import {
   getCurrentColumns,
@@ -41,6 +41,17 @@ class MusicStatsElement extends HTMLElement {
         const group = toggle.closest<HTMLElement>(".ms-range-group");
         if (group) this.#openGroup(group.dataset.group);
       });
+    }
+    const track = this.querySelector<HTMLElement>(".ms-ranges-track");
+    if (track) {
+      const mark = () => markScrollEdges(track);
+      track.addEventListener("scroll", mark, { passive: true });
+      // The track keeps its width while a group opens or closes inside it,
+      // so the groups are watched as well.
+      const resizes = new ResizeObserver(mark);
+      for (const element of [track, ...track.children]) {
+        resizes.observe(element);
+      }
     }
     this.querySelector(".ms-range-day-close")?.addEventListener("click", () =>
       this.#pick(this.#range?.id ?? this.dataset.defaultRange ?? "all")

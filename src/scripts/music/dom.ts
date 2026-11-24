@@ -84,6 +84,22 @@ export function formatRelative(ms: number, nowMs = Date.now()): string {
   return format.format(-Math.round(minutes / (60 * 24)), "day");
 }
 
+/**
+ * Marks the edges of a sideways scroller that have more to scroll to, as
+ * `data-scroll="start end"`, for the styles to fade them out.
+ */
+export function markScrollEdges(scroller: HTMLElement) {
+  const hasMoreBefore = scroller.scrollLeft > 4;
+  const hasMoreAfter =
+    scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 4;
+  const state = [hasMoreBefore && "start", hasMoreAfter && "end"]
+    .filter(Boolean)
+    .join(" ");
+  if (state) scroller.dataset.scroll = state;
+  else delete scroller.dataset.scroll;
+  return { hasMoreAfter, hasMoreBefore };
+}
+
 function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }

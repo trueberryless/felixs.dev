@@ -1,6 +1,14 @@
 import type { MusicStats, RangeStats } from "@/lib/music";
 
-import { formatDate, formatNumber, html, offsetWithin, slug, svg } from "./dom";
+import {
+  formatDate,
+  formatNumber,
+  html,
+  markScrollEdges,
+  offsetWithin,
+  slug,
+  svg,
+} from "./dom";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const CURRENT_ROWS = 5;
@@ -384,14 +392,7 @@ function updateScrollState(
   scroller: HTMLElement,
   nav: HTMLElement | null | undefined
 ) {
-  const hasMoreBefore = scroller.scrollLeft > 4;
-  const hasMoreAfter =
-    scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 4;
-  const state = [hasMoreBefore && "start", hasMoreAfter && "end"]
-    .filter(Boolean)
-    .join(" ");
-  if (state) scroller.dataset.scroll = state;
-  else delete scroller.dataset.scroll;
+  const { hasMoreAfter, hasMoreBefore } = markScrollEdges(scroller);
 
   if (!nav) return;
   nav.hidden = !hasMoreBefore && !hasMoreAfter;
