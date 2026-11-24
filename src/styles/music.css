@@ -155,8 +155,12 @@
 }
 
 /* On a narrow screen the ranges scroll sideways inside the pill, and they
-   fade out at each edge with more to scroll to. */
+   fade out at each edge with more to scroll to. The fade reaches far into
+   the pill, so it always catches the next label. Scrolling a focused range
+   into view keeps it clear of the fade. */
 .ms-ranges-track {
+  --fade: 96px;
+
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
@@ -164,6 +168,7 @@
   min-width: 0;
   padding: 4px;
   overflow-x: auto;
+  scroll-padding-inline: var(--fade);
   scrollbar-width: none;
 }
 
@@ -172,20 +177,20 @@
 }
 
 .ms-ranges-track[data-scroll~="start"] {
-  mask-image: linear-gradient(to right, transparent, black 48px);
+  mask-image: linear-gradient(to right, transparent 12px, black var(--fade));
 }
 
 .ms-ranges-track[data-scroll~="end"] {
-  mask-image: linear-gradient(to left, transparent, black 48px);
+  mask-image: linear-gradient(to left, transparent 12px, black var(--fade));
 }
 
 .ms-ranges-track[data-scroll~="start"][data-scroll~="end"] {
   mask-image: linear-gradient(
     to right,
-    transparent,
-    black 48px,
-    black calc(100% - 48px),
-    transparent
+    transparent 12px,
+    black var(--fade),
+    black calc(100% - var(--fade)),
+    transparent calc(100% - 12px)
   );
 }
 

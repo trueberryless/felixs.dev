@@ -52,6 +52,19 @@ class MusicStatsElement extends HTMLElement {
       for (const element of [track, ...track.children]) {
         resizes.observe(element);
       }
+      // The picked range starts clear of the fade, which is as wide as the
+      // scroll padding of the track.
+      const picked = track.querySelector(":checked")?.closest("label");
+      if (picked) {
+        const fade = Number.parseFloat(
+          getComputedStyle(track).scrollPaddingInlineEnd
+        );
+        const overlap =
+          picked.getBoundingClientRect().right -
+          track.getBoundingClientRect().right +
+          fade;
+        if (overlap > 0) track.scrollLeft += overlap;
+      }
     }
     this.querySelector(".ms-range-day-close")?.addEventListener("click", () =>
       this.#pick(this.#range?.id ?? this.dataset.defaultRange ?? "all")
