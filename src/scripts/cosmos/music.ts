@@ -19,6 +19,16 @@ const PROGRESSION = [
 const NOTE_GAPS_S = [0.45, 0.6, 0.9, 1.2, 1.8] as const;
 const GESTURES = ["pointerdown", "keydown", "touchend"] as const;
 
+// Opening the audio device takes a moment, long enough to stall the rocket,
+// so the countdown opens it ahead of the launch.
+let preparedContext: AudioContext | undefined;
+
+export function prepareMusic() {
+  if (preparedContext) return;
+  preparedContext = new AudioContext();
+  void preparedContext.suspend();
+}
+
 export function createSpaceMusic(): SpaceMusic {
   let context: AudioContext | undefined;
   let master: GainNode | undefined;
@@ -31,13 +41,14 @@ export function createSpaceMusic(): SpaceMusic {
   let isPlaying = false;
 
   function setUp() {
-    const ctx = new AudioContext();
+    const ctx = preparedContext ?? new AudioContext();
+    preparedContext = undefined;
     const out = ctx.createGain();
     out.gain.value = 0;
     out.connect(ctx.destination);
 
     const reverb = ctx.createConvolver();
-    reverb.buffer = createImpulse(ctx, 4.5);
+    fillReverb(ctx, reverb, 4.5);
     const wet = ctx.createGain();
     wet.gain.value = 0.9;
     reverb.connect(wet).connect(out);
@@ -220,17 +231,36 @@ function playTone(
   oscillator.stop(at + length + 0.05);
 }
 
-// Decaying stereo noise makes a convincing hall without any sample file.
-function createImpulse(ctx: AudioContext, seconds: number) {
+// Decaying stereo noise makes a convincing hall without any sample file. The
+// few hundred thousand samples would stall the rocket's launch if made in
+// one go, so they are made a slice per idle moment, and the reverb joins in
+// once they are ready, well within the music's fade in.
+const IMPULSE_SLICE = 20_000;
+
+function fillReverb(ctx: AudioContext, reverb: ConvolverNode, seconds: number) {
   const length = Math.round(ctx.sampleRate * seconds);
   const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
-  for (let channel = 0; channel < 2; channel++) {
-    const data = impulse.getChannelData(channel);
-    for (let index = 0; index < length; index++) {
-      data[index] = (Math.random() * 2 - 1) * (1 - index / length) ** 3;
+  const left = impulse.getChannelData(0);
+  const right = impulse.getChannelData(1);
+  let index = 0;
+
+  const fillSlice = () => {
+    const end = Math.min(length, index + IMPULSE_SLICE);
+    for (; index < end; index++) {
+      const decay = (1 - index / length) ** 3;
+      left[index] = (Math.random() * 2 - 1) * decay;
+      right[index] = (Math.random() * 2 - 1) * decay;
     }
-  }
-  return impulse;
+    if (index < length) whenIdle(fillSlice);
+    else reverb.buffer = impulse;
+  };
+  whenIdle(fillSlice);
+}
+
+function whenIdle(callback: () => void) {
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(callback, { timeout: 200 });
+  } else setTimeout(callback, 16);
 }
 
 function toFrequency(note: number) {
