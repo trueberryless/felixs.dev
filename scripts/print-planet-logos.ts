@@ -35,7 +35,6 @@ const LOGOS: LogoPrint[] = [
   { mode: "alpha", name: "expressive-code", pitch: -0.06, yaw: 0.1 },
   { mode: "alpha", name: "knip", pitch: -0.1, yaw: -0.06 },
   { mode: "alpha", name: "monkeytype", pitch: 0.08, yaw: -0.1 },
-  { mode: "alpha", name: "release-it", pitch: 0.1, yaw: -0.12 },
   // The dark middle of the badge, which leaves the flower bare.
   { mode: "dark", name: "rose-pine", pitch: -0.06, yaw: 0.06 },
   { mode: "alpha", name: "zizmor", pitch: -0.12, yaw: -0.08 },

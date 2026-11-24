@@ -15,7 +15,6 @@ import madeInCommonLight from "@/assets/logos/light/made-in-common.png";
 import monkeytypeLight from "@/assets/logos/light/monkeytype.png";
 import npmxLight from "@/assets/logos/light/npmx.png";
 import nuxtLight from "@/assets/logos/light/nuxt.png";
-import releaseItLight from "@/assets/logos/light/release-it.png";
 import rosePineLight from "@/assets/logos/light/rose-pine.png";
 import starlightLight from "@/assets/logos/light/starlight.png";
 import zizmorLight from "@/assets/logos/light/zizmor.png";
@@ -33,7 +32,6 @@ import madeInCommonDark from "@/assets/logos/dark/made-in-common.png";
 import monkeytypeDark from "@/assets/logos/dark/monkeytype.png";
 import npmxDark from "@/assets/logos/dark/npmx.png";
 import nuxtDark from "@/assets/logos/dark/nuxt.png";
-import releaseItDark from "@/assets/logos/dark/release-it.png";
 import rosePineDark from "@/assets/logos/dark/rose-pine.png";
 import starlightDark from "@/assets/logos/dark/starlight.png";
 import zizmorDark from "@/assets/logos/dark/zizmor.png";
@@ -51,7 +49,6 @@ import madeInCommonPrint from "@/assets/logos/planets/made-in-common.png";
 import monkeytypePrint from "@/assets/logos/planets/monkeytype.png";
 import npmxPrint from "@/assets/logos/planets/npmx.png";
 import nuxtPrint from "@/assets/logos/planets/nuxt.png";
-import releaseItPrint from "@/assets/logos/planets/release-it.png";
 import rosePinePrint from "@/assets/logos/planets/rose-pine.png";
 import starlightPrint from "@/assets/logos/planets/starlight.png";
 import zizmorPrint from "@/assets/logos/planets/zizmor.png";
@@ -167,7 +164,7 @@ const planets = [
     dark: changesetsDark,
     delay: "-3.6s",
     duration: "6.4s",
-    href: "https://github.com/changesets/changesets",
+    href: "https://changesets.dev",
     light: changesetsLight,
     name: "Changesets",
     phone: [23, 22],
@@ -237,17 +234,6 @@ const moons = [
     phone: [50, 14],
     print: knipPrint,
     spot: { dy: -4, row: -2, x: 11.5 },
-  },
-  {
-    dark: releaseItDark,
-    delay: "-2.7s",
-    duration: "6.2s",
-    href: "https://github.com/release-it/release-it",
-    hue: 5,
-    light: releaseItLight,
-    name: "release-it",
-    print: releaseItPrint,
-    spot: { dy: -8, row: -2, x: 50.5 },
   },
   {
     dark: rosePineDark,
@@ -488,15 +474,28 @@ const prints = await Promise.all(
       });
     }
 
-    const points = spreadOut(
-      items.map((item) => ({
-        reach: reachOf(item),
-        x: item.offsetLeft,
-        y: item.offsetTop,
-      })),
-      box,
-      obstacles
-    );
+    // Every layout starts from the spots in the markup, like a fresh load, so
+    // a resize ends up exactly where a reload would. The logos briefly go
+    // back there without a transition to be measured, then return to where
+    // they were, so the move to their new spots still glides.
+    const placed = items.map(({ style }) => [style.left, style.top] as const);
+    for (const { style } of items) {
+      style.transition = "none";
+      style.left = "";
+      style.top = "";
+    }
+    const seeds = items.map((item) => ({
+      reach: reachOf(item),
+      x: item.offsetLeft,
+      y: item.offsetTop,
+    }));
+    for (const [index, { style }] of items.entries()) {
+      [style.left, style.top] = placed[index]!;
+    }
+    void logos.offsetWidth;
+    for (const { style } of items) style.transition = "";
+
+    const points = spreadOut(seeds, box, obstacles);
     for (const [index, item] of items.entries()) {
       item.style.left = `${points[index]!.x.toFixed(1)}px`;
       item.style.top = `${points[index]!.y.toFixed(1)}px`;
