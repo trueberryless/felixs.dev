@@ -471,6 +471,30 @@
     0 14px 30px oklch(0.04 0.03 290 / 0.6);
 }
 
+/* Pluto, far out and small: pale ice with its bright heart. */
+:root.space.dark .logo-wrapper[data-planet="pluto"] {
+  --planet-size: 54px;
+  --planet-glow: oklch(0.85 0.04 70 / 0.4);
+  --planet-ink: oklch(0.32 0.06 40 / 0.78);
+  --planet-surface:
+    radial-gradient(
+      ellipse 30% 26% at 62% 62%,
+      oklch(0.95 0.02 80 / 0.95),
+      transparent
+    ),
+    radial-gradient(
+      ellipse 22% 30% at 26% 70%,
+      oklch(0.45 0.08 35 / 0.7),
+      transparent
+    ),
+    radial-gradient(
+      ellipse 40% 20% at 40% 22%,
+      oklch(0.66 0.06 55 / 0.55),
+      transparent
+    ),
+    oklch(0.78 0.05 65);
+}
+
 /* Venus hides under pale, swirling clouds. */
 :root.space.dark .logo-wrapper[data-planet="venus"] {
   --planet-size: 66px;

@@ -6,6 +6,7 @@ import bombshellLight from "@/assets/logos/light/bombshell.png";
 import catppuccinLight from "@/assets/logos/light/catppuccin.png";
 import diglotLight from "@/assets/logos/light/diglot.png";
 import forgesLight from "@/assets/logos/light/forges.png";
+import madeInCommonLight from "@/assets/logos/light/made-in-common.png";
 import npmxLight from "@/assets/logos/light/npmx.png";
 import nuxtLight from "@/assets/logos/light/nuxt.png";
 import starlightLight from "@/assets/logos/light/starlight.png";
@@ -14,6 +15,7 @@ import bombshellDark from "@/assets/logos/dark/bombshell.png";
 import catppuccinDark from "@/assets/logos/dark/catppuccin.png";
 import diglotDark from "@/assets/logos/dark/diglot.png";
 import forgesDark from "@/assets/logos/dark/forges.png";
+import madeInCommonDark from "@/assets/logos/dark/made-in-common.png";
 import npmxDark from "@/assets/logos/dark/npmx.png";
 import nuxtDark from "@/assets/logos/dark/nuxt.png";
 import starlightDark from "@/assets/logos/dark/starlight.png";
@@ -22,6 +24,7 @@ import bombshellPrint from "@/assets/logos/planets/bombshell.png";
 import catppuccinPrint from "@/assets/logos/planets/catppuccin.png";
 import diglotPrint from "@/assets/logos/planets/diglot.png";
 import forgesPrint from "@/assets/logos/planets/forges.png";
+import madeInCommonPrint from "@/assets/logos/planets/made-in-common.png";
 import npmxPrint from "@/assets/logos/planets/npmx.png";
 import nuxtPrint from "@/assets/logos/planets/nuxt.png";
 import starlightPrint from "@/assets/logos/planets/starlight.png";
@@ -86,8 +89,21 @@ const hexagons = [
   },
 ];
 
-// One logo for every planet of the solar system, from far to near.
+// One logo for every planet of the solar system and Pluto, from far to near.
 const logos = [
+  {
+    dark: madeInCommonDark,
+    delay: "-5.3s",
+    depth: 0.62,
+    duration: "7s",
+    href: "https://made-in-common.dev",
+    left: "4%",
+    light: madeInCommonLight,
+    name: "Made in Common",
+    planet: "pluto",
+    print: madeInCommonPrint,
+    top: "84%",
+  },
   {
     dark: diglotDark,
     delay: "-2.2s",
