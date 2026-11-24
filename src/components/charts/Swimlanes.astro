@@ -38,92 +38,97 @@ const month = new Intl.DateTimeFormat("en-US", {
 });
 ---
 
-<div
-  class="lanes"
-  role="region"
-  tabindex="0"
-  aria-label={`${label}, scrollable`}
-  data-lanes
->
-  <div class="lanes-inner" style={`--width: ${width}px`}>
-    {lanes.map((lane, row) => (
-      <div class="lane" data-org={lane.key} style={`--row: ${row}`}>
-        <button
-          type="button"
-          class="lane-label"
-          data-org={lane.key}
-          aria-pressed="false"
-        >
-          {lane.avatar && (
-            <img
-              src={`${lane.avatar}${lane.avatar.includes("?") ? "&" : "?"}s=64`}
-              alt=""
-              width="22"
-              height="22"
-              loading="lazy"
+<div class="edge-scroll-frame lanes-frame">
+  <div
+    class="lanes"
+    role="region"
+    tabindex="0"
+    aria-label={`${label}, scrollable`}
+    data-lanes
+    data-edge-scroll
+  >
+    <div class="lanes-inner" style={`--width: ${width}px`}>
+      {lanes.map((lane, row) => (
+        <div class="lane" data-org={lane.key} style={`--row: ${row}`}>
+          <button
+            type="button"
+            class="lane-label"
+            data-org={lane.key}
+            aria-pressed="false"
+          >
+            {lane.avatar && (
+              <img
+                src={`${lane.avatar}${lane.avatar.includes("?") ? "&" : "?"}s=64`}
+                alt=""
+                width="22"
+                height="22"
+                loading="lazy"
+              />
+            )}
+            <span class="lane-name">{lane.name}</span>
+            <span class="lane-count">{lane.count}</span>
+            <span class="sr-only">
+              {` merged pull requests, from ${month.format(lane.first)} to ${month.format(lane.last)}`}
+            </span>
+          </button>
+          <svg
+            class="lane-track"
+            viewBox={`0 0 ${width} ${HEIGHT}`}
+            width={width}
+            height={HEIGHT}
+            aria-hidden="true"
+          >
+            {years.map((year) => (
+              <line
+                class="lane-grid"
+                x1={x(Date.UTC(year, 0, 1))}
+                x2={x(Date.UTC(year, 0, 1))}
+                y1="0"
+                y2={HEIGHT}
+              />
+            ))}
+            <line
+              class="lane-span"
+              x1={x(lane.first)}
+              x2={Math.max(x(lane.last), x(lane.first) + 1)}
+              y1={MIDDLE}
+              y2={MIDDLE}
             />
-          )}
-          <span class="lane-name">{lane.name}</span>
-          <span class="lane-count">{lane.count}</span>
-          <span class="sr-only">
-            {` merged pull requests, from ${month.format(lane.first)} to ${month.format(lane.last)}`}
-          </span>
-        </button>
+            {lane.times.map((time, index) => (
+              <circle
+                class="lane-dot"
+                data-month={new Date(time).toISOString().slice(0, 7)}
+                cx={x(time).toFixed(1)}
+                cy={(MIDDLE + jitter(index)).toFixed(1)}
+                r="3.5"
+                style={`--at: ${(x(time) / width).toFixed(3)}`}
+              />
+            ))}
+          </svg>
+        </div>
+      ))}
+      <div class="lane lane-axis" aria-hidden="true">
+        <span class="lane-label" />
         <svg
           class="lane-track"
-          viewBox={`0 0 ${width} ${HEIGHT}`}
+          viewBox={`0 0 ${width} 24`}
           width={width}
-          height={HEIGHT}
-          aria-hidden="true"
+          height="24"
         >
           {years.map((year) => (
-            <line
-              class="lane-grid"
-              x1={x(Date.UTC(year, 0, 1))}
-              x2={x(Date.UTC(year, 0, 1))}
-              y1="0"
-              y2={HEIGHT}
-            />
-          ))}
-          <line
-            class="lane-span"
-            x1={x(lane.first)}
-            x2={Math.max(x(lane.last), x(lane.first) + 1)}
-            y1={MIDDLE}
-            y2={MIDDLE}
-          />
-          {lane.times.map((time, index) => (
-            <circle
-              class="lane-dot"
-              data-month={new Date(time).toISOString().slice(0, 7)}
-              cx={x(time).toFixed(1)}
-              cy={(MIDDLE + jitter(index)).toFixed(1)}
-              r="3.5"
-              style={`--at: ${(x(time) / width).toFixed(3)}`}
-            />
+            <text class="lane-year" x={x(Date.UTC(year, 6, 1))} y="16">
+              {year}
+            </text>
           ))}
         </svg>
       </div>
-    ))}
-    <div class="lane lane-axis" aria-hidden="true">
-      <span class="lane-label" />
-      <svg
-        class="lane-track"
-        viewBox={`0 0 ${width} 24`}
-        width={width}
-        height="24"
-      >
-        {years.map((year) => (
-          <text class="lane-year" x={x(Date.UTC(year, 6, 1))} y="16">
-            {year}
-          </text>
-        ))}
-      </svg>
     </div>
   </div>
 </div>
 
 <script>
+  import "@/scripts/edge-scroll";
+
   // Start at the most recent years, older ones are a scroll away.
   function scrollLanes() {
     for (const element of document.querySelectorAll<HTMLElement>(
@@ -138,19 +143,25 @@ const month = new Intl.DateTimeFormat("en-US", {
 </script>
 
 <style>
-  .lanes {
+  /* The card sits around the scroller, so its fades leave the border alone,
+     and they start after the labels that stick to its start. */
+  .lanes-frame {
     --label: 200px;
+    --edge-inset: var(--label);
 
-    overflow-x: auto;
+    overflow: hidden;
     border: 1px solid var(--border);
     border-radius: var(--radius-card);
     background: var(--card-bg);
-    scrollbar-width: thin;
+  }
+
+  .lanes-frame:has(.lanes:focus-visible) {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
   }
 
   .lanes:focus-visible {
-    outline: 2px solid var(--text);
-    outline-offset: 2px;
+    outline: none;
   }
 
   .lanes-inner {
@@ -317,7 +328,7 @@ const month = new Intl.DateTimeFormat("en-US", {
   }
 
   @media (max-width: 640px) {
-    .lanes {
+    .lanes-frame {
       --label: 132px;
     }
 
@@ -327,7 +338,7 @@ const month = new Intl.DateTimeFormat("en-US", {
   }
 
   @media (max-width: 280px) {
-    .lanes {
+    .lanes-frame {
       --label: 96px;
     }
 

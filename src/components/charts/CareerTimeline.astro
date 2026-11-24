@@ -42,6 +42,7 @@ const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
   tabindex="0"
   aria-label="Career timeline, scrollable"
   data-career
+  data-edge-scroll
 >
   <svg
     class="career"
@@ -137,6 +138,8 @@ const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
 </div>
 
 <script>
+  import "@/scripts/edge-scroll";
+
   // Start at the most recent years, older ones are a scroll away.
   function scrollCareers() {
     for (const element of document.querySelectorAll<HTMLElement>(
@@ -158,10 +161,7 @@ const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
 
 <style>
   .career-scroll {
-    overflow-x: auto;
     padding-bottom: 6px;
-    mask-image: linear-gradient(to right, transparent, black 48px);
-    scrollbar-width: thin;
   }
 
   .career {

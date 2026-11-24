@@ -43,75 +43,77 @@ const timeZoneName =
     <script type="application/json" class="ms-data" set:html={json} />
     <fieldset class="ms-ranges">
       <legend class="sr-only">Time range</legend>
-      <div
-        class:list={["ms-range-group", { "is-open": !isYearDefault }]}
-        data-group="relative"
-      >
-        <button
-          type="button"
-          class="ms-range-toggle"
-          aria-expanded={isYearDefault ? "false" : "true"}
-          aria-controls="ms-range-relative"
-          hidden
-          data-label="Recent"
+      <div class="ms-ranges-track" data-edge-scroll>
+        <div
+          class:list={["ms-range-group", { "is-open": !isYearDefault }]}
+          data-group="relative"
         >
-          Recent
-        </button>
-        <div class="ms-range-options" id="ms-range-relative">
-          <div class="ms-range-inner">
-            {relativeRanges.map((range) => (
-              <label class="ms-range">
-                <input
-                  type="radio"
-                  name="music-range"
-                  value={range.id}
-                  checked={range.id === defaultRange.id}
-                />
-                <span>{range.label}</span>
-              </label>
-            ))}
+          <button
+            type="button"
+            class="ms-range-toggle"
+            aria-expanded={isYearDefault ? "false" : "true"}
+            aria-controls="ms-range-relative"
+            hidden
+            data-label="Recent"
+          >
+            Recent
+          </button>
+          <div class="ms-range-options" id="ms-range-relative">
+            <div class="ms-range-inner">
+              {relativeRanges.map((range) => (
+                <label class="ms-range">
+                  <input
+                    type="radio"
+                    name="music-range"
+                    value={range.id}
+                    checked={range.id === defaultRange.id}
+                  />
+                  <span>{range.label}</span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-      <div
-        class:list={["ms-range-group", { "is-open": isYearDefault }]}
-        data-group="year"
-      >
-        <button
-          type="button"
-          class="ms-range-toggle"
-          aria-expanded={isYearDefault ? "true" : "false"}
-          aria-controls="ms-range-year"
-          hidden
-          data-label="By year"
+        <div
+          class:list={["ms-range-group", { "is-open": isYearDefault }]}
+          data-group="year"
         >
-          By year
-        </button>
-        <div class="ms-range-options" id="ms-range-year">
-          <div class="ms-range-inner">
-            {yearRanges.map((range) => (
-              <label class="ms-range">
-                <input
-                  type="radio"
-                  name="music-range"
-                  value={range.id}
-                  checked={range.id === defaultRange.id}
-                />
-                <span>{range.label}</span>
-              </label>
-            ))}
+          <button
+            type="button"
+            class="ms-range-toggle"
+            aria-expanded={isYearDefault ? "true" : "false"}
+            aria-controls="ms-range-year"
+            hidden
+            data-label="By year"
+          >
+            By year
+          </button>
+          <div class="ms-range-options" id="ms-range-year">
+            <div class="ms-range-inner">
+              {yearRanges.map((range) => (
+                <label class="ms-range">
+                  <input
+                    type="radio"
+                    name="music-range"
+                    value={range.id}
+                    checked={range.id === defaultRange.id}
+                  />
+                  <span>{range.label}</span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-      <div class="ms-range-day" hidden>
-        <span class="ms-range-day-label" />
-        <button
-          type="button"
-          class="ms-range-day-close"
-          aria-label="Back to the time range"
-        >
-          <span aria-hidden="true">×</span>
-        </button>
+        <div class="ms-range-day" hidden>
+          <span class="ms-range-day-label" />
+          <button
+            type="button"
+            class="ms-range-day-close"
+            aria-label="Back to the time range"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
       </div>
     </fieldset>
     <p class="sr-only" aria-live="polite" data-status />

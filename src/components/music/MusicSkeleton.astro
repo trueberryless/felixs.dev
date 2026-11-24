@@ -9,12 +9,14 @@ const numbers = ["minutes listened", "plays", "artists", "tracks"];
 
 <div class="skeleton ms" aria-hidden="true">
   <div class="ms-ranges">
-    {ranges.map((range) => (
-      <span class="ms-range">
-        <span>{range}</span>
-      </span>
-    ))}
-    <span class="ms-range-toggle">By year</span>
+    <div class="ms-ranges-track">
+      {ranges.map((range) => (
+        <span class="ms-range">
+          <span>{range}</span>
+        </span>
+      ))}
+      <span class="ms-range-toggle">By year</span>
+    </div>
   </div>
 
   <NumberCards numbers={numbers.map((label) => ({ label }))} />

@@ -1,5 +1,6 @@
 import type { MusicStats, RangeStats } from "@/lib/music";
 import { countTo } from "@/scripts/count-up";
+import "@/scripts/edge-scroll";
 
 import { formatDate, reveal } from "./dom";
 import { renderTrack } from "./track";

@@ -1,0 +1,108 @@
+/* Sideways scrollers, see `src/scripts/edge-scroll.ts`. `--edge-fade` sets
+   how far the fades reach in, and `--edge-inset` how much sticks to the
+   start edge, like the labels of the swimlanes. The buttons sit next to the
+   scroller, so they read both from a shared parent. */
+.edge-scroll-frame {
+  position: relative;
+  min-width: 0;
+}
+
+[data-edge-scroll] {
+  --fade: var(--edge-fade, 64px);
+  --inset: var(--edge-inset, 0px);
+
+  overflow-x: auto;
+  scroll-padding-inline: calc(var(--inset) + var(--fade)) var(--fade);
+  scrollbar-width: none;
+}
+
+[data-edge-scroll]::-webkit-scrollbar {
+  display: none;
+}
+
+[data-edge-scroll][data-scroll~="start"] {
+  mask-image: linear-gradient(
+    to right,
+    black var(--inset),
+    transparent var(--inset),
+    transparent calc(var(--inset) + 12px),
+    black calc(var(--inset) + var(--fade))
+  );
+}
+
+[data-edge-scroll][data-scroll~="end"] {
+  mask-image: linear-gradient(to left, transparent 12px, black var(--fade));
+}
+
+[data-edge-scroll][data-scroll~="start"][data-scroll~="end"] {
+  mask-image: linear-gradient(
+    to right,
+    black var(--inset),
+    transparent var(--inset),
+    transparent calc(var(--inset) + 12px),
+    black calc(var(--inset) + var(--fade)),
+    black calc(100% - var(--fade)),
+    transparent calc(100% - 12px)
+  );
+}
+
+/* Solid buttons, so nothing shows through them, sitting in the fades. They
+   only show for a mouse hovering the scroller, on an edge with more. */
+.edge-scroll-button {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--header-bg-solid);
+  color: var(--text);
+  box-shadow: 0 2px 10px var(--header-shadow);
+  translate: 0 -50%;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.edge-scroll-button[data-edge="start"] {
+  left: calc(var(--edge-inset, 0px) + 6px);
+}
+
+.edge-scroll-button[data-edge="end"] {
+  right: 6px;
+}
+
+.edge-scroll-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .edge-scroll-button:not([hidden]) {
+    display: flex;
+  }
+
+  .edge-scroll-frame:hover > .edge-scroll-button {
+    opacity: 1;
+  }
+
+  .edge-scroll-button:hover {
+    background: var(--bg-subtle, var(--header-bg-solid));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edge-scroll-button {
+    transition: none;
+  }
+}

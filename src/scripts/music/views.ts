@@ -1,4 +1,5 @@
 import type { MusicStats, RangeStats } from "@/lib/music";
+import { markScrollEdges } from "@/scripts/edge-scroll";
 
 import { formatDate, formatNumber, html, offsetWithin, slug, svg } from "./dom";
 
@@ -384,14 +385,7 @@ function updateScrollState(
   scroller: HTMLElement,
   nav: HTMLElement | null | undefined
 ) {
-  const hasMoreBefore = scroller.scrollLeft > 4;
-  const hasMoreAfter =
-    scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 4;
-  const state = [hasMoreBefore && "start", hasMoreAfter && "end"]
-    .filter(Boolean)
-    .join(" ");
-  if (state) scroller.dataset.scroll = state;
-  else delete scroller.dataset.scroll;
+  const { hasMoreAfter, hasMoreBefore } = markScrollEdges(scroller);
 
   if (!nav) return;
   nav.hidden = !hasMoreBefore && !hasMoreAfter;
@@ -636,6 +630,7 @@ export function renderCalendar(
       {
         "aria-label": "Daily plays, scrollable",
         class: "ms-calendar-scroll",
+        "data-edge-scroll": "",
         role: "region",
         tabindex: 0,
       },
