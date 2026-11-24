@@ -1,19 +1,28 @@
 ---
 import RadarChart from "@/components/charts/RadarChart.astro";
 import Story from "@/components/story/Story.astro";
-import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { applyCache, dataCache, degradedCache } from "@/lib/cache";
+import { loadCached } from "@/lib/data-cache";
 import { actorDid } from "@/lib/const";
 import { fetchGitHubActivity } from "@/lib/data";
 import { getRepoRecords } from "@/lib/repo";
 import { getSocialActivity } from "@/lib/stories";
 
-const [records, github] = await Promise.all([
-  getRepoRecords().catch(() => null),
-  fetchGitHubActivity(),
-]);
-applyCache(Astro.response, records ? longLivedCache : degradedCache);
+// Only the counts are kept, not the whole repository behind them.
+const social = await loadCached(
+  "social",
+  async () => {
+    const [records, github] = await Promise.all([
+      getRepoRecords().catch(() => null),
+      fetchGitHubActivity(),
+    ]);
+    return records ? getSocialActivity(records, github) : null;
+  },
+  Astro.locals
+);
+applyCache(Astro.response, social ? dataCache : degradedCache);
 
-const activities = records ? getSocialActivity(records, github) : [];
+const activities = social ?? [];
 const top = activities.toSorted((a, b) => b.value - a.value)[0];
 const hasData = activities.some((activity) => activity.value > 0);
 ---

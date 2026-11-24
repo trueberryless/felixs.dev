@@ -1,12 +1,13 @@
 ---
 import Story from "@/components/story/Story.astro";
-import { applyCache, dailyCache, degradedCache } from "@/lib/cache";
+import { applyCache, dataCache, degradedCache } from "@/lib/cache";
+import { loadCached } from "@/lib/data-cache";
 import { fetchEvents } from "@/lib/data";
 
 const MAX_AVATARS = 8;
 
-const events = await fetchEvents().catch(() => null);
-applyCache(Astro.response, events ? dailyCache : degradedCache);
+const events = await loadCached("events", fetchEvents, Astro.locals);
+applyCache(Astro.response, events ? dataCache : degradedCache);
 
 const nowMs = Date.now();
 const upcoming = (events ?? [])

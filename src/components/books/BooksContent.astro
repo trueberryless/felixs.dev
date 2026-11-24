@@ -9,11 +9,12 @@ import {
   getBooksPerYear,
   getPagesRead,
 } from "@/lib/books";
-import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { applyCache, dataCache, degradedCache } from "@/lib/cache";
+import { loadCached } from "@/lib/data-cache";
 import { fetchBooks } from "@/lib/data";
 
-const books = await fetchBooks().catch(() => null);
-applyCache(Astro.response, books ? longLivedCache : degradedCache);
+const books = await loadCached("books", fetchBooks, Astro.locals);
+applyCache(Astro.response, books ? dataCache : degradedCache);
 const hasData = Boolean(books && books.length > 0);
 
 const nowMs = Date.now();
@@ -160,8 +161,8 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
         button.setAttribute("aria-pressed", String(year === this.#year));
         const label = button.querySelector("[data-count]");
         if (label) label.textContent = String(count);
-        const books = button.querySelector("[data-books]");
-        if (books) books.textContent = count === 1 ? " book in" : " books in";
+        const unit = button.querySelector("[data-books]");
+        if (unit) unit.textContent = count === 1 ? " book in" : " books in";
       }
       for (const button of this.querySelectorAll<HTMLElement>(
         ".shelf-author"

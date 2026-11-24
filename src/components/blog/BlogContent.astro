@@ -1,14 +1,15 @@
 ---
 import FilterChip from "@/components/utils/FilterChip.astro";
 import Fallback from "@/components/utils/Fallback.astro";
-import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { applyCache, dataCache, degradedCache } from "@/lib/cache";
+import { loadCached } from "@/lib/data-cache";
 import { fetchPosts } from "@/lib/data";
 import { getDocumentBlocks, getReadingMinutes } from "@/lib/leaflet";
 import { getPostImage } from "@/lib/post-images";
 import { getPostPath, groupPostsByYear } from "@/lib/posts";
 
-const posts = await fetchPosts().catch(() => null);
-applyCache(Astro.response, posts ? longLivedCache : degradedCache);
+const posts = await loadCached("posts", fetchPosts, Astro.locals);
+applyCache(Astro.response, posts ? dataCache : degradedCache);
 const { years, postsByYear } =
   posts && posts.length > 0
     ? groupPostsByYear(posts)

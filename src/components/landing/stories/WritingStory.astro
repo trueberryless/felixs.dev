@@ -1,12 +1,13 @@
 ---
 import PostTimeline from "@/components/charts/PostTimeline.astro";
 import Story from "@/components/story/Story.astro";
-import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { applyCache, dataCache, degradedCache } from "@/lib/cache";
+import { loadCached } from "@/lib/data-cache";
 import { fetchPosts } from "@/lib/data";
 import { getPostPath } from "@/lib/posts";
 
-const posts = await fetchPosts().catch(() => null);
-applyCache(Astro.response, posts ? longLivedCache : degradedCache);
+const posts = await loadCached("posts", fetchPosts, Astro.locals);
+applyCache(Astro.response, posts ? dataCache : degradedCache);
 
 const items = (posts ?? []).map((post) => ({
   date: post.data.publishedAt,

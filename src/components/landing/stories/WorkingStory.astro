@@ -1,12 +1,13 @@
 ---
 import CareerTimeline from "@/components/charts/CareerTimeline.astro";
 import Story from "@/components/story/Story.astro";
-import { applyCache, degradedCache, longLivedCache } from "@/lib/cache";
+import { applyCache, dataCache, degradedCache } from "@/lib/cache";
+import { loadCached } from "@/lib/data-cache";
 import { fetchResume } from "@/lib/data";
 import { getCareerRows, parseResumeDate, tellCareer } from "@/lib/stories";
 
-const resume = await fetchResume().catch(() => null);
-applyCache(Astro.response, resume ? longLivedCache : degradedCache);
+const resume = await loadCached("resume", fetchResume, Astro.locals);
+applyCache(Astro.response, resume ? dataCache : degradedCache);
 
 const nowMs = Date.now();
 const rows = getCareerRows(resume, nowMs);
