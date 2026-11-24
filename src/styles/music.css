@@ -154,44 +154,24 @@
   min-inline-size: 0;
 }
 
-/* On a narrow screen the ranges scroll sideways inside the pill, and they
-   fade out at each edge with more to scroll to. The fade reaches far into
-   the pill, so it always catches the next label. Scrolling a focused range
-   into view keeps it clear of the fade. */
-.ms-ranges-track {
-  --fade: 96px;
+/* On a narrow screen the ranges scroll sideways inside the pill, see
+   `src/scripts/edge-scroll.ts`. The fades reach far into the pill, so they
+   always catch the next label. */
+.ms-ranges {
+  --edge-fade: 96px;
+}
 
+.ms-ranges > .edge-scroll-frame {
+  flex: 0 1 auto;
+}
+
+.ms-ranges-track {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
   gap: 4px;
   min-width: 0;
   padding: 4px;
-  overflow-x: auto;
-  scroll-padding-inline: var(--fade);
-  scrollbar-width: none;
-}
-
-.ms-ranges-track::-webkit-scrollbar {
-  display: none;
-}
-
-.ms-ranges-track[data-scroll~="start"] {
-  mask-image: linear-gradient(to right, transparent 12px, black var(--fade));
-}
-
-.ms-ranges-track[data-scroll~="end"] {
-  mask-image: linear-gradient(to left, transparent 12px, black var(--fade));
-}
-
-.ms-ranges-track[data-scroll~="start"][data-scroll~="end"] {
-  mask-image: linear-gradient(
-    to right,
-    transparent 12px,
-    black var(--fade),
-    black calc(100% - var(--fade)),
-    transparent calc(100% - 12px)
-  );
 }
 
 .ms-range-group {
@@ -868,7 +848,6 @@ a.ms-track-name:hover {
 
 /* Calendar */
 .ms-calendar-scroll {
-  overflow-x: auto;
   padding-bottom: 4px;
 }
 

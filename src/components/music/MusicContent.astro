@@ -43,7 +43,7 @@ const timeZoneName =
     <script type="application/json" class="ms-data" set:html={json} />
     <fieldset class="ms-ranges">
       <legend class="sr-only">Time range</legend>
-      <div class="ms-ranges-track">
+      <div class="ms-ranges-track" data-edge-scroll>
         <div
           class:list={["ms-range-group", { "is-open": !isYearDefault }]}
           data-group="relative"

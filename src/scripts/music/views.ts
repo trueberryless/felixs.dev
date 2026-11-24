@@ -1,14 +1,7 @@
 import type { MusicStats, RangeStats } from "@/lib/music";
+import { markScrollEdges } from "@/scripts/edge-scroll";
 
-import {
-  formatDate,
-  formatNumber,
-  html,
-  markScrollEdges,
-  offsetWithin,
-  slug,
-  svg,
-} from "./dom";
+import { formatDate, formatNumber, html, offsetWithin, slug, svg } from "./dom";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const CURRENT_ROWS = 5;
@@ -637,6 +630,7 @@ export function renderCalendar(
       {
         "aria-label": "Daily plays, scrollable",
         class: "ms-calendar-scroll",
+        "data-edge-scroll": "",
         role: "region",
         tabindex: 0,
       },

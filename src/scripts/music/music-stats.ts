@@ -1,7 +1,8 @@
 import type { MusicStats, RangeStats } from "@/lib/music";
 import { countTo } from "@/scripts/count-up";
+import "@/scripts/edge-scroll";
 
-import { formatDate, markScrollEdges, reveal } from "./dom";
+import { formatDate, reveal } from "./dom";
 import { renderTrack } from "./track";
 import {
   getCurrentColumns,
@@ -41,30 +42,6 @@ class MusicStatsElement extends HTMLElement {
         const group = toggle.closest<HTMLElement>(".ms-range-group");
         if (group) this.#openGroup(group.dataset.group);
       });
-    }
-    const track = this.querySelector<HTMLElement>(".ms-ranges-track");
-    if (track) {
-      const mark = () => markScrollEdges(track);
-      track.addEventListener("scroll", mark, { passive: true });
-      // The track keeps its width while a group opens or closes inside it,
-      // so the groups are watched as well.
-      const resizes = new ResizeObserver(mark);
-      for (const element of [track, ...track.children]) {
-        resizes.observe(element);
-      }
-      // The picked range starts clear of the fade, which is as wide as the
-      // scroll padding of the track.
-      const picked = track.querySelector(":checked")?.closest("label");
-      if (picked) {
-        const fade = Number.parseFloat(
-          getComputedStyle(track).scrollPaddingInlineEnd
-        );
-        const overlap =
-          picked.getBoundingClientRect().right -
-          track.getBoundingClientRect().right +
-          fade;
-        if (overlap > 0) track.scrollLeft += overlap;
-      }
     }
     this.querySelector(".ms-range-day-close")?.addEventListener("click", () =>
       this.#pick(this.#range?.id ?? this.dataset.defaultRange ?? "all")
