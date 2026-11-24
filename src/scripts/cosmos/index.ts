@@ -3,7 +3,7 @@
 import { DEPTH, POINTER_REACH, getBodies } from "./bodies";
 import stylesUrl from "./cosmos.css?url";
 import { landRocket, launchRocket } from "./launch";
-import { createSpaceMusic } from "./music";
+import { createSpaceMusic, prepareMusic } from "./music";
 import { createNebula } from "./nebula";
 import { createStarfield } from "./starfield";
 import { createSkyEffects, createStars } from "./stars";
@@ -19,6 +19,12 @@ const STILL_KEY = "spaceStill";
 // skipped with a timer rather than an early return, because every animation
 // frame the page asks for also makes the browser tick all CSS animations.
 const IDLE_FRAME_MS = 1000 / 30;
+// The fog and the planet move far slower than the twinkling stars, so while
+// nothing else moves they redraw only every few frames.
+const IDLE_NEBULA_MS = 1000 / 10;
+// Stars and effects are tiny points and lines, sharp enough at this density
+// even on denser screens, and every pixel saved counts on a big display.
+const MAX_STAR_PIXEL_RATIO = 1.5;
 const ACTIVE_FOR_MS = 250;
 const POINTER_LINGER_S = 2.5;
 // Longer gaps between frames, like a tab in the background, do not move the
@@ -55,12 +61,63 @@ const styles = loadStylesheet(stylesUrl);
 // The easing each element is still running from the last toggle.
 const settling = new WeakMap<Element, Animation>();
 let fonts: Promise<unknown> | undefined;
+let warm: Promise<void> | undefined;
 let scene: Scene | undefined;
+// Decoded prints stay referenced, so the browser keeps them ready.
+const prints: HTMLImageElement[] = [];
 
-/** Fetches the fonts and styles ahead of time, so switching never waits. */
+/**
+ * Fetches the fonts and styles and does the slow first-time work ahead of
+ * time, so switching never waits. The countdown calls it, well before the
+ * rocket lifts off.
+ */
 export function prepare() {
   fonts ??= loadFonts();
-  return Promise.all([styles, fonts]);
+  warm ??= warmUp();
+  return Promise.all([styles, fonts, warm]);
+}
+
+/**
+ * Compiles the sky's shaders once, which the GPU keeps for the real scene,
+ * and decodes the planets' prints. Like opening the audio device, both
+ * would otherwise land in the middle of the launch and stall the rocket.
+ */
+async function warmUp() {
+  // One step per idle moment, so none of them stalls the countdown.
+  await idle();
+  prepareMusic();
+  for (const create of [createNebula, createStarfield]) {
+    await idle();
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    create(canvas)?.destroy();
+  }
+  await Promise.all(decodePrints());
+}
+
+function idle() {
+  return new Promise<void>((resolve) => {
+    if ("requestIdleCallback" in window) {
+      requestIdleCallback(() => resolve(), { timeout: 400 });
+    } else setTimeout(resolve, 0);
+  });
+}
+
+function decodePrints() {
+  return [...document.querySelectorAll<HTMLElement>("[data-planet]")].map(
+    async (element) => {
+      const url = /url\(["']?([^"')]+)/.exec(
+        element.style.getPropertyValue("--planet-print")
+      )?.[1];
+      if (!url) return;
+      const image = new Image();
+      image.src = url;
+      prints.push(image);
+      // A print that fails to load simply shows without its logo.
+      await image.decode().catch(() => {});
+    }
+  );
 }
 
 /**
@@ -152,6 +209,10 @@ function createScene(): Scene {
   let lastPointerMove = -Infinity;
   let lastScroll = -Infinity;
   let lastFrame = performance.now();
+  let lastNebulaFrame = -Infinity;
+  // Reading the page height on every frame would force a layout whenever the
+  // page changed in between, so it is kept up to date on resize instead.
+  let scrollMax = 0;
   // The sky's own time, which stands still while paused. Resuming carries on
   // from the same moment, so nothing jumps.
   let motionTime = 0;
@@ -221,21 +282,24 @@ function createScene(): Scene {
       height,
       pointer: view,
       scroll,
-      scrollMax: document.documentElement.scrollHeight - height,
+      scrollMax,
       time: motionTime,
       width,
     });
 
-    nebula?.draw({
-      bodies,
-      dim: Math.min(1, scroll / height) * 0.2,
-      nebulaOffset: {
-        x: view.x * DEPTH.nebula * POINTER_REACH,
-        y: view.y * DEPTH.nebula * POINTER_REACH + scroll * DEPTH.nebula,
-      },
-      time: motionTime,
-      warp: warpStrength,
-    });
+    if (isActive || now - lastNebulaFrame >= IDLE_NEBULA_MS) {
+      lastNebulaFrame = now;
+      nebula?.draw({
+        bodies,
+        dim: Math.min(1, scroll / height) * 0.2,
+        nebulaOffset: {
+          x: view.x * DEPTH.nebula * POINTER_REACH,
+          y: view.y * DEPTH.nebula * POINTER_REACH + scroll * DEPTH.nebula,
+        },
+        time: motionTime,
+        warp: warpStrength,
+      });
+    }
     starfield?.draw({
       // Paused stars keep the twinkle they had, motion-free ones are even.
       animate: !isFixed,
@@ -297,12 +361,24 @@ function createScene(): Scene {
     const width = window.innerWidth;
     const height = window.innerHeight;
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    const starPixelRatio = Math.min(pixelRatio, MAX_STAR_PIXEL_RATIO);
     const stars = createStars(width, height);
     nebula?.resize(width, height, pixelRatio);
-    starfield?.resize(width, height, pixelRatio, stars);
-    effects?.resize(width, height, pixelRatio, stars);
+    starfield?.resize(width, height, starPixelRatio, stars);
+    effects?.resize(width, height, starPixelRatio, stars);
+    measurePage();
+  }
+
+  // Runs after layout, so reading the height here costs nothing extra.
+  function measurePage() {
+    scrollMax = Math.max(
+      0,
+      document.documentElement.scrollHeight - window.innerHeight
+    );
     wake();
   }
+  const pageSize = new ResizeObserver(measurePage);
+  pageSize.observe(document.documentElement);
 
   function onPointerMove(event: PointerEvent) {
     if (event.pointerType !== "mouse" || isStill()) return;
@@ -350,6 +426,7 @@ function createScene(): Scene {
     cancelAnimationFrame(driftFrame);
     driftObserver.disconnect();
     window.removeEventListener("resize", resize);
+    pageSize.disconnect();
     window.removeEventListener("pointermove", onPointerMove);
     window.removeEventListener("scroll", onScroll);
     window.removeEventListener("click", onClick);

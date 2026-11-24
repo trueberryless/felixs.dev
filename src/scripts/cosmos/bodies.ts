@@ -1,9 +1,8 @@
 // One parallax rule for the whole sky: something at depth `d` (0 is infinitely
 // far, 1 is the page itself) moves `d` times as far as the page when
 // scrolling, and `d × POINTER_REACH` when the pointer moves. Being closer also
-// means being in front: the planet and the moon hide the stars behind them.
+// means being in front: the planet hides the stars behind it.
 export const DEPTH = {
-  moon: 0.022,
   nebula: 0.004,
   planet: 0.062,
   starsFar: 0.002,
@@ -20,8 +19,8 @@ export const POINTER_REACH = 420;
 const FULL_PLANET_RISE = 0.9;
 
 /**
- * Positions the planet and the moon in CSS pixels. The nebula shader paints
- * them from these numbers and the starfield uses them to hide occluded stars.
+ * Positions the planet in CSS pixels. The nebula shader paints
+ * it from these numbers and the starfield uses it to hide occluded stars.
  */
 export function getBodies({
   arrival,
@@ -39,18 +38,6 @@ export function getBodies({
   const planetRise = Math.min(scroll, scrollMax) * rate;
 
   return {
-    moon: {
-      radius: height * 0.032,
-      x:
-        width * 0.2 +
-        Math.cos(time * 0.021) * width * 0.04 -
-        pointer.x * DEPTH.moon * POINTER_REACH,
-      y:
-        height * 0.22 +
-        Math.sin(time * 0.021) * height * 0.015 -
-        scroll * DEPTH.moon -
-        pointer.y * DEPTH.moon * POINTER_REACH,
-    },
     planet: {
       radius: height,
       x:
@@ -68,16 +55,12 @@ export function getBodies({
   };
 }
 
-/** Whether a point is hidden behind the planet or the moon. */
-export function isOccluded({ moon, planet }: Bodies, x: number, y: number) {
-  return (
-    (x - planet.x) ** 2 + (y - planet.y) ** 2 < planet.radius ** 2 ||
-    (x - moon.x) ** 2 + (y - moon.y) ** 2 < moon.radius ** 2
-  );
+/** Whether a point is hidden behind the planet. */
+export function isOccluded({ planet }: Bodies, x: number, y: number) {
+  return (x - planet.x) ** 2 + (y - planet.y) ** 2 < planet.radius ** 2;
 }
 
 export interface Bodies {
-  moon: Body;
   planet: Body;
 }
 

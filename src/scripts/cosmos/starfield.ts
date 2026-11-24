@@ -23,7 +23,6 @@ uniform float uReach;
 uniform float uWarp;
 // Centre and radius in CSS pixels.
 uniform vec3 uPlanet;
-uniform vec3 uMoon;
 
 varying vec3 vColor;
 varying float vAlpha;
@@ -42,10 +41,7 @@ void main() {
   float travel = 0.25 + 0.75 * (1.0 - uWarp);
   position = uViewport * 0.5 + (position - uViewport * 0.5) * travel;
 
-  bool isHidden = uWarp == 0.0 && (
-    distance(position, uPlanet.xy) < uPlanet.z ||
-    distance(position, uMoon.xy) < uMoon.z
-  );
+  bool isHidden = uWarp == 0.0 && distance(position, uPlanet.xy) < uPlanet.z;
   float twinkle = mix(0.85, 0.6 + 0.4 * sin(uTime * aTwinkle.x + aColor.a), uAnimate);
   vAlpha = min(1.0, (0.35 + nearness * 0.6) * twinkle + uWarp * 0.6);
   vColor = aColor.rgb;
@@ -184,12 +180,6 @@ export function createStarfield(
       bodies.planet.y,
       bodies.planet.radius
     );
-    gl!.uniform3f(
-      uniforms.moon,
-      bodies.moon.x,
-      bodies.moon.y,
-      bodies.moon.radius
-    );
     gl!.drawArrays(gl!.POINTS, 0, stars.length);
   }
 
@@ -229,7 +219,6 @@ function createState(gl: WebGLRenderingContext) {
   return {
     uniforms: {
       animate: uniform("uAnimate"),
-      moon: uniform("uMoon"),
       pixelRatio: uniform("uPixelRatio"),
       planet: uniform("uPlanet"),
       scroll: uniform("uScroll"),

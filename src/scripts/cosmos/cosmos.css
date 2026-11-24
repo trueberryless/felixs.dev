@@ -479,7 +479,7 @@
     0 14px 30px oklch(0.04 0.03 290 / 0.6);
 }
 
-/* The outer ring: small moons that all share one cheap surface, a few
+/* The smaller projects: moons that all share one cheap surface, a few
    craters over a flat tint, so ten more bodies cost almost nothing to paint.
    Each logo picks its own hue. */
 :root.space.dark .logo-wrapper[data-planet="moon"] {
