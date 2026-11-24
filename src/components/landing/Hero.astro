@@ -2,29 +2,56 @@
 import { Image, getImage } from "astro:assets";
 
 import astroLight from "@/assets/logos/light/astro.png";
+import biomeLight from "@/assets/logos/light/biome.png";
 import bombshellLight from "@/assets/logos/light/bombshell.png";
 import catppuccinLight from "@/assets/logos/light/catppuccin.png";
+import changesetsLight from "@/assets/logos/light/changesets.png";
 import diglotLight from "@/assets/logos/light/diglot.png";
+import e18eLight from "@/assets/logos/light/e18e.png";
+import expressiveCodeLight from "@/assets/logos/light/expressive-code.png";
 import forgesLight from "@/assets/logos/light/forges.png";
+import knipLight from "@/assets/logos/light/knip.png";
+import madeInCommonLight from "@/assets/logos/light/made-in-common.png";
+import monkeytypeLight from "@/assets/logos/light/monkeytype.png";
 import npmxLight from "@/assets/logos/light/npmx.png";
 import nuxtLight from "@/assets/logos/light/nuxt.png";
+import rosePineLight from "@/assets/logos/light/rose-pine.png";
 import starlightLight from "@/assets/logos/light/starlight.png";
+import zizmorLight from "@/assets/logos/light/zizmor.png";
 import astroDark from "@/assets/logos/dark/astro.png";
+import biomeDark from "@/assets/logos/dark/biome.png";
 import bombshellDark from "@/assets/logos/dark/bombshell.png";
 import catppuccinDark from "@/assets/logos/dark/catppuccin.png";
+import changesetsDark from "@/assets/logos/dark/changesets.png";
 import diglotDark from "@/assets/logos/dark/diglot.png";
+import e18eDark from "@/assets/logos/dark/e18e.png";
+import expressiveCodeDark from "@/assets/logos/dark/expressive-code.png";
 import forgesDark from "@/assets/logos/dark/forges.png";
+import knipDark from "@/assets/logos/dark/knip.png";
+import madeInCommonDark from "@/assets/logos/dark/made-in-common.png";
+import monkeytypeDark from "@/assets/logos/dark/monkeytype.png";
 import npmxDark from "@/assets/logos/dark/npmx.png";
 import nuxtDark from "@/assets/logos/dark/nuxt.png";
+import rosePineDark from "@/assets/logos/dark/rose-pine.png";
 import starlightDark from "@/assets/logos/dark/starlight.png";
+import zizmorDark from "@/assets/logos/dark/zizmor.png";
 import astroPrint from "@/assets/logos/planets/astro.png";
+import biomePrint from "@/assets/logos/planets/biome.png";
 import bombshellPrint from "@/assets/logos/planets/bombshell.png";
 import catppuccinPrint from "@/assets/logos/planets/catppuccin.png";
+import changesetsPrint from "@/assets/logos/planets/changesets.png";
 import diglotPrint from "@/assets/logos/planets/diglot.png";
+import e18ePrint from "@/assets/logos/planets/e18e.png";
+import expressiveCodePrint from "@/assets/logos/planets/expressive-code.png";
 import forgesPrint from "@/assets/logos/planets/forges.png";
+import knipPrint from "@/assets/logos/planets/knip.png";
+import madeInCommonPrint from "@/assets/logos/planets/made-in-common.png";
+import monkeytypePrint from "@/assets/logos/planets/monkeytype.png";
 import npmxPrint from "@/assets/logos/planets/npmx.png";
 import nuxtPrint from "@/assets/logos/planets/nuxt.png";
+import rosePinePrint from "@/assets/logos/planets/rose-pine.png";
 import starlightPrint from "@/assets/logos/planets/starlight.png";
+import zizmorPrint from "@/assets/logos/planets/zizmor.png";
 
 interface Props {
   name: string;
@@ -86,112 +113,226 @@ const hexagons = [
   },
 ];
 
-// One logo for every planet of the solar system, from far to near.
-const logos = [
+// The logos start on the corners of a hex grid around the name: five rows
+// evenly apart, each half a step off the next. `x` is a share of the width,
+// `row` counts rows from the name and `dy` nudges a logo in pixels. The
+// script below then spreads them out evenly in the room the actual screen
+// leaves, so these spots are only where they start, and where they stay
+// without scripts. The projects I work on most are the planets, the smaller
+// ones moons, and each group scrolls at its own depth. Phones only show the
+// logos with a spot of their own.
+const DEPTH = { moon: 0.7, planet: 0.76 };
+
+const planets = [
   {
-    dark: diglotDark,
+    dark: starlightDark,
     delay: "-2.2s",
-    depth: 0.66,
     duration: "6.8s",
-    href: "https://diglot.sh",
-    left: "60%",
-    light: diglotLight,
-    name: "diglot",
-    planet: "venus",
-    print: diglotPrint,
-    top: "13%",
-  },
-  {
-    dark: astroDark,
-    delay: "0s",
-    depth: 0.7,
-    duration: "6s",
-    href: "https://astro.build",
-    left: "35%",
-    light: astroLight,
-    name: "Astro",
-    planet: "mars",
-    print: astroPrint,
-    top: "15%",
+    href: "https://starlight.astro.build",
+    light: starlightLight,
+    name: "Starlight",
+    phone: [67, 36],
+    planet: "mercury",
+    print: starlightPrint,
+    spot: { dy: 6, row: -2, x: 37.5 },
   },
   {
     dark: bombshellDark,
-    delay: "-4.5s",
-    depth: 0.72,
-    duration: "7.2s",
+    delay: "0s",
+    duration: "6s",
     href: "https://bomb.sh",
-    left: "77%",
     light: bombshellLight,
     name: "bombshell",
+    phone: [79, 19],
     planet: "jupiter",
     print: bombshellPrint,
-    top: "25%",
+    spot: { dy: -6, row: -2, x: 75 },
+  },
+  {
+    dark: astroDark,
+    delay: "-4.5s",
+    duration: "7.2s",
+    href: "https://astro.build",
+    light: astroLight,
+    name: "Astro",
+    phone: [35, 35],
+    planet: "mars",
+    print: astroPrint,
+    spot: { dy: -4, row: -1, x: 30 },
+  },
+  {
+    dark: changesetsDark,
+    delay: "-3.6s",
+    duration: "6.4s",
+    href: "https://changesets.dev",
+    light: changesetsLight,
+    name: "Changesets",
+    phone: [23, 22],
+    planet: "saturn",
+    print: changesetsPrint,
+    spot: { dy: 8, row: -1, x: 82 },
+  },
+  {
+    dark: diglotDark,
+    delay: "-4.8s",
+    duration: "6.6s",
+    href: "https://diglot.sh",
+    light: diglotLight,
+    name: "diglot",
+    phone: [15, 69],
+    planet: "venus",
+    print: diglotPrint,
+    spot: { dy: -6, row: 1, x: 18 },
+  },
+  {
+    dark: npmxDark,
+    delay: "-0.8s",
+    duration: "5.9s",
+    href: "https://npmx.dev",
+    light: npmxLight,
+    name: "npmx",
+    phone: [48, 66],
+    planet: "neptune",
+    print: npmxPrint,
+    spot: { dy: 4, row: 1, x: 70 },
   },
   {
     dark: forgesDark,
-    delay: "-3.6s",
-    depth: 0.74,
-    duration: "6.4s",
+    delay: "-1.4s",
+    duration: "5.6s",
     href: "https://forges.link",
-    left: "12%",
     light: forgesLight,
     name: "forges",
+    phone: [31, 81],
     planet: "uranus",
     print: forgesPrint,
-    top: "64%",
+    spot: { dy: 8, row: 2, x: 24.5 },
+  },
+  {
+    dark: madeInCommonDark,
+    delay: "-3.1s",
+    duration: "5.2s",
+    href: "https://made-in-common.dev",
+    light: madeInCommonLight,
+    name: "Made in Common",
+    phone: [82, 70],
+    planet: "earth",
+    print: madeInCommonPrint,
+    spot: { dy: -4, row: 2, x: 62 },
+  },
+];
+
+const moons = [
+  {
+    dark: knipDark,
+    delay: "-5.3s",
+    duration: "7s",
+    href: "https://knip.dev",
+    hue: 45,
+    light: knipLight,
+    name: "Knip",
+    phone: [50, 14],
+    print: knipPrint,
+    spot: { dy: -4, row: -2, x: 11.5 },
+  },
+  {
+    dark: rosePineDark,
+    delay: "-2.2s",
+    duration: "6.8s",
+    href: "https://rosepinetheme.com",
+    hue: 340,
+    light: rosePineLight,
+    name: "Rosé Pine",
+    print: rosePinePrint,
+    spot: { dy: 4, row: -2, x: 88.5 },
   },
   {
     dark: catppuccinDark,
-    delay: "-4.8s",
-    depth: 0.75,
-    duration: "6.6s",
+    delay: "0s",
+    duration: "6s",
     href: "https://catppuccin.com",
-    left: "5%",
+    hue: 305,
     light: catppuccinLight,
     name: "Catppuccin",
-    planet: "saturn",
+    phone: [65, 84],
     print: catppuccinPrint,
-    top: "35%",
+    spot: { dy: 6, row: -1, x: 5 },
+  },
+  {
+    dark: biomeDark,
+    delay: "-4.5s",
+    duration: "7.2s",
+    href: "https://biomejs.dev",
+    hue: 235,
+    light: biomeLight,
+    name: "Biome",
+    print: biomePrint,
+    spot: { dy: -10, row: 0, x: 11 },
+  },
+  {
+    dark: zizmorDark,
+    delay: "-3.6s",
+    duration: "6.4s",
+    href: "https://zizmor.sh",
+    hue: 25,
+    light: zizmorLight,
+    name: "zizmor",
+    print: zizmorPrint,
+    spot: { dy: 10, row: 0, x: 89 },
+  },
+  {
+    dark: e18eDark,
+    delay: "-4.8s",
+    duration: "6.6s",
+    href: "https://e18e.dev",
+    hue: 130,
+    light: e18eLight,
+    name: "e18e",
+    print: e18ePrint,
+    spot: { dy: -4, row: 1, x: 95 },
   },
   {
     dark: nuxtDark,
     delay: "-0.8s",
-    depth: 0.77,
     duration: "5.9s",
     href: "https://nuxt.com",
-    left: "76%",
+    hue: 155,
     light: nuxtLight,
     name: "Nuxt",
-    planet: "earth",
     print: nuxtPrint,
-    top: "60%",
+    spot: { dy: -6, row: 2, x: 11.5 },
   },
   {
-    dark: npmxDark,
+    dark: expressiveCodeDark,
     delay: "-1.4s",
-    depth: 0.78,
     duration: "5.6s",
-    href: "https://npmx.dev",
-    left: "57%",
-    light: npmxLight,
-    name: "npmx",
-    planet: "neptune",
-    print: npmxPrint,
-    top: "75%",
+    href: "https://expressive-code.com",
+    hue: 200,
+    light: expressiveCodeLight,
+    name: "Expressive Code",
+    print: expressiveCodePrint,
+    spot: { dy: 6, row: 2, x: 49 },
   },
   {
-    dark: starlightDark,
+    dark: monkeytypeDark,
     delay: "-3.1s",
-    depth: 0.82,
     duration: "5.2s",
-    href: "https://starlight.astro.build",
-    left: "25%",
-    light: starlightLight,
-    name: "Starlight",
-    planet: "mercury",
-    print: starlightPrint,
-    top: "80%",
+    href: "https://monkeytype.com",
+    hue: 90,
+    light: monkeytypeLight,
+    name: "Monkeytype",
+    print: monkeytypePrint,
+    spot: { dy: -2, row: 2, x: 88 },
   },
+];
+
+const logos = [
+  ...moons.map((moon) =>
+    Object.assign({}, moon, { depth: DEPTH.moon, planet: "moon" })
+  ),
+  ...planets.map((planet) =>
+    Object.assign({}, planet, { depth: DEPTH.planet, hue: undefined })
+  ),
 ];
 
 // The space theme turns every logo into a planet with the logo printed on
@@ -220,37 +361,172 @@ const prints = await Promise.all(
   <div class="floating-logos">
     {logos.map((logo, index) => (
       <div
-        class="logo-parallax parallax"
-        style={`top: ${logo.top}; left: ${logo.left}; --depth: ${logo.depth};`}
+        class:list={[
+          "logo-parallax parallax",
+          {
+            "is-beside": logo.spot.row === 0,
+            "is-wide-only": !logo.phone,
+          },
+        ]}
+        style={`--x: ${logo.spot.x}%; --row: ${logo.spot.row}; --dy: ${logo.spot.dy}px;${logo.phone ? ` --phone-x: ${logo.phone[0]}%; --phone-y: ${logo.phone[1]}%;` : ""} --depth: ${logo.depth};`}
       >
         <a
           href={logo.href}
-          class="logo-wrapper"
+          class:list={["logo-wrapper", { "is-moon": logo.planet === "moon" }]}
           data-planet={logo.planet}
-          style={`animation-delay: ${logo.delay}; animation-duration: ${logo.duration}; --planet-print: url(${prints[index]?.src});`}
+          style={`animation-delay: ${logo.delay}; animation-duration: ${logo.duration}; --planet-print: url(${prints[index]?.src});${logo.hue === undefined ? "" : ` --hue: ${logo.hue};`}`}
           aria-label={logo.name}
         >
           <span class="planet-print" />
+          {/* The logos show at about 43px, so they ship small with sharper
+              copies for denser screens. */}
           <Image
             src={logo.light}
             alt={`${logo.name} Logo`}
             class="tech-logo light-logo"
+            width={52}
+            densities={[1, 2, 3]}
           />
           <Image
             src={logo.dark}
             alt={`${logo.name} Logo`}
             class="tech-logo dark-logo"
+            width={52}
+            densities={[1, 2, 3]}
           />
         </a>
       </div>
     ))}
   </div>
-
+  {/* Hidden until the script below spreads the logos out, so they never jump. */}
+  <script is:inline>
+    document.currentScript?.previousElementSibling?.setAttribute(
+      "data-placing",
+      ""
+    );
+  </script>
   <div class="hero-center-wrapper parallax" style="--depth: 0.65;">
     <div class="hero-halo" aria-hidden="true"></div>
     <h1 class="hero-text">{name}</h1>
   </div>
 </section>
+
+<script>
+  import { spreadOut, type Obstacle, type Rect } from "@/lib/spread";
+
+  // The logos spread out evenly around the name, like particles pushing each
+  // other away, in whatever room this screen and theme leave them. The spots
+  // in the markup are where they start, and where they stay without scripts.
+  // The name keeps them at a good distance, the header and the edges at a
+  // smaller one, so the room towards them gets used too.
+  const NAME_SHARE = 0.55;
+  const HEADER_SHARE = 0.3;
+  // The music dock and the pause button sit at the bottom of the screen.
+  const BOTTOM_ROOM = 48;
+
+  let pending = 0;
+
+  function placeAll() {
+    cancelAnimationFrame(pending);
+    pending = requestAnimationFrame(() => {
+      for (const logos of document.querySelectorAll<HTMLElement>(
+        ".floating-logos"
+      )) {
+        place(logos);
+      }
+    });
+  }
+
+  function place(logos: HTMLElement) {
+    const hero = logos.closest<HTMLElement>(".hero-viewport");
+    const name = hero?.querySelector(".hero-text");
+    if (!hero || !name) return;
+
+    const items = [
+      ...logos.querySelectorAll<HTMLElement>(".logo-parallax"),
+    ].filter((item) => item.offsetParent !== null);
+    const frame = logos.getBoundingClientRect();
+    // In the logos' own coordinates, as the page lays out at the very top:
+    // the header stays put while scrolling and the name has its parallax.
+    const local = (rect: DOMRect, shiftY = 0): Rect => ({
+      bottom: rect.bottom - frame.top - shiftY,
+      left: rect.left - frame.left,
+      right: rect.right - frame.left,
+      top: rect.top - frame.top - shiftY,
+    });
+
+    const heroBox = local(hero.getBoundingClientRect());
+    const box = { ...heroBox, bottom: heroBox.bottom - BOTTOM_ROOM };
+    const text = document.createRange();
+    text.selectNodeContents(name);
+    const wrapper = name.closest(".parallax");
+    const lift = wrapper
+      ? new DOMMatrix(getComputedStyle(wrapper).transform).m42
+      : 0;
+    const obstacles: Obstacle[] = [
+      { rect: local(text.getBoundingClientRect(), lift), share: NAME_SHARE },
+    ];
+    const header = document.querySelector(".header-inner");
+    if (header) {
+      obstacles.push({
+        rect: local(header.getBoundingClientRect(), window.scrollY),
+        share: HEADER_SHARE,
+      });
+    }
+
+    // Every layout starts from the spots in the markup, like a fresh load, so
+    // a resize ends up exactly where a reload would. The logos briefly go
+    // back there without a transition to be measured, then return to where
+    // they were, so the move to their new spots still glides.
+    const placed = items.map(({ style }) => [style.left, style.top] as const);
+    for (const { style } of items) {
+      style.transition = "none";
+      style.left = "";
+      style.top = "";
+    }
+    const seeds = items.map((item) => ({
+      reach: reachOf(item),
+      x: item.offsetLeft,
+      y: item.offsetTop,
+    }));
+    for (const [index, { style }] of items.entries()) {
+      [style.left, style.top] = placed[index]!;
+    }
+    void logos.offsetWidth;
+    for (const { style } of items) style.transition = "";
+
+    const points = spreadOut(seeds, box, obstacles);
+    for (const [index, item] of items.entries()) {
+      item.style.left = `${points[index]!.x.toFixed(1)}px`;
+      item.style.top = `${points[index]!.y.toFixed(1)}px`;
+    }
+
+    if (logos.hasAttribute("data-placing")) {
+      logos.removeAttribute("data-placing");
+      // Later moves, like a resize or a new theme, glide instead of jumping.
+      requestAnimationFrame(() => logos.classList.add("is-placed"));
+    }
+  }
+
+  // Half a logo plus a little air, and Saturn's rings reach further out.
+  function reachOf(item: HTMLElement) {
+    const logo = item.querySelector<HTMLElement>(".logo-wrapper");
+    if (!logo) return 0;
+    const hasRings =
+      document.documentElement.classList.contains("space") &&
+      logo.dataset.planet === "saturn";
+    return (logo.offsetWidth / 2) * (hasRings ? 1.8 : 1) + 12;
+  }
+
+  placeAll();
+  document.addEventListener("astro:page-load", placeAll);
+  window.addEventListener("resize", placeAll, { passive: true });
+  void document.fonts.ready.then(placeAll);
+  // The space theme sets the name in a wider font.
+  new MutationObserver(placeAll).observe(document.documentElement, {
+    attributeFilter: ["class"],
+  });
+</script>
 
 <style is:global>
   /* Specific enough to win over the global padding, whatever order the
@@ -323,15 +599,41 @@ const prints = await Promise.all(
     transform: rotate(120deg);
   }
 
+  /* The logos keep well clear of the header and of every edge. Rows sit a
+     fixed gap apart, within limits, so the closest ones stay well away from
+     the name. */
   .floating-logos {
+    --gap: clamp(112px, 19%, 150px);
+
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: min(100%, 1180px);
-    height: min(100%, 860px);
-    transform: translate(-50%, -50%);
+    inset: 120px 0;
+    width: min(100% - 96px, 1500px);
+    height: min(100% - 240px, 860px);
+    margin: auto;
     z-index: 40;
     pointer-events: none;
+  }
+
+  .floating-logos {
+    transition: opacity 0.5s ease;
+  }
+
+  /* A fallback reveal, in case the script that places them never runs. */
+  .floating-logos[data-placing] {
+    opacity: 0;
+    animation: logos-reveal 0.5s ease 2s forwards;
+  }
+
+  @keyframes logos-reveal {
+    to {
+      opacity: 1;
+    }
+  }
+
+  .floating-logos.is-placed .logo-parallax {
+    transition:
+      left 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+      top 0.8s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   :root:not(.dark) .dark-logo {
@@ -342,8 +644,12 @@ const prints = await Promise.all(
     display: none;
   }
 
+  /* Each logo is centred on its spot on the grid. */
   .logo-parallax {
     position: absolute;
+    top: calc(50% + var(--row) * var(--gap) + var(--dy));
+    left: var(--x);
+    translate: -50% -50%;
     pointer-events: auto;
   }
 
@@ -377,8 +683,10 @@ const prints = await Promise.all(
   }
 
   .logo-wrapper {
-    width: 72px;
-    height: 72px;
+    --badge-size: 72px;
+
+    width: var(--badge-size);
+    height: var(--badge-size);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -505,6 +813,11 @@ const prints = await Promise.all(
       transform: none !important;
     }
 
+    .floating-logos,
+    .floating-logos.is-placed .logo-parallax {
+      transition: none;
+    }
+
     .logo-wrapper {
       animation: none !important;
       transition: none;
@@ -530,6 +843,45 @@ const prints = await Promise.all(
     .hero-text {
       font-size: 15vw;
       padding: 24px 8px;
+    }
+  }
+
+  /* The moons further out are a little smaller. */
+  .logo-wrapper.is-moon {
+    --badge-size: 60px;
+
+    border-radius: 14px;
+  }
+
+  /* The logos beside the name need room next to it. The name fills the
+     width of narrower screens, and in space its wider letters need a very
+     wide one. */
+  @media (max-width: 1000px) {
+    .logo-parallax.is-beside {
+      display: none;
+    }
+  }
+
+  @media (max-width: 1599px) {
+    :global(:root.space) .logo-parallax.is-beside {
+      display: none;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .floating-logos {
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .logo-parallax {
+      top: var(--phone-y);
+      left: var(--phone-x);
+    }
+
+    .logo-parallax.is-wide-only {
+      display: none;
     }
   }
 

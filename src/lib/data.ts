@@ -14,6 +14,7 @@ const TIMEOUT_MS = 15000;
 const SHOWCASE_ORGS: [string, string][] = [
   ["withastro", "Build fast websites, faster"],
   ["npmx-dev", "A fast, modern browser for the npm registry"],
+  ["made-in-common", "Open source tools for the web, looked after together"],
   [
     "all-contributors",
     "Recognize all contributors, not just the ones who push code",

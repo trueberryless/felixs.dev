@@ -23,9 +23,21 @@ const LOGOS: LogoPrint[] = [
   // The two halves of the circle stand out from the black tile.
   { crop: 0.14, mode: "bright", name: "diglot", pitch: 0.1, yaw: -0.1 },
   { mode: "alpha", name: "forges", pitch: -0.06, yaw: 0.12 },
+  // Only the black circles, so the lens between them stays bare and the
+  // overlap still reads on the surface.
+  { mode: "black", name: "made-in-common", pitch: 0.06, yaw: -0.1 },
   { mode: "alpha", name: "nuxt", pitch: 0.1, yaw: -0.08 },
   { mode: "alpha", name: "npmx", pitch: 0.08, yaw: 0.16 },
   { mode: "alpha", name: "starlight", pitch: -0.12, yaw: -0.12 },
+  { mode: "alpha", name: "biome", pitch: 0.06, yaw: 0.12 },
+  { mode: "alpha", name: "changesets", pitch: 0.06, yaw: -0.12 },
+  { mode: "alpha", name: "e18e", pitch: 0.1, yaw: 0.08 },
+  { mode: "alpha", name: "expressive-code", pitch: -0.06, yaw: 0.1 },
+  { mode: "alpha", name: "knip", pitch: -0.1, yaw: -0.06 },
+  { mode: "alpha", name: "monkeytype", pitch: 0.08, yaw: -0.1 },
+  // The dark middle of the badge, which leaves the flower bare.
+  { mode: "dark", name: "rose-pine", pitch: -0.06, yaw: 0.06 },
+  { mode: "alpha", name: "zizmor", pitch: -0.12, yaw: -0.08 },
 ];
 
 const logosDir = new URL("../src/assets/logos/", import.meta.url);
@@ -82,7 +94,9 @@ async function readInk({ crop = 0, mode, name }: LogoPrint) {
           ? a * clamp((0.32 - luminance) / 0.12)
           : mode === "white"
             ? a * clamp((Math.min(r, g, b) - 0.6) / 0.2)
-            : a * clamp((brightest - 0.5) / 0.16);
+            : mode === "black"
+              ? a * clamp((0.3 - brightest) / 0.12)
+              : a * clamp((brightest - 0.5) / 0.16);
   }
 
   return ink;
@@ -151,7 +165,7 @@ interface LogoPrint {
   /** The share cut from every side first, to drop a tile's frame. */
   crop?: number;
   /** Which pixels count as ink. */
-  mode: "alpha" | "bright" | "dark" | "white";
+  mode: "alpha" | "black" | "bright" | "dark" | "white";
   name: string;
   pitch: number;
   yaw: number;

@@ -442,6 +442,14 @@
     linear-gradient(transparent 50%, #000 50%);
 }
 
+/* On narrower screens the moons sit closer, so the rings are a little
+   tighter to keep clear of them. */
+@media (max-width: 900px) {
+  :root.space.dark .logo-wrapper[data-planet="saturn"]::before {
+    width: 170%;
+  }
+}
+
 :root.space.dark .logo-wrapper[data-planet="neptune"] {
   --planet-size: 70px;
   --planet-glow: oklch(0.66 0.16 250 / 0.6);
@@ -469,6 +477,28 @@
     inset 0 0 10px oklch(0.85 0.1 220 / 0.5),
     0 0 30px -6px var(--planet-glow),
     0 14px 30px oklch(0.04 0.03 290 / 0.6);
+}
+
+/* The outer ring: small moons that all share one cheap surface, a few
+   craters over a flat tint, so ten more bodies cost almost nothing to paint.
+   Each logo picks its own hue. */
+:root.space.dark .logo-wrapper[data-planet="moon"] {
+  --planet-size: 50px;
+  --planet-glow: oklch(0.8 0.06 var(--hue) / 0.4);
+  --planet-ink: oklch(0.3 0.06 var(--hue) / 0.75);
+  --crater:
+    oklch(0.25 0.03 var(--hue) / 0.35) 55%, oklch(1 0 0 / 0.12) 72%,
+    transparent 82%;
+  --planet-surface:
+    radial-gradient(
+      circle calc(var(--planet-size) * 0.1) at 26% 30%,
+      var(--crater)
+    ),
+    radial-gradient(
+      circle calc(var(--planet-size) * 0.07) at 72% 74%,
+      var(--crater)
+    ),
+    oklch(0.74 0.06 var(--hue));
 }
 
 /* Venus hides under pale, swirling clouds. */

@@ -2,58 +2,28 @@
 import { actorDid } from "@/lib/const";
 import Badge from "@/components/utils/Badge.astro";
 
-import astroLight from "@/assets/logos/light/astro.png";
 import blueskyLight from "@/assets/logos/light/bluesky.png";
-import npmxLight from "@/assets/logos/light/npmx.png";
-import starlightLight from "@/assets/logos/light/starlight.png";
-import allContributorsLight from "@/assets/logos/light/all-contributors.png";
-import sifaLight from "@/assets/logos/light/sifa.png";
 import bombshellLight from "@/assets/logos/light/bombshell.png";
-import diglotLight from "@/assets/logos/light/diglot.png";
+import changesetsLight from "@/assets/logos/light/changesets.png";
 import forgesLight from "@/assets/logos/light/forges.png";
-import nuxtLight from "@/assets/logos/light/nuxt.png";
+import npmxLight from "@/assets/logos/light/npmx.png";
+import sifaLight from "@/assets/logos/light/sifa.png";
+import starlightLight from "@/assets/logos/light/starlight.png";
 
-import astroDark from "@/assets/logos/dark/astro.png";
 import blueskyDark from "@/assets/logos/dark/bluesky.png";
-import npmxDark from "@/assets/logos/dark/npmx.png";
-import starlightDark from "@/assets/logos/dark/starlight.png";
-import allContributorsDark from "@/assets/logos/dark/all-contributors.png";
-import sifaDark from "@/assets/logos/dark/sifa.png";
 import bombshellDark from "@/assets/logos/dark/bombshell.png";
-import diglotDark from "@/assets/logos/dark/diglot.png";
+import changesetsDark from "@/assets/logos/dark/changesets.png";
 import forgesDark from "@/assets/logos/dark/forges.png";
-import nuxtDark from "@/assets/logos/dark/nuxt.png";
+import npmxDark from "@/assets/logos/dark/npmx.png";
+import sifaDark from "@/assets/logos/dark/sifa.png";
+import starlightDark from "@/assets/logos/dark/starlight.png";
 
 const badges = {
-  astro: {
-    href: "https://astro.build",
-    text: "Astro",
-    light: astroLight,
-    dark: astroDark,
-  },
   bluesky: {
     href: `https://bsky.app/profile/${actorDid}`,
     text: "Bluesky",
     light: blueskyLight,
     dark: blueskyDark,
-  },
-  npmx: {
-    href: "https://npmx.dev",
-    text: "npmx.dev",
-    light: npmxLight,
-    dark: npmxDark,
-  },
-  starlight: {
-    href: "https://starlight.astro.build",
-    text: "Starlight",
-    light: starlightLight,
-    dark: starlightDark,
-  },
-  forges: {
-    href: "https://forges.link",
-    text: "forges",
-    light: forgesLight,
-    dark: forgesDark,
   },
   bombshell: {
     href: "https://bomb.sh",
@@ -61,29 +31,35 @@ const badges = {
     light: bombshellLight,
     dark: bombshellDark,
   },
-  nuxt: {
-    href: "https://nuxt.com",
-    text: "Nuxt",
-    light: nuxtLight,
-    dark: nuxtDark,
+  changesets: {
+    href: "https://changesets.dev",
+    text: "Changesets",
+    light: changesetsLight,
+    dark: changesetsDark,
   },
-  diglot: {
-    href: "https://diglot.sh",
-    text: "diglot",
-    light: diglotLight,
-    dark: diglotDark,
+  forges: {
+    href: "https://forges.link",
+    text: "forges",
+    light: forgesLight,
+    dark: forgesDark,
   },
-  "all-contributors": {
-    href: "https://allcontributors.org",
-    text: "All Contributors",
-    light: allContributorsLight,
-    dark: allContributorsDark,
+  npmx: {
+    href: "https://npmx.dev",
+    text: "npmx.dev",
+    light: npmxLight,
+    dark: npmxDark,
   },
   sifa: {
     href: "https://sifa.id/p/felixs.dev",
     text: "Sifa",
     light: sifaLight,
     dark: sifaDark,
+  },
+  starlight: {
+    href: "https://starlight.astro.build",
+    text: "Starlight",
+    light: starlightLight,
+    dark: starlightDark,
   },
 };
 
