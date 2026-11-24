@@ -116,13 +116,14 @@ const hexagons = [
   },
 ];
 
-// The logos float on the corners of a hex grid around the name, like the
-// hexagons behind them: five rows evenly apart, each half a step off the
-// next, with every spot nudged a little off the grid so it looks natural.
-// `x` is a share of the width, `row` counts rows from the name and `dy`
-// nudges a logo up or down in pixels. The projects I work on most are the
-// planets, the smaller ones moons, and each group scrolls at its own depth.
-// Phones only show the logos with a spot of their own.
+// The logos start on the corners of a hex grid around the name: five rows
+// evenly apart, each half a step off the next. `x` is a share of the width,
+// `row` counts rows from the name and `dy` nudges a logo in pixels. The
+// script below then spreads them out evenly in the room the actual screen
+// leaves, so these spots are only where they start, and where they stay
+// without scripts. The projects I work on most are the planets, the smaller
+// ones moons, and each group scrolls at its own depth. Phones only show the
+// logos with a spot of their own.
 const DEPTH = { moon: 0.7, planet: 0.76 };
 
 const planets = [
@@ -411,12 +412,122 @@ const prints = await Promise.all(
       </div>
     ))}
   </div>
-
+  {/* Hidden until the script below spreads the logos out, so they never jump. */}
+  <script is:inline>
+    document.currentScript?.previousElementSibling?.setAttribute(
+      "data-placing",
+      ""
+    );
+  </script>
   <div class="hero-center-wrapper parallax" style="--depth: 0.65;">
     <div class="hero-halo" aria-hidden="true"></div>
     <h1 class="hero-text">{name}</h1>
   </div>
 </section>
+
+<script>
+  import { spreadOut, type Obstacle, type Rect } from "@/lib/spread";
+
+  // The logos spread out evenly around the name, like particles pushing each
+  // other away, in whatever room this screen and theme leave them. The spots
+  // in the markup are where they start, and where they stay without scripts.
+  // The name keeps them at a good distance, the header and the edges at a
+  // smaller one, so the room towards them gets used too.
+  const NAME_SHARE = 0.55;
+  const HEADER_SHARE = 0.3;
+  // The music dock and the pause button sit at the bottom of the screen.
+  const BOTTOM_ROOM = 48;
+
+  let pending = 0;
+
+  function placeAll() {
+    cancelAnimationFrame(pending);
+    pending = requestAnimationFrame(() => {
+      for (const logos of document.querySelectorAll<HTMLElement>(
+        ".floating-logos"
+      )) {
+        place(logos);
+      }
+    });
+  }
+
+  function place(logos: HTMLElement) {
+    const hero = logos.closest<HTMLElement>(".hero-viewport");
+    const name = hero?.querySelector(".hero-text");
+    if (!hero || !name) return;
+
+    const items = [
+      ...logos.querySelectorAll<HTMLElement>(".logo-parallax"),
+    ].filter((item) => item.offsetParent !== null);
+    const frame = logos.getBoundingClientRect();
+    // In the logos' own coordinates, as the page lays out at the very top:
+    // the header stays put while scrolling and the name has its parallax.
+    const local = (rect: DOMRect, shiftY = 0): Rect => ({
+      bottom: rect.bottom - frame.top - shiftY,
+      left: rect.left - frame.left,
+      right: rect.right - frame.left,
+      top: rect.top - frame.top - shiftY,
+    });
+
+    const heroBox = local(hero.getBoundingClientRect());
+    const box = { ...heroBox, bottom: heroBox.bottom - BOTTOM_ROOM };
+    const text = document.createRange();
+    text.selectNodeContents(name);
+    const wrapper = name.closest(".parallax");
+    const lift = wrapper
+      ? new DOMMatrix(getComputedStyle(wrapper).transform).m42
+      : 0;
+    const obstacles: Obstacle[] = [
+      { rect: local(text.getBoundingClientRect(), lift), share: NAME_SHARE },
+    ];
+    const header = document.querySelector(".header-inner");
+    if (header) {
+      obstacles.push({
+        rect: local(header.getBoundingClientRect(), window.scrollY),
+        share: HEADER_SHARE,
+      });
+    }
+
+    const points = spreadOut(
+      items.map((item) => ({
+        reach: reachOf(item),
+        x: item.offsetLeft,
+        y: item.offsetTop,
+      })),
+      box,
+      obstacles
+    );
+    for (const [index, item] of items.entries()) {
+      item.style.left = `${points[index]!.x.toFixed(1)}px`;
+      item.style.top = `${points[index]!.y.toFixed(1)}px`;
+    }
+
+    if (logos.hasAttribute("data-placing")) {
+      logos.removeAttribute("data-placing");
+      // Later moves, like a resize or a new theme, glide instead of jumping.
+      requestAnimationFrame(() => logos.classList.add("is-placed"));
+    }
+  }
+
+  // Half a logo plus a little air, and Saturn's rings reach further out.
+  function reachOf(item: HTMLElement) {
+    const logo = item.querySelector<HTMLElement>(".logo-wrapper");
+    if (!logo) return 0;
+    const hasRings =
+      document.documentElement.classList.contains("space") &&
+      logo.dataset.planet === "saturn";
+    return (logo.offsetWidth / 2) * (hasRings ? 1.8 : 1) + 12;
+  }
+
+  placeAll();
+  document.addEventListener("astro:page-load", placeAll);
+  window.addEventListener("resize", placeAll, { passive: true });
+  void document.fonts.ready.then(placeAll);
+  // The space theme sets the name in a wider font.
+  new MutationObserver(placeAll).observe(document.documentElement, {
+    attributeFilter: ["class"],
+  });
+</script>
 
 <style is:global>
   /* Specific enough to win over the global padding, whatever order the
@@ -502,6 +613,28 @@ const prints = await Promise.all(
     margin: auto;
     z-index: 40;
     pointer-events: none;
+  }
+
+  .floating-logos {
+    transition: opacity 0.5s ease;
+  }
+
+  /* A fallback reveal, in case the script that places them never runs. */
+  .floating-logos[data-placing] {
+    opacity: 0;
+    animation: logos-reveal 0.5s ease 2s forwards;
+  }
+
+  @keyframes logos-reveal {
+    to {
+      opacity: 1;
+    }
+  }
+
+  .floating-logos.is-placed .logo-parallax {
+    transition:
+      left 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+      top 0.8s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   :root:not(.dark) .dark-logo {
@@ -679,6 +812,11 @@ const prints = await Promise.all(
   @media (prefers-reduced-motion: reduce) {
     .parallax {
       transform: none !important;
+    }
+
+    .floating-logos,
+    .floating-logos.is-placed .logo-parallax {
+      transition: none;
     }
 
     .logo-wrapper {
