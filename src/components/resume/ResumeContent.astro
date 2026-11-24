@@ -20,8 +20,9 @@ import {
   tellCareer,
 } from "@/lib/stories";
 import { applyCache, dataCache, degradedCache } from "@/lib/cache";
+import { loadCached } from "@/lib/data-cache";
 
-const resume = await fetchResume().catch(() => null);
+const resume = await loadCached("resume", fetchResume, Astro.locals);
 applyCache(Astro.response, resume ? dataCache : degradedCache);
 const hasData = Boolean(
   resume &&

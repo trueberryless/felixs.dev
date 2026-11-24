@@ -7,8 +7,9 @@ import Section from "@/components/utils/Section.astro";
 import { fetchEvents } from "@/lib/data";
 import { getPeopleMet, getPlaces } from "@/lib/events";
 import { applyCache, dataCache, degradedCache } from "@/lib/cache";
+import { loadCached } from "@/lib/data-cache";
 
-const events = await fetchEvents().catch(() => null);
+const events = await loadCached("events", fetchEvents, Astro.locals);
 applyCache(Astro.response, events ? dataCache : degradedCache);
 const hasData = Boolean(events && events.length > 0);
 

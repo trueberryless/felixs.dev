@@ -2,13 +2,13 @@
 import Fallback from "@/components/utils/Fallback.astro";
 import MusicBones from "@/components/music/MusicBones.astro";
 import NumberCards from "@/components/utils/NumberCards.astro";
-import { applyCache, dailyCache, degradedCache } from "@/lib/cache";
+import { applyCache, dataCache, degradedCache } from "@/lib/cache";
 import { actorDid, pdsEndpoint, scrobblerEndpoint } from "@/lib/const";
 import type { MusicStats } from "@/lib/music";
 import { getMusicStats } from "@/lib/music-data";
 
 const stats: MusicStats | null = await getMusicStats().catch(() => null);
-applyCache(Astro.response, stats ? dailyCache : degradedCache);
+applyCache(Astro.response, stats ? dataCache : degradedCache);
 
 const defaultRange =
   stats?.ranges.find((range) => range.id === "12m" && range.plays > 0) ??

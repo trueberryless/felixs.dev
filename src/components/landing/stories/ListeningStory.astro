@@ -3,21 +3,48 @@ import AreaChart from "@/components/charts/AreaChart.astro";
 import NowPlaying from "@/components/landing/NowPlaying.astro";
 import Story from "@/components/story/Story.astro";
 import { applyCache, dataCache, degradedCache } from "@/lib/cache";
+import { loadCached } from "@/lib/data-cache";
 import { PLAY_COLLECTION, recordToPlay } from "@/lib/music";
 import { getRepoRecords } from "@/lib/repo";
 
 const nowMs = Date.now();
-const records = await getRepoRecords().catch(() => null);
-const plays = (records?.get(PLAY_COLLECTION) ?? [])
-  .map((record) => recordToPlay(record.value))
-  .filter((play) => play !== undefined);
-applyCache(Astro.response, plays.length > 0 ? dataCache : degradedCache);
+// Only what the story shows is kept, not every play behind it.
+const listening = await loadCached(
+  "listening",
+  async () => {
+    const records = await getRepoRecords();
+    const plays = (records.get(PLAY_COLLECTION) ?? [])
+      .map((record) => recordToPlay(record.value))
+      .filter((play) => play !== undefined);
+    if (plays.length === 0) return null;
 
-const perYear = new Map<number, number>();
-for (const play of plays) {
-  const year = new Date(play.at).getUTCFullYear();
-  perYear.set(year, (perYear.get(year) ?? 0) + 1);
-}
+    const perYear = new Map<number, number>();
+    const recentStart = Date.now() - 90 * 24 * 60 * 60 * 1000;
+    const artistCounts = new Map<string, number>();
+    for (const play of plays) {
+      const year = new Date(play.at).getUTCFullYear();
+      perYear.set(year, (perYear.get(year) ?? 0) + 1);
+      if (play.at < recentStart) continue;
+      for (const artist of play.artists) {
+        artistCounts.set(artist, (artistCounts.get(artist) ?? 0) + 1);
+      }
+    }
+    return {
+      perYear: [...perYear],
+      plays: plays.length,
+      topArtists: [...artistCounts]
+        .toSorted((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([name]) => name),
+    };
+  },
+  Astro.locals
+);
+applyCache(Astro.response, listening ? dataCache : degradedCache);
+
+const playCount = listening?.plays ?? 0;
+const topArtists = listening?.topArtists ?? [];
+const perYear = new Map(listening?.perYear ?? []);
 const firstYear = Math.min(...perYear.keys());
 const series = Number.isFinite(firstYear)
   ? Array.from(
@@ -33,27 +60,14 @@ const series = Number.isFinite(firstYear)
       }
     )
   : [];
-
-const recentStart = nowMs - 90 * 24 * 60 * 60 * 1000;
-const artistCounts = new Map<string, number>();
-for (const play of plays) {
-  if (play.at < recentStart) continue;
-  for (const artist of play.artists) {
-    artistCounts.set(artist, (artistCounts.get(artist) ?? 0) + 1);
-  }
-}
-const topArtists = [...artistCounts]
-  .toSorted((a, b) => b[1] - a[1])
-  .slice(0, 3)
-  .map(([name]) => name);
 const listFormat = new Intl.ListFormat("en", { type: "conjunction" });
 ---
 
 <Story kicker="Listening" href="/music" linkText="Dig into my music">
   <Fragment slot="title">
-    {plays.length > 0 ? (
+    {playCount > 0 ? (
       <>
-        <em>{plays.length.toLocaleString("en-US")}</em> plays and counting
+        <em>{playCount.toLocaleString("en-US")}</em> plays and counting
       </>
     ) : (
       "Always something playing"
@@ -66,7 +80,7 @@ const listFormat = new Intl.ListFormat("en", { type: "conjunction" });
   </p>
   <div slot="visual" class="listening-visual">
     <NowPlaying bare />
-    {plays.length > 0 && (
+    {playCount > 0 && (
       <AreaChart points={series} label="Plays per year since my first play" />
     )}
   </div>

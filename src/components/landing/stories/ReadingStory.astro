@@ -2,9 +2,10 @@
 import Book from "@/components/books/Book.astro";
 import Story from "@/components/story/Story.astro";
 import { applyCache, dataCache, degradedCache } from "@/lib/cache";
+import { loadCached } from "@/lib/data-cache";
 import { buildReadingSummary, fetchBooks } from "@/lib/data";
 
-const books = await fetchBooks().catch(() => null);
+const books = await loadCached("books", fetchBooks, Astro.locals);
 applyCache(Astro.response, books ? dataCache : degradedCache);
 
 const summary = books ? buildReadingSummary(books) : null;
