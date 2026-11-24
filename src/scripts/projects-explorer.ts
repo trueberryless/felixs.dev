@@ -2,6 +2,7 @@
 // lane or its bubble) or a month (its bar) narrows every number, chart and
 // the list of pull requests down to it. Picking it again lets go.
 import { packBubbles } from "@/lib/bubbles";
+import { countTo } from "@/scripts/count-up";
 
 interface PullRequest {
   /** Merge time, `YYYY-MM-DDTHH:mm:ssZ`. */
@@ -91,7 +92,7 @@ class ProjectsExplorer extends HTMLElement {
     };
     for (const element of this.querySelectorAll<HTMLElement>("[data-stat]")) {
       const value = values[element.dataset.stat ?? ""];
-      if (value !== undefined) element.textContent = numberFormat.format(value);
+      if (value !== undefined) countTo(element, value);
     }
 
     const lanes = this.querySelector<HTMLElement>(".lanes");

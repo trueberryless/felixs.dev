@@ -227,7 +227,9 @@ const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
   }
   enableTips();
   document.addEventListener("astro:page-load", enableTips);
-  new MutationObserver(enableTips).observe(document.body, {
+  // Islands arrive after the page, and the client router swaps the whole
+  // body on every navigation, so the watch is on the root.
+  new MutationObserver(enableTips).observe(document.documentElement, {
     childList: true,
     subtree: true,
   });

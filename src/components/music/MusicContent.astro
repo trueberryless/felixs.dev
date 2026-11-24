@@ -1,6 +1,7 @@
 ---
 import Fallback from "@/components/utils/Fallback.astro";
 import MusicBones from "@/components/music/MusicBones.astro";
+import NumberCards from "@/components/utils/NumberCards.astro";
 import { applyCache, dailyCache, degradedCache } from "@/lib/cache";
 import { actorDid, pdsEndpoint, scrobblerEndpoint } from "@/lib/const";
 import type { MusicStats } from "@/lib/music";
@@ -115,32 +116,18 @@ const timeZoneName =
     </fieldset>
     <p class="sr-only" aria-live="polite" data-status />
 
-    <div class="ms-numbers" aria-live="polite">
-      <div class="ms-number">
-        <span class="ms-number-value" data-stat="minutes">
-          {numberFormat.format(defaultRange.minutes)}
-        </span>
-        <span class="ms-number-label">minutes listened</span>
-      </div>
-      <div class="ms-number">
-        <span class="ms-number-value" data-stat="plays">
-          {numberFormat.format(defaultRange.plays)}
-        </span>
-        <span class="ms-number-label">plays</span>
-      </div>
-      <div class="ms-number">
-        <span class="ms-number-value" data-stat="artists">
-          {numberFormat.format(defaultRange.artists)}
-        </span>
-        <span class="ms-number-label">artists</span>
-      </div>
-      <div class="ms-number">
-        <span class="ms-number-value" data-stat="tracks">
-          {numberFormat.format(defaultRange.tracks)}
-        </span>
-        <span class="ms-number-label">tracks</span>
-      </div>
-    </div>
+    <NumberCards
+      numbers={[
+        {
+          key: "minutes",
+          label: "minutes listened",
+          value: defaultRange.minutes,
+        },
+        { key: "plays", label: "plays", value: defaultRange.plays },
+        { key: "artists", label: "artists", value: defaultRange.artists },
+        { key: "tracks", label: "tracks", value: defaultRange.tracks },
+      ]}
+    />
 
     <section class="ms-section" aria-labelledby="ms-artists-title">
       <h2 id="ms-artists-title" class="ms-title">

@@ -99,11 +99,19 @@
   :is(
     .story-title-text,
     .post-title,
-    .ms-number-value,
+    .number-card-value,
     .ms-spotlight-name,
     .error-code
   ) {
   text-shadow: none;
+}
+
+/* Big numbers shine like the headings. */
+:root.space .number-card-value {
+  background-image: var(--text-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* The planet rises behind the landing sections, and its bright rim would

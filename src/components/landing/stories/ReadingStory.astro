@@ -311,8 +311,9 @@ const [topAuthor, topAuthorBooks = 0] =
   }
   enableShelves();
   document.addEventListener("astro:page-load", enableShelves);
-  // The story arrives after the page, as a server island.
-  new MutationObserver(enableShelves).observe(document.body, {
+  // Islands arrive after the page, and the client router swaps the whole
+  // body on every navigation, so the watch is on the root.
+  new MutationObserver(enableShelves).observe(document.documentElement, {
     childList: true,
     subtree: true,
   });

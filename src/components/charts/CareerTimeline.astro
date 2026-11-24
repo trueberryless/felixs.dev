@@ -148,7 +148,9 @@ const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
   }
   scrollCareers();
   document.addEventListener("astro:page-load", scrollCareers);
-  new MutationObserver(scrollCareers).observe(document.body, {
+  // Islands arrive after the page, and the client router swaps the whole
+  // body on every navigation, so the watch is on the root.
+  new MutationObserver(scrollCareers).observe(document.documentElement, {
     childList: true,
     subtree: true,
   });

@@ -1,7 +1,10 @@
 ---
 interface Props {
-  /** Leave out the values to show the cards as a skeleton. */
-  numbers: { label: string; value?: number | string }[];
+  /**
+   * Leave out the values to show the cards as a skeleton. A `key` lets a
+   * page find a number again to update it, as `[data-stat="key"]`.
+   */
+  numbers: { key?: string; label: string; value?: number | string }[];
 }
 
 const { numbers } = Astro.props;
@@ -16,7 +19,14 @@ const numberFormat = new Intl.NumberFormat("en-US");
           <span class="bone">00</span>
         </span>
       ) : (
-        <span class="number-card-value">
+        <span
+          class="number-card-value"
+          data-stat={number.key}
+          data-count-to={
+            typeof number.value === "number" ? number.value : undefined
+          }
+          data-count-order={index}
+        >
           {typeof number.value === "number"
             ? numberFormat.format(number.value)
             : number.value}
@@ -26,6 +36,10 @@ const numberFormat = new Intl.NumberFormat("en-US");
     </li>
   ))}
 </ul>
+
+<script>
+  import "@/scripts/count-up";
+</script>
 
 <style>
   .number-cards {

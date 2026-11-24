@@ -88,27 +88,6 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/**
- * Counts an element's number up (or down) to its new value.
- */
-export function animateNumber(element: Element, to: number, durationMs = 900) {
-  const from = Number(element.getAttribute("data-value") ?? 0);
-  element.setAttribute("data-value", String(to));
-  if (prefersReducedMotion() || from === to) {
-    element.textContent = formatNumber(to);
-    return;
-  }
-
-  const startedAt = performance.now();
-  const step = (now: number) => {
-    const progress = Math.min((now - startedAt) / durationMs, 1);
-    const eased = 1 - (1 - progress) ** 4;
-    element.textContent = formatNumber(from + (to - from) * eased);
-    if (progress < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
-
 export function slug(value: string): string {
   return value
     .normalize("NFKD")
