@@ -44,8 +44,7 @@ const month = new Intl.DateTimeFormat("en-US", {
     role="region"
     tabindex="0"
     aria-label={`${label}, scrollable`}
-    data-lanes
-    data-edge-scroll
+    data-edge-scroll="end"
   >
     <div class="lanes-inner" style={`--width: ${width}px`}>
       {lanes.map((lane, row) => (
@@ -127,19 +126,8 @@ const month = new Intl.DateTimeFormat("en-US", {
 </div>
 
 <script>
+  // Starts at the most recent years, older ones are a scroll away.
   import "@/scripts/edge-scroll";
-
-  // Start at the most recent years, older ones are a scroll away.
-  function scrollLanes() {
-    for (const element of document.querySelectorAll<HTMLElement>(
-      "[data-lanes]:not([data-ready])"
-    )) {
-      element.scrollLeft = element.scrollWidth;
-      element.dataset.ready = "";
-    }
-  }
-  scrollLanes();
-  document.addEventListener("astro:page-load", scrollLanes);
 </script>
 
 <style>

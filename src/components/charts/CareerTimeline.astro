@@ -41,8 +41,7 @@ const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
   role="region"
   tabindex="0"
   aria-label="Career timeline, scrollable"
-  data-career
-  data-edge-scroll
+  data-edge-scroll="end"
 >
   <svg
     class="career"
@@ -138,25 +137,8 @@ const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
 </div>
 
 <script>
+  // Starts at the most recent years, older ones are a scroll away.
   import "@/scripts/edge-scroll";
-
-  // Start at the most recent years, older ones are a scroll away.
-  function scrollCareers() {
-    for (const element of document.querySelectorAll<HTMLElement>(
-      "[data-career]:not([data-ready])"
-    )) {
-      element.scrollLeft = element.scrollWidth;
-      element.dataset.ready = "";
-    }
-  }
-  scrollCareers();
-  document.addEventListener("astro:page-load", scrollCareers);
-  // Islands arrive after the page, and the client router swaps the whole
-  // body on every navigation, so the watch is on the root.
-  new MutationObserver(scrollCareers).observe(document.documentElement, {
-    childList: true,
-    subtree: true,
-  });
 </script>
 
 <style>
