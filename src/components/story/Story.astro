@@ -45,10 +45,12 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
     padding-block: clamp(48px, 10vh, 112px);
   }
 
-  @media (min-width: 860px) {
+  /* Copy and visual sit side by side as soon as there is room, so a chart
+     never grows to the full width of a tablet and taller than the screen.
+     The pinned stage of the landing page only starts at 860px. */
+  @media (min-width: 640px) {
     .story {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
-      min-height: min(78svh, 760px);
     }
 
     /* Copy and visual swap sides from one section to the next. Counting the
@@ -60,6 +62,12 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
 
     :global(.story-frame:nth-child(even of .story-frame)) .story-copy {
       order: 2;
+    }
+  }
+
+  @media (min-width: 860px) {
+    .story {
+      min-height: min(78svh, 760px);
     }
   }
 
@@ -125,6 +133,15 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
 
   .story-visual {
     min-width: 0;
+  }
+
+  /* Stacked below the copy, a chart keeps to about the size it has next to
+     it on wider screens. */
+  @media (max-width: 639px) {
+    .story-visual {
+      width: 100%;
+      max-width: 460px;
+    }
   }
 
   /* Every part of a section arrives on its own, a few frames apart, and
