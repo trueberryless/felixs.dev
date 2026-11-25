@@ -54,6 +54,7 @@ const [topAuthor, topAuthorBooks = 0] =
 
 <style>
   .reading-shelf {
+    container: shelf / inline-size;
     position: relative;
     display: flex;
     flex-wrap: nowrap;
@@ -120,14 +121,16 @@ const [topAuthor, topAuthorBooks = 0] =
     rotate: var(--tilt, 0deg);
   }
 
-  @media (max-width: 600px) {
+  /* The books shrink with the room the shelf has, wherever the layout puts
+     it, so they never reach past the edge of the screen. */
+  @container shelf (max-width: 420px) {
     .reading-book {
       margin-inline: -10px;
       zoom: 0.48;
     }
   }
 
-  @media (max-width: 280px) {
+  @container shelf (max-width: 250px) {
     .reading-book {
       margin-inline: -16px;
       zoom: 0.36;
