@@ -2,10 +2,14 @@
 // edges fade out wherever there is more to scroll to, and with a mouse,
 // buttons at those edges scroll on by a page. Touch screens swipe instead.
 // Keyboard focus and the picked item always scroll fully into view, clear
-// of the fades and the buttons.
+// of the fades and the buttons. Timelines set `data-edge-scroll="end"`: they
+// start at their most recent end and stay there through every resize, until
+// the visitor scrolls them.
 import "@/styles/edge-scroll.css";
 
 const SELECTOR = "[data-edge-scroll]:not([data-edge-ready])";
+// How long after a wheel, touch or key a scroll counts as the visitor's own.
+const OWN_SCROLL_MS = 1000;
 const PICKED = ":checked, [aria-current]:not([aria-current='false'])";
 
 /**
@@ -82,6 +86,10 @@ function enhance(scroller: HTMLElement) {
     frame.append(scroller);
   }
 
+  const pinsToEnd = scroller.dataset.edgeScroll === "end";
+  let isPinned = pinsToEnd;
+  let lastInput = -Infinity;
+
   // The buttons only help a mouse, so they stay out of the keyboard order
   // and away from screen readers, which reach every item on their own.
   const buttons = (["start", "end"] as const).map((direction) => {
@@ -93,6 +101,7 @@ function enhance(scroller: HTMLElement) {
     button.setAttribute("aria-hidden", "true");
     button.append(chevron(direction));
     button.addEventListener("click", () => {
+      lastInput = performance.now();
       const style = getComputedStyle(scroller);
       const fade = Number.parseFloat(style.scrollPaddingInlineEnd) || 0;
       const page = Math.max(
@@ -113,10 +122,32 @@ function enhance(scroller: HTMLElement) {
     buttons[0].hidden = !hasMoreBefore;
     buttons[1].hidden = !hasMoreAfter;
   };
-  scroller.addEventListener("scroll", mark, { passive: true });
+  scroller.addEventListener(
+    "scroll",
+    () => {
+      // Only the visitor's own scrolling lets go of the end, not the browser
+      // clamping the position while the scroller resizes.
+      if (performance.now() - lastInput < OWN_SCROLL_MS) {
+        isPinned =
+          pinsToEnd &&
+          scroller.scrollLeft + scroller.clientWidth >=
+            scroller.scrollWidth - 2;
+      }
+      mark();
+    },
+    { passive: true }
+  );
+  for (const type of ["wheel", "pointerdown", "touchstart", "keydown"]) {
+    scroller.addEventListener(type, () => (lastInput = performance.now()), {
+      passive: true,
+    });
+  }
   // The scroller can keep its width while what's inside it grows, like a
   // group of ranges opening, so its children are watched as well.
-  const resizes = new ResizeObserver(mark);
+  const resizes = new ResizeObserver(() => {
+    if (isPinned) scroller.scrollLeft = scroller.scrollWidth;
+    mark();
+  });
   for (const element of [scroller, ...scroller.children]) {
     resizes.observe(element);
   }
@@ -132,7 +163,8 @@ function enhance(scroller: HTMLElement) {
   });
 
   const picked = scroller.querySelector(PICKED);
-  if (picked) reveal(scroller, picked, false);
+  if (isPinned) scroller.scrollLeft = scroller.scrollWidth;
+  else if (picked) reveal(scroller, picked, false);
   mark();
 }
 
