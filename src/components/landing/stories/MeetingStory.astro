@@ -123,6 +123,9 @@ const when = startDate
 <style>
   .meeting-card {
     display: grid;
+    /* Keeps a long place name or a crowd of avatars from widening the card
+       past narrow screens. */
+    grid-template-columns: minmax(0, 1fr);
     overflow: hidden;
     border: 1px solid var(--border);
     border-radius: calc(var(--radius-card) + 4px);
@@ -186,6 +189,7 @@ const when = startDate
   .meeting-going {
     color: var(--text-muted);
     font-size: 0.9rem;
+    overflow-wrap: anywhere;
   }
 
   .meeting-name {
@@ -202,8 +206,13 @@ const when = startDate
     margin-top: 8px;
   }
 
+  /* Avatars wrap on narrow screens. The padding makes room for the overlap of
+     whichever avatar starts a row. */
   .meeting-avatars {
     display: flex;
+    flex-wrap: wrap;
+    row-gap: 4px;
+    padding-left: 10px;
   }
 
   .meeting-avatars img {
@@ -215,9 +224,5 @@ const when = startDate
     object-fit: cover;
     transition: translate 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     transition-delay: calc(var(--i) * 30ms);
-  }
-
-  .meeting-avatars img:first-child {
-    margin-left: 0;
   }
 </style>
