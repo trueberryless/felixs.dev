@@ -1,23 +1,20 @@
 ---
 import "../styles/global.css";
-import BaseHead from "@/layouts/BaseHead.astro";
+import BaseHead, { type Props as HeadProps } from "@/layouts/BaseHead.astro";
 import Cosmos from "@/layouts/Cosmos.astro";
 import Header from "@/layouts/Header.astro";
 import Footer from "@/layouts/Footer.astro";
 import Parallax from "@/layouts/Parallax.astro";
 import LiveVisitors from "@/components/utils/LiveVisitors.astro";
 
-interface Props {
-  title: string;
-  description?: string;
-}
+type Props = HeadProps;
 
-const { title, description } = Astro.props;
+const { description, image, title } = Astro.props;
 ---
 
 <html lang="en" transition:animate="none">
   <head>
-    <BaseHead title={title} description={description} />
+    <BaseHead description={description} image={image} title={title} />
   </head>
   <body>
     <a class="skip-link button" href="#main">

@@ -15,6 +15,7 @@ import {
   toSegments,
 } from "@/lib/leaflet";
 import { collectProfiles, isSafeUrl, segmentsToHtml } from "@/lib/leaflet-html";
+import { getPostImage } from "@/lib/post-images";
 import "@/styles/post.css";
 
 export const prerender = false;
@@ -62,6 +63,11 @@ const coverRatio =
     ? undefined
     : (allBlocks[coverIndex]?.aspectRatio as
         { height?: number; width?: number } | undefined);
+
+const coverImage = getPostImage(record?.coverImage);
+const shareImage = coverImage
+  ? { alt: coverAlt.trim(), url: coverImage.share }
+  : undefined;
 
 const publication = saved?.publication;
 const originalUrl =
@@ -200,7 +206,11 @@ async function getEmbeds(documentBlocks: unknown[]) {
 }
 ---
 
-<LayoutPage title={`${title} | Felix Schneider`} description={description}>
+<LayoutPage
+  title={`${title} | Felix Schneider`}
+  description={description}
+  image={shareImage}
+>
   <div class="post-progress" aria-hidden="true"></div>
 
   <article class="post">

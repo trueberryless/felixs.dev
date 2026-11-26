@@ -11,4 +11,9 @@ describe('getPostImage', () => {
   test('keeps GIFs as one file', () => {
     expect(getPostImage({ mimeType: 'image/gif', ref: { $link: 'cid' } })?.srcset).toBeUndefined()
   })
+
+  test('shares photos and GIFs as JPEGs', () => {
+    expect(getPostImage({ mimeType: 'image/png', ref: { $link: 'cid' } })?.share).toMatch(/feed_fullsize\/.*cid@jpeg$/)
+    expect(getPostImage({ mimeType: 'image/gif', ref: { $link: 'cid' } })?.share).toMatch(/feed_fullsize\/.*cid@jpeg$/)
+  })
 })
