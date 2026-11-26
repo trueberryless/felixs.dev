@@ -10,6 +10,11 @@ export interface PostImage {
    * the bytes. Left out for GIFs.
    */
   srcset: string | undefined;
+  /**
+   * A JPEG copy for link previews. Some social sites can't read WebP, and GIFs
+   * turn into their first frame.
+   */
+  share: string;
   /** A small copy, for previews. */
   thumbnail: string;
   isAnimated: boolean;
@@ -42,6 +47,7 @@ export function getPostImage(blob: unknown): PostImage | undefined {
     src: isAnimated
       ? original
       : `https://cdn.bsky.app/img/feed_fullsize/plain/${actorDid}/${cid}@webp`,
+    share: `https://cdn.bsky.app/img/feed_fullsize/plain/${actorDid}/${cid}@jpeg`,
     srcset: isAnimated
       ? undefined
       : `https://cdn.bsky.app/img/feed_thumbnail/plain/${actorDid}/${cid}@webp 1000w, https://cdn.bsky.app/img/feed_fullsize/plain/${actorDid}/${cid}@webp 2400w`,
