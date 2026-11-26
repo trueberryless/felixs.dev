@@ -6,11 +6,11 @@ import Fallback from "@/components/utils/Fallback.astro";
 import Section from "@/components/utils/Section.astro";
 import { fetchEvents } from "@/lib/data";
 import { getPeopleMet, getPlaces } from "@/lib/events";
-import { applyCache, dataCache, degradedCache } from "@/lib/cache";
+import { applyCache, degradedCache, liveCache } from "@/lib/cache";
 import { loadCached } from "@/lib/data-cache";
 
 const events = await loadCached("events", fetchEvents, Astro.locals);
-applyCache(Astro.response, events ? dataCache : degradedCache);
+applyCache(Astro.response, events ? liveCache : degradedCache);
 const hasData = Boolean(events && events.length > 0);
 
 const now = Date.now();

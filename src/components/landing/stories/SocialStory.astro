@@ -1,7 +1,7 @@
 ---
 import RadarChart from "@/components/charts/RadarChart.astro";
 import Story from "@/components/story/Story.astro";
-import { applyCache, dataCache, degradedCache } from "@/lib/cache";
+import { applyCache, degradedCache, liveCache } from "@/lib/cache";
 import { loadCached } from "@/lib/data-cache";
 import { actorDid } from "@/lib/const";
 import { fetchGitHubActivity } from "@/lib/data";
@@ -20,7 +20,7 @@ const social = await loadCached(
   },
   Astro.locals
 );
-applyCache(Astro.response, social ? dataCache : degradedCache);
+applyCache(Astro.response, social ? liveCache : degradedCache);
 
 const activities = social ?? [];
 const top = activities.toSorted((a, b) => b.value - a.value)[0];

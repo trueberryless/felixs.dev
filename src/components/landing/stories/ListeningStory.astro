@@ -2,7 +2,7 @@
 import AreaChart from "@/components/charts/AreaChart.astro";
 import NowPlaying from "@/components/landing/NowPlaying.astro";
 import Story from "@/components/story/Story.astro";
-import { applyCache, dataCache, degradedCache } from "@/lib/cache";
+import { applyCache, degradedCache, liveCache } from "@/lib/cache";
 import { loadCached } from "@/lib/data-cache";
 import { PLAY_COLLECTION, recordToPlay } from "@/lib/music";
 import { getRepoRecords } from "@/lib/repo";
@@ -40,7 +40,7 @@ const listening = await loadCached(
   },
   Astro.locals
 );
-applyCache(Astro.response, listening ? dataCache : degradedCache);
+applyCache(Astro.response, listening ? liveCache : degradedCache);
 
 const playCount = listening?.plays ?? 0;
 const topArtists = listening?.topArtists ?? [];

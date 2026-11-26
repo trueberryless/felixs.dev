@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { applyCache, degradedCache, dataCache } from '../../src/lib/cache'
+import { applyCache, dataCache, degradedCache, liveCache } from '../../src/lib/cache'
 
 describe('applyCache', () => {
   test('applies the data profile by default', () => {
@@ -34,5 +34,15 @@ describe('applyCache', () => {
     expect(seconds('s-maxage')).toBe(day)
     expect(seconds('stale-while-revalidate')).toBe(14 * day)
     expect(seconds('stale-if-error')).toBe(56 * day)
+  })
+
+  test('keeps live records fresh for a minute, refreshes them for two weeks and falls back on them for eight', () => {
+    const seconds = (name: string) => Number(new RegExp(`${name}=(\\d+)`).exec(liveCache.cdn)?.[1])
+    const day = 24 * 60 * 60
+
+    expect(seconds('s-maxage')).toBe(60)
+    expect(seconds('stale-while-revalidate')).toBe(14 * day)
+    expect(seconds('stale-if-error')).toBe(56 * day)
+    expect(liveCache.browser).toBe('public, max-age=60')
   })
 })

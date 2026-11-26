@@ -24,22 +24,37 @@ beforeEach(() => {
 })
 
 describe('loadCached', () => {
-  test('uses a copy younger than a day without loading', async () => {
-    save('saved', 2 * 60 * 60 * 1000)
+  test('uses a copy younger than a minute without loading', async () => {
+    save('saved', 30 * 1000)
     const load = vi.fn(async () => 'fresh')
 
     expect(await loadCached('key', load)).toBe('saved')
     expect(load).not.toHaveBeenCalled()
   })
 
-  test('answers with a stale copy and refreshes it in the background', async () => {
-    save('saved', 3 * day)
+  test('answers with fresh data when it loads quickly', async () => {
+    save('saved', 2 * 60 * 1000)
     const background: Promise<unknown>[] = []
     const locals = { netlify: { context: { waitUntil: (promise: Promise<unknown>) => background.push(promise) } } }
 
-    expect(await loadCached('key', async () => 'fresh', locals)).toBe('saved')
+    expect(await loadCached('key', async () => 'fresh', locals)).toBe('fresh')
+    expect(saved.get('v1/key')).toMatchObject({ value: 'fresh' })
+  })
+
+  test('answers with a stale copy and refreshes it in the background when loading is slow', async () => {
+    vi.useFakeTimers()
+    save('saved', 3 * day)
+    const background: Promise<unknown>[] = []
+    const locals = { netlify: { context: { waitUntil: (promise: Promise<unknown>) => background.push(promise) } } }
+    const slow = () => new Promise<string>((resolve) => setTimeout(() => resolve('fresh'), 5000))
+
+    const answer = loadCached('key', slow, locals)
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(await answer).toBe('saved')
+    await vi.advanceTimersByTimeAsync(5000)
     await Promise.all(background)
     expect(saved.get('v1/key')).toMatchObject({ value: 'fresh' })
+    vi.useRealTimers()
   })
 
   test('waits for fresh data when nothing can work in the background', async () => {
