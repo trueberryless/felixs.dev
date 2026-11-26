@@ -131,8 +131,8 @@ const month = new Intl.DateTimeFormat("en-US", {
 </script>
 
 <style>
-  /* The card sits around the scroller, so its fades leave the border alone,
-     and they start after the labels that stick to its start. */
+  /* The fades sit on the card around the scroller, so they spare the border,
+     and start after the sticky labels. */
   .lanes-frame {
     --label: 200px;
     --edge-inset: var(--label);
@@ -186,8 +186,7 @@ const month = new Intl.DateTimeFormat("en-US", {
     background: transparent;
   }
 
-  /* A picked organisation reads like the picked month: in the accent colour,
-     with a small dot in front, while the rest steps back. */
+  /* A picked organisation gets the accent and a dot, like the picked month. */
   .lane-name::before {
     content: "";
     display: inline-block;

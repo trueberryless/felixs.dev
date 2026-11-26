@@ -1,5 +1,5 @@
-// Small enhancements for blog posts: copy buttons on code, big GIFs that only
-// load on request, and images that zoom into a lightbox.
+// Blog post enhancements: copy buttons on code, big GIFs on request and a
+// lightbox for images.
 
 const reducedMotion = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -14,7 +14,7 @@ export function setUpPost() {
 }
 
 function setUpImageSkeletons() {
-  // The cover is the first thing to load and should show the moment it does.
+  // The cover loads first and should show the moment it does.
   for (const image of document.querySelectorAll<HTMLImageElement>(
     ".post-image:not(.post-cover) .post-zoom img"
   )) {
@@ -96,9 +96,8 @@ function setUpGifs() {
 }
 
 /**
- * Inspired by starlight-image-zoom: the image grows from where it sits in the
- * post to fill the screen, with its alt text underneath. A click, Escape or
- * scrolling puts it back.
+ * Inspired by starlight-image-zoom: the image grows from its spot to fill the
+ * screen, with its alt text below. A click, Escape or scrolling closes it.
  */
 function setUpLightbox() {
   const dialog = document.querySelector<HTMLDialogElement>(".post-lightbox");
@@ -123,8 +122,7 @@ function setUpLightbox() {
   const open = (image: HTMLImageElement) => {
     source = image;
     zoomed.src = image.currentSrc || image.src;
-    // Phones show the smaller copy in the post; the zoom swaps in the full
-    // one once it has loaded.
+    // Phones show the smaller copy, the zoom swaps in the full one once loaded.
     if (image.currentSrc && image.currentSrc !== image.src) {
       const full = new Image();
       full.src = image.src;
@@ -142,9 +140,7 @@ function setUpLightbox() {
     caption.hidden = !image.alt;
 
     dialog.showModal();
-    // A copy that hasn't decoded yet has no size, which made the very first
-    // zoom start from a wild scale. Its size comes from the image in the post
-    // instead, which is always laid out.
+    // An undecoded copy has no size yet, so take it from the image in the post.
     const from = image.getBoundingClientRect();
     fitZoomed(from.width / from.height);
     if (reducedMotion()) return;
@@ -162,9 +158,8 @@ function setUpLightbox() {
     zoomed.style.height = `${width / ratio}px`;
   };
 
-  // The image flies back to wherever its spot in the post is right now, so
-  // when scrolling closes it, it follows the page instead of hanging in the
-  // middle of the screen.
+  // The image flies back to its current spot, so closing by scrolling follows
+  // the page.
   const flyBack = (target: HTMLImageElement, duration: number) =>
     new Promise<void>((resolve) => {
       zoomed.getAnimations().forEach((animation) => animation.finish());
@@ -195,7 +190,7 @@ function setUpLightbox() {
     isClosing = false;
   };
 
-  // The article comes with each page, so this listener never piles up.
+  // The article is replaced on every page, so listeners never pile up.
   document.querySelector(".post")?.addEventListener("click", (event) => {
     const button = (event.target as Element).closest<HTMLButtonElement>(
       ".post-zoom"
@@ -208,7 +203,7 @@ function setUpLightbox() {
     event.preventDefault();
     void close();
   });
-  // Scrolling closes it quickly and lets the page move on underneath.
+  // Scrolling closes it quickly and lets the page move on.
   const scrollAway = () => void close(ZOOM_MS * 0.5);
   dialog.addEventListener("wheel", scrollAway, { passive: true });
   dialog.addEventListener("touchmove", scrollAway, { passive: true });

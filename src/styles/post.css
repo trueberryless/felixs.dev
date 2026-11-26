@@ -8,7 +8,7 @@
   padding-top: 24px;
 }
 
-/* Reading progress, driven by the page's own scroll position. */
+/* Reading progress, driven by the page's scroll. */
 .post-progress {
   position: fixed;
   inset: 0 0 auto;
@@ -51,8 +51,8 @@
   color: var(--text-muted);
 }
 
-/* Date and reading time belong together, and so do the tags: the gap
-   inside each group is smaller than the gap between them. */
+/* Date and reading time pair up, as do the tags, with smaller gaps inside
+   each group. */
 .post-meta {
   display: flex;
   flex-wrap: wrap;
@@ -176,7 +176,7 @@ h4.post-heading {
   color: var(--text-muted);
 }
 
-/* Images get room to breathe, and each leans its own way on hover. */
+/* Images get room, and each leans its own way on hover. */
 .post-image {
   margin: 1.4em 0;
 }
@@ -196,9 +196,8 @@ h4.post-heading {
   cursor: zoom-in;
 }
 
-/* Until an image arrives, its space pulses like the other skeletons, so
-   nothing below it moves. Images without a known size borrow the usual
-   cover shape meanwhile. */
+/* Loading images pulse like skeletons so nothing below moves. Unknown sizes
+   borrow the usual cover shape. */
 .post-zoom::before {
   content: "";
   position: absolute;
@@ -440,16 +439,15 @@ h4.post-heading {
   }
 }
 
-/* Badges for people: GitHub profiles, Bluesky profiles and mentions, with
-   their avatar. */
+/* Avatar badges for people: GitHub and Bluesky profiles and mentions. */
 .post-body .post-badge,
 .post-footnotes .post-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.3em;
   box-sizing: border-box;
-  /* A fixed height, centred on the text, with margins that take it back out,
-     so a line with a badge is exactly as tall as any other line. */
+  /* A fixed height centred on the text, with margins taking it back out, so
+     badge lines are as tall as any other. */
   height: 1.6em;
   margin-block: -0.4em;
   padding: 0 0.55em 0 0.2em;
@@ -462,7 +460,7 @@ h4.post-heading {
   line-height: 1;
   text-decoration: none;
   vertical-align: middle;
-  /* Middle sits on the x-height, a little below the centre of the text. */
+  /* `middle` sits on the x-height, a little below the text's centre. */
   translate: 0 -0.12em;
   white-space: nowrap;
   transition:
@@ -507,8 +505,8 @@ h4.post-heading {
   font-size: 0.75rem;
 }
 
-/* The copy button speaks in the heading font, and says "Copied" in place
-   without changing its width. */
+/* The copy button uses the heading font and says "Copied" without changing
+   width. */
 .post-copy {
   display: grid;
   place-items: center;
@@ -537,7 +535,7 @@ h4.post-heading {
   translate: 0 0;
 }
 
-/* Scrollable code can be reached and scrolled with the keyboard. */
+/* Scrollable code is keyboard focusable. */
 .post-code .astro-code:focus-visible {
   outline: 2px solid var(--text);
   outline-offset: -4px;

@@ -11,10 +11,8 @@ interface Props {
     | "weekdays";
 }
 
-// Each part draws what the music script renders into that spot, with the
-// same classes and bones in place of the data. They sit in the empty
-// containers until the script replaces them, so the page keeps its shape
-// from the first skeleton to the finished charts.
+// Each part mirrors what the music script renders there, with bones in place
+// of data, so the page keeps its shape until the charts are done.
 const { part } = Astro.props;
 const bars = 9;
 const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];

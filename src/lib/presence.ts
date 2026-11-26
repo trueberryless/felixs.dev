@@ -1,6 +1,5 @@
-// Every open tab sends a heartbeat per window, and a visitor counts as present
-// while they have a key in the current or the previous window. Each tab writes
-// its own key, so concurrent visitors never overwrite each other.
+// Each tab writes its own key per window, and a visitor is present while
+// they have a key in the current or previous window.
 export const PRESENCE_WINDOW_MS = 15_000;
 export const PRESENCE_PREFIX = "presence/";
 
@@ -22,17 +21,12 @@ export function getWindowPrefix(window: number): string {
   return `${PRESENCE_PREFIX}${window}/`;
 }
 
-/**
- * Counts the distinct visitors among the keys of the current and the previous
- * window.
- */
+/** Counts distinct visitors in the current and previous window. */
 export function countVisitors(keys: string[]): number {
   return new Set(keys.map((key) => key.slice(key.lastIndexOf("/") + 1))).size;
 }
 
-/**
- * Returns the keys of windows that no longer count.
- */
+/** The keys of windows that no longer count. */
 export function getExpiredKeys(
   keys: string[],
   currentWindow: number

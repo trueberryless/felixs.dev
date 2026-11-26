@@ -1,7 +1,7 @@
-/* Sideways scrollers, see `src/scripts/edge-scroll.ts`. `--edge-fade` sets
-   how far the fades reach in, and `--edge-inset` how much sticks to the
-   start edge, like the labels of the swimlanes. The buttons sit next to the
-   scroller, so they read both from a shared parent. */
+/* Sideways scrollers, see `src/scripts/edge-scroll.ts`. `--edge-fade` sets the
+   fade width and `--edge-inset` what sticks to the start, like swimlane labels.
+   Both are read from a shared parent, since the buttons sit beside the
+   scroller. */
 .edge-scroll-frame {
   position: relative;
   min-width: 0;
@@ -46,8 +46,7 @@
   );
 }
 
-/* Solid buttons, so nothing shows through them, sitting in the fades. They
-   only show for a mouse hovering the scroller, on an edge with more. */
+/* Solid buttons in the fades, shown on mouse hover at an edge with more. */
 .edge-scroll-button {
   position: absolute;
   top: 50%;

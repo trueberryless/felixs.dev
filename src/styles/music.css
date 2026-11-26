@@ -71,7 +71,7 @@
 }
 
 /* The plain lists stay for screen readers and search engines until the
-   charts replace them; the bones next to them hold the charts' space. */
+   charts replace them. The bones beside them hold the charts' space. */
 .ms-fallback-list {
   position: absolute;
   width: 1px;
@@ -81,9 +81,8 @@
   white-space: nowrap;
 }
 
-/* Entrance: every re-render fades and drifts in, staggered by `--i`, and
-   whole sections arrive one after another (`--reveal`), so a new range
-   lands as one wave instead of a few elements jumping in on their own. */
+/* Every re-render fades and drifts in, staggered by `--i`, with sections in
+   order (`--reveal`), so a new range lands as one wave. */
 @media (prefers-reduced-motion: no-preference) {
   .ms-enter {
     animation: ms-enter 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -117,8 +116,7 @@
   margin-bottom: 0;
 }
 
-/* Loading a single day: what's about to change steps back, the calendar
-   stays sharp so you can keep picking. */
+/* Loading a day dims what will change, the calendar stays sharp for picking. */
 .ms > .ms-section,
 .ms > .number-cards {
   transition:
@@ -132,8 +130,8 @@
   pointer-events: none;
 }
 
-/* Range picker: one glass pill under the header, like the header itself.
-   The group that isn't in use folds into a single button. */
+/* Range picker: a glass pill like the header. The unused group folds into a
+   single button. */
 .ms-ranges {
   position: sticky;
   top: 76px;
@@ -154,9 +152,8 @@
   min-inline-size: 0;
 }
 
-/* On a narrow screen the ranges scroll sideways inside the pill, see
-   `src/scripts/edge-scroll.ts`. The fades reach far into the pill, so they
-   always catch the next label. */
+/* Narrow screens scroll the ranges inside the pill, see
+   `src/scripts/edge-scroll.ts`. Wide fades always catch the next label. */
 .ms-ranges {
   --edge-fade: 96px;
 }
@@ -612,8 +609,7 @@ a.ms-track-name:hover {
   stroke-dasharray: 1;
 }
 
-/* Lines draw themselves from column to column, right after the columns
-   they connect have arrived. */
+/* Lines draw themselves once the columns they connect have arrived. */
 @media (prefers-reduced-motion: no-preference) {
   .ms-current-line {
     animation: ms-draw 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -973,8 +969,8 @@ a.ms-track-name:hover {
   font-size: 0.9rem;
 }
 
-/* Recently played: covers hanging off a winding track. Positions are set by
-   the script every frame. */
+/* Recently played: covers hanging off a winding track, positioned by the
+   script every frame. */
 .tr {
   --tr-cover: 64px;
 
@@ -1003,7 +999,7 @@ a.ms-track-name:hover {
   stroke-linecap: round;
 }
 
-/* Solid, so the ends of the stems never show underneath. */
+/* Solid, so the stems' ends never show underneath. */
 .tr-dot {
   fill: var(--header-bg-solid);
   stroke: var(--accent);

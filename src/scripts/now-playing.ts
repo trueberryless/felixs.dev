@@ -46,7 +46,7 @@ class NowPlayingElement extends HTMLElement {
       this.#fetchedAtMs = Date.now();
       this.#render();
     } catch {
-      // The widget simply stays hidden or stale when the scrobbler is unreachable.
+      // The widget stays hidden or stale when the scrobbler is unreachable.
     }
   }
 

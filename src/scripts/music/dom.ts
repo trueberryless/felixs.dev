@@ -28,10 +28,7 @@ export function formatNumber(value: number): string {
   return numberFormat.format(Math.round(value));
 }
 
-/**
- * Fades a freshly rendered element in, `order` steps after the first one,
- * so a whole page of changes arrives as one wave.
- */
+/** Fades a fresh element in `order` steps after the first, as one wave. */
 export function reveal(element: Element | null, order = 0) {
   if (!(element instanceof HTMLElement) || prefersReducedMotion()) return;
   element.classList.remove("ms-reveal");

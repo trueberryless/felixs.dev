@@ -1,8 +1,7 @@
 <script>
-  // Parallax and the footer reveal run as CSS scroll-driven animations. This
-  // fallback only drives them in browsers without scroll timelines, and writes
-  // to the moving elements alone: a variable on the root element would restyle
-  // the whole page on every scrolled frame.
+  // Fallback for browsers without scroll timelines. It writes only to the
+  // moving elements, since a root variable would restyle the whole page every
+  // frame.
   const isSupported = CSS.supports("animation-timeline: scroll()");
   const prefersReducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
@@ -16,8 +15,8 @@
     const root = document.documentElement;
 
     const update = () => {
-      // The space theme's pause button stops the parallax as well, and eases
-      // everything into place from here.
+      // The space theme's pause button stops the parallax too and eases it into
+      // place.
       const isPaused = root.classList.contains("cosmos-still");
       const scrollY = window.scrollY;
       const maxScroll = root.scrollHeight - window.innerHeight;
@@ -50,7 +49,7 @@
     );
     window.addEventListener("resize", update, { passive: true });
 
-    // The client router renders every page anew, so collect its layers again.
+    // The router renders every page anew, so collect the layers again.
     document.addEventListener("astro:page-load", () => {
       layers = [...document.querySelectorAll<HTMLElement>(".parallax")].map(
         (element) => ({

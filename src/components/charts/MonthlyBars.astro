@@ -98,8 +98,7 @@ const plural = (count: number) => `${count} ${count === 1 ? unit : `${unit}s`}`;
     padding-bottom: 22px;
   }
 
-  /* Every month is a full height column, so even a quiet one is easy to
-     pick; the bar inside shows its count. */
+  /* Full-height columns keep quiet months easy to pick. */
   .bar {
     position: relative;
     display: flex;

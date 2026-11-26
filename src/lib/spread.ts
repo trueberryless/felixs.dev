@@ -4,7 +4,7 @@ export interface Point {
 }
 
 export interface Seed extends Point {
-  /** How far the point itself reaches out, which it always keeps inside. */
+  /** How far the point reaches out, always kept inside. */
   reach?: number;
 }
 
@@ -28,11 +28,9 @@ interface SpreadOptions {
 }
 
 /**
- * Spreads points out evenly in a box around some obstacles, like particles
- * that push each other away. Every pair closer than the spacing pushes
- * apart, and so do the edges and the obstacles. The spacing comes from the
- * free area, so the points settle into a loose triangular pattern that fills
- * it. The same seeds always give the same layout.
+ * Spreads points evenly in a box around obstacles, like repelling particles.
+ * The spacing comes from the free area, so the points settle into a loose
+ * triangular grid. The same seeds give the same layout.
  */
 export function spreadOut(
   seeds: Seed[],
@@ -45,7 +43,7 @@ export function spreadOut(
   const points = seeds.map((seed) => clampTo(box, seed));
 
   for (let step = 0; step < iterations; step++) {
-    // Big moves first, then ever smaller ones, so the points settle.
+    // Big moves first, then smaller ones, so the points settle.
     const rate = 0.5 * (1 - step / iterations) + 0.02;
     const forces = points.map(() => ({ x: 0, y: 0 }));
 
@@ -71,8 +69,8 @@ export function spreadOut(
       }
     }
 
-    // Edges and obstacles push harder than the points push each other, so
-    // a crowd never squeezes a point into them.
+    // Edges and obstacles push harder than points, so crowds can't squeeze a
+    // point into them.
     for (const [index, point] of points.entries()) {
       const force = forces[index]!;
       const wall = Math.max(spacing * wallShare, seeds[index]!.reach ?? 0);
@@ -103,9 +101,8 @@ export function spreadOut(
 const STIFFNESS = 3;
 
 /**
- * The distance between neighbours when the points fill the free area: the
- * box minus its edges and the obstacles with their clearance. Those depend
- * on the spacing in turn, so it settles over a few rounds.
+ * The neighbour distance when points fill the free area. The free area
+ * depends on the spacing, so it settles over a few rounds.
  */
 export function getSpacing(
   count: number,
@@ -122,8 +119,7 @@ export function getSpacing(
       0
     );
     const free = Math.max(areaOf(inner) - blocked, 1);
-    // Each point of a triangular grid takes up √3/2 × spacing², and the
-    // points on the rim of the free area take up only part of that.
+    // A triangular grid point takes √3/2 × spacing², rim points less.
     spacing =
       Math.sqrt((2 * free) / (Math.sqrt(3) * Math.max(count, 1))) * 1.15;
   }
@@ -153,8 +149,8 @@ function awayFrom(
   const distance = Math.hypot(dx, dy);
 
   if (distance === 0) {
-    // Inside: out through the nearest side that leads back into the box,
-    // so a rectangle at an edge never traps a point against it.
+    // Inside: out through the nearest side that leads back into the box, so a
+    // rectangle at an edge never traps a point.
     const exits = [
       { x: rect.left - point.x - clearance, y: 0 },
       { x: rect.right - point.x + clearance, y: 0 },

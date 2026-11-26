@@ -16,9 +16,8 @@ import {
 } from "./views";
 
 /**
- * Enhances the server-rendered music stats: every view is re-rendered from
- * the embedded data whenever another time range is picked, and a day picked
- * in the calendar is fetched on demand.
+ * Enhances the server-rendered music stats: views re-render from the embedded
+ * data per range, and a picked day is fetched on demand.
  */
 class MusicStatsElement extends HTMLElement {
   #stats: MusicStats | undefined;
@@ -50,8 +49,8 @@ class MusicStatsElement extends HTMLElement {
     this.classList.add("is-enhanced");
     this.#pick(this.dataset.defaultRange ?? "all", { isFirst: true });
 
-    // Warm up the latest day with plays in the background, which also
-    // prepares the rest of its month on the server.
+    // Prefetch the latest day with plays, which also warms its month on the
+    // server.
     const { counts, start } = this.#stats.daily;
     const lastIndex = counts.findLastIndex((count) => count > 0);
     if (lastIndex !== -1) {
@@ -226,7 +225,7 @@ class MusicStatsElement extends HTMLElement {
 
       toggle.setAttribute("aria-expanded", String(isOpen));
       options.inert = !isOpen;
-      // A folded group still shows its range when that's the one picked.
+      // A folded group still shows its range when it's the picked one.
       const checked = group.querySelector<HTMLInputElement>("input:checked");
       const label = isOpen
         ? undefined
@@ -265,8 +264,8 @@ class MusicStatsElement extends HTMLElement {
   }
 
   /**
-   * Re-renders without moving the element the reader is looking at, even when
-   * the sections above it change height.
+   * Re-renders without moving the element in view, even if sections above
+   * resize.
    */
   #keepInPlace(selector: string, update: () => void) {
     const anchor = this.querySelector(selector);
@@ -295,8 +294,7 @@ function setShown(element: HTMLElement, shown: boolean, animate: boolean) {
     return;
   }
 
-  // The padding folds along with the width, so nothing is left to jump when
-  // the element is finally hidden.
+  // The padding folds with the width, so nothing jumps when it's hidden.
   element.hidden = false;
   const style = getComputedStyle(element);
   const open = {

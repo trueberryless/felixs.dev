@@ -34,8 +34,8 @@ const MAX_SATELLITES = 12;
     #isConnected = false;
 
     connectedCallback() {
-      // `transition:persist` moves the element between pages, which calls
-      // this again. Only the first connection starts the heartbeat.
+      // `transition:persist` reruns this on every page, so only the first
+      // connection starts the heartbeat.
       if (this.#isConnected) return;
       this.#isConnected = true;
 
@@ -50,8 +50,7 @@ const MAX_SATELLITES = 12;
       });
       window.addEventListener("pagehide", () => this.#leave());
 
-      // The hero is the one place without the pill, so nothing competes with
-      // it. The pill slides in once the hero scrolls out of view.
+      // Hidden on the hero, slides in once the hero scrolls out of view.
       this.#watchHero();
       document.addEventListener("astro:page-load", () => this.#watchHero());
 
@@ -90,8 +89,8 @@ const MAX_SATELLITES = 12;
         if (!response.ok) return;
 
         const { count } = (await response.json()) as { count: number };
-        // The heartbeat only reports the other tabs once its own write lands,
-        // so there is always at least this visitor.
+        // Read after our own write lands, so the count always includes this
+        // visitor.
         this.#render(Math.max(count, 1));
       } catch {
         // Offline or blocked: keep showing the last known count.

@@ -47,7 +47,7 @@ const allBlocks = record ? getDocumentBlocks(record.content) : [];
 const footnotes = collectFootnotes(allBlocks);
 const minutes = getReadingMinutes(allBlocks);
 const coverCid = record ? getBlobCid(record.coverImage) : undefined;
-// Most posts use their first image as the cover too, so it isn't shown twice.
+// Posts often use their first image as the cover, so it isn't shown twice.
 const coverIndex = coverCid
   ? allBlocks.findIndex(
       (block) =>
@@ -129,7 +129,7 @@ async function getPublication(uri: string) {
     : undefined;
 }
 
-// Every piece of rich text in the post, including list items and footnotes.
+// Every rich text in the post, including list items and footnotes.
 function getAllSegments(
   value: unknown,
   found: ReturnType<typeof toSegments> = []

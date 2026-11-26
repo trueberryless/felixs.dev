@@ -1,6 +1,6 @@
-// Wraps the hero's logos around a sphere and prints them in one color, for
-// the planets of the space theme. The prints are committed, so this only runs
-// when a logo changes: `node scripts/print-planet-logos.ts`.
+// Wraps the hero's logos around a sphere as one-color prints for the space
+// theme's planets. Run `node scripts/print-planet-logos.ts` when a logo
+// changes.
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
@@ -23,8 +23,7 @@ const LOGOS: LogoPrint[] = [
   // The two halves of the circle stand out from the black tile.
   { crop: 0.14, mode: "bright", name: "diglot", pitch: 0.1, yaw: -0.1 },
   { mode: "alpha", name: "forges", pitch: -0.06, yaw: 0.12 },
-  // Only the black circles, so the lens between them stays bare and the
-  // overlap still reads on the surface.
+  // Only the black circles, so the lens between them stays bare.
   { mode: "black", name: "made-in-common", pitch: 0.06, yaw: -0.1 },
   { mode: "alpha", name: "nuxt", pitch: 0.1, yaw: -0.08 },
   { mode: "alpha", name: "npmx", pitch: 0.08, yaw: 0.16 },
@@ -103,9 +102,8 @@ async function readInk({ crop = 0, mode, name }: LogoPrint) {
 }
 
 /**
- * Looks at a sphere from the front and paints every visible point with the
- * ink at its longitude and latitude, so the logo curves with the surface and
- * squeezes towards the edge. Yaw and pitch turn its centre away a little.
+ * Projects the ink onto the visible half of a sphere, so the logo curves with
+ * the surface. Yaw and pitch turn its centre away a little.
  */
 function wrapAroundSphere(ink: Float32Array, { pitch, yaw }: LogoPrint) {
   const print = Buffer.alloc(PRINT_SIZE * PRINT_SIZE * 4);

@@ -115,13 +115,12 @@ const pathname = Astro.url.pathname;
 <script>
   import { loadCosmos } from "@/scripts/cosmos/load";
 
-  // Dark follows space in the cycle, so nobody lands from space straight into
-  // bright light.
+  // Dark follows space, so nobody jumps from space straight into light.
   const THEMES = ["dark", "light"];
   // Light is the default look; the other themes add a class to the root.
   const CLASS_THEMES = THEMES.filter((theme) => theme !== "light");
   const SPECIAL_THEMES: string[] = ["space"];
-  // Special themes build on a base theme so its assets (logos, shadows) apply.
+  // Special themes build on a base theme to inherit its assets.
   const BASE_THEMES: Record<string, string> = { space: "dark" };
   const UNLOCK_CLICKS = 7;
   const COUNTDOWN = [
@@ -145,8 +144,8 @@ const pathname = Astro.url.pathname;
   ];
 
   const root = document.documentElement;
-  // With the client router this script runs once, while the header is
-  // rendered anew on every page, so its elements are looked up per page.
+  // The router runs this once but renders the header anew, so elements are
+  // looked up per page.
   let button: Element | null = null;
   let headerInner: Element | null = null;
   let header: Element | null = null;
@@ -154,8 +153,7 @@ const pathname = Astro.url.pathname;
   let themeText: Element | null | undefined = null;
   let toast: HTMLElement | null = null;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  // Below this width the links no longer fit next to the name, so they fold
-  // into a menu. Keep in sync with the styles below.
+  // Below this width the links fold into a menu. Keep in sync with the CSS.
   const compactMenu = window.matchMedia("(max-width: 719px)");
 
   const SCROLL_THRESHOLD_DIVISOR = 1.8;
@@ -187,8 +185,8 @@ const pathname = Astro.url.pathname;
     }
   };
 
-  // The collapsed menu is only hidden visually, so its links are also taken
-  // out of the tab order and the accessibility tree until it opens.
+  // The collapsed menu is only visually hidden, so its links also leave the tab
+  // order and accessibility tree.
   const syncMenuState = () => {
     const isOpen = headerInner?.classList.contains("is-open") ?? false;
     button?.setAttribute("aria-expanded", String(isOpen));
@@ -281,8 +279,8 @@ const pathname = Astro.url.pathname;
   let switchingFrame = 0;
 
   const setTheme = (theme: string) => {
-    // Without this, every themed element would run its own color transition,
-    // which keeps the main thread busy for the whole switch.
+    // Otherwise every themed element runs its own color transition and keeps
+    // the main thread busy.
     root.classList.add("theme-switching");
     root.classList.remove(...CLASS_THEMES, ...SPECIAL_THEMES);
     const baseTheme = BASE_THEMES[theme];
@@ -299,8 +297,8 @@ const pathname = Astro.url.pathname;
     });
   };
 
-  // Every trip to a special theme is a rocket launch; the first one, right
-  // after the countdown, gets the long ignition.
+  // Every switch to a special theme launches a rocket. The first one gets the
+  // long ignition.
   const launchIntoSpace = async (theme: string, isFirstFlight = false) => {
     isLaunching = true;
     const message = isFirstFlight
@@ -310,8 +308,7 @@ const pathname = Astro.url.pathname;
 
     try {
       const cosmos = await loadCosmos();
-      // The launch covers the page with the sky while it switches the theme,
-      // so the restyle happens out of sight and needs no view transition.
+      // The launch sky hides the restyle, so no view transition is needed.
       await cosmos.launch(toast, () => setTheme(theme), { isFirstFlight });
     } catch {
       setTheme(theme);
@@ -387,8 +384,7 @@ const pathname = Astro.url.pathname;
     applyTheme(currentTheme);
   };
 
-  // Fetch the space scene before a click that will need it, so its reveal
-  // never waits for the network.
+  // Prefetch the space scene so its reveal never waits on the network.
   const prepareNextTheme = () => {
     if (!specialThemesUnlocked) return;
     const availableThemes = [...THEMES, ...SPECIAL_THEMES];

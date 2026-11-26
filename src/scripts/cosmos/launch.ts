@@ -1,5 +1,5 @@
 const ASCENT_MS = 1500;
-// How long after liftoff the sky has turned into space and covers the page.
+// When after liftoff the sky has turned to space and covers the page.
 const COVER_MS = 1250;
 const REVEAL_MS = 900;
 const LANDING_COVER_MS = 450;
@@ -24,9 +24,8 @@ const ROCKET_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 72">
 </svg>`;
 
 /**
- * Lifts a rocket off from the given element while the sky darkens into space
- * behind it. `onSwitch` runs once the sky covers the page, so the theme can
- * change out of sight, then the sky fades to reveal it.
+ * Launches a rocket from the element as the sky darkens into space.
+ * `onSwitch` runs once the sky covers the page, then the sky fades away.
  */
 export function launchRocket(
   from: Element | null,
@@ -48,9 +47,9 @@ export function launchRocket(
       resolve();
     }
 
-    // The sky is a gradient twice the viewport tall that slides down: light
-    // atmosphere first, then deeper blues, then space. Only transform and
-    // opacity animate, and it rasterizes at half height before scaling.
+    // A gradient twice the viewport tall slides down: atmosphere, deeper blues,
+    // then space. Only transform and opacity animate, rasterized at half
+    // height.
     const descent = sky.animate(
       [
         { transform: "translate3d(0, -200vh, 0) scaleY(2)" },
@@ -66,8 +65,8 @@ export function launchRocket(
     descent.finished
       .then(() => {
         onSwitch();
-        // The sky stays until the fonts are in, then two frames let the new
-        // theme and the first frame of the scene paint.
+        // The sky waits for the fonts, then two frames for the new theme and
+        // the scene to paint.
         return beforeReveal;
       })
       .then(
@@ -141,9 +140,8 @@ export function launchRocket(
 }
 
 /**
- * The way back: space fades in over the page, the theme switches out of
- * sight, then the sky slides up through the atmosphere while the rocket brakes
- * down onto the given element.
+ * The way back: space fades in, the theme switches, then the sky slides up
+ * through the atmosphere as the rocket lands on the element.
  */
 export function landRocket(
   to: Element | null,
@@ -251,8 +249,7 @@ export function landRocket(
   });
 }
 
-// The full-screen canvas for the rocket, the sky behind it and the pad it
-// starts from or lands on.
+// The full-screen canvas for the rocket, its sky and its pad.
 function createStage(pad: Element | null) {
   const width = window.innerWidth;
   const height = window.innerHeight;
@@ -372,7 +369,7 @@ interface Particle {
 }
 
 interface LaunchRocketOptions {
-  /** Held back until this settles, so the reveal shows the final fonts. */
+  /** Awaited before the reveal, so it shows the final fonts. */
   beforeReveal: Promise<unknown>;
   ignitionMs: number;
   onSwitch: () => void;

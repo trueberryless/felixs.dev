@@ -1,6 +1,5 @@
-// The projects page as something to explore: picking an organisation (its
-// lane or its bubble) or a month (its bar) narrows every number, chart and
-// the list of pull requests down to it. Picking it again lets go.
+// Picking an organisation (lane or bubble) or a month (bar) filters every
+// number, chart and the pull request list. Picking it again clears it.
 import { packBubbles } from "@/lib/bubbles";
 import { countTo } from "@/scripts/count-up";
 
@@ -145,8 +144,8 @@ class ProjectsExplorer extends HTMLElement {
     this.#renderList(picked);
   }
 
-  // A month repacks the bubbles to that month only: they glide and grow to
-  // their new places, and their labels come back once they've settled.
+  // A month repacks the bubbles: they glide to their new places and their
+  // labels return once settled.
   #packBubbles(month: string | undefined) {
     const data = this.#data;
     const chart = this.querySelector<SVGSVGElement>(".bubble-chart");
@@ -198,7 +197,7 @@ class ProjectsExplorer extends HTMLElement {
       for (const group of chart.querySelectorAll<SVGGElement>("[data-key]")) {
         const bubble = packed.get(group.dataset.key ?? "");
         const text = group.querySelector(".bubble-text");
-        // Spaces between the lines keep them apart as words when read out.
+        // Spaces keep the lines apart as words when read out.
         const parts = bubble
           ? renderLabel(bubble).flatMap((part, index) =>
               index === 0 ? [part] : [document.createTextNode(" "), part]

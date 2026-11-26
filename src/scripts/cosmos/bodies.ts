@@ -1,7 +1,6 @@
-// One parallax rule for the whole sky: something at depth `d` (0 is infinitely
-// far, 1 is the page itself) moves `d` times as far as the page when
-// scrolling, and `d × POINTER_REACH` when the pointer moves. Being closer also
-// means being in front: the planet hides the stars behind it.
+// Parallax for the whole sky: depth `d` (0 is infinitely far, 1 is the page)
+// moves `d` times the scroll and `d × POINTER_REACH` with the pointer. Closer
+// things are in front, so the planet hides the stars behind it.
 export const DEPTH = {
   nebula: 0.004,
   planet: 0.062,
@@ -12,16 +11,12 @@ export const DEPTH = {
 export const POINTER_REACH = 420;
 
 /**
- * How far the planet rises by the end of a long page, as a share of the
- * viewport. Long pages slow its rise down evenly instead of stopping it, so it
- * keeps moving until the very end.
+ * How far the planet rises by the end of a page, as a share of the viewport.
+ * Long pages slow the rise evenly, so it moves until the end.
  */
 const FULL_PLANET_RISE = 0.9;
 
-/**
- * Positions the planet in CSS pixels. The nebula shader paints
- * it from these numbers and the starfield uses it to hide occluded stars.
- */
+/** The planet's position in CSS pixels, for the nebula and starfield. */
 export function getBodies({
   arrival,
   height,

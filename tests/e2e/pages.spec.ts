@@ -44,8 +44,8 @@ for (const { heading, path, title } of pages) {
 test.describe('landing stage', () => {
   test.use({ viewport: { height: 800, width: 1280 } })
 
-  // A minifier once folded the timeline into the animation shorthand, which
-  // browsers drop as a whole, so only the built page shows whether it works.
+  // Minifiers can fold the timeline into the `animation` shorthand, which
+  // browsers drop, so only the built page shows whether it works.
   test('glides with the scroll timeline', async ({ page }) => {
     await page.goto('/')
     const supported = await page.evaluate(() => CSS.supports('animation-timeline: view()'))
@@ -78,8 +78,8 @@ test.describe('accessibility', () => {
   for (const path of ['/', '/blog', '/blog/3mpvwzmluok2z', '/books', '/music', '/events', '/projects', '/resume', '/404']) {
     for (const colorScheme of ['dark', 'light'] as const) {
       test(`${path} has no violations in ${colorScheme} mode`, async ({ page }) => {
-        // Sections fade through each other while scrolling, which axe would
-        // catch half way. Reduced motion shows every section as it settles.
+        // axe would catch sections mid-fade, so reduced motion shows them
+        // settled.
         await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' })
         await page.goto(path)
         await page.waitForLoadState('networkidle')
@@ -177,10 +177,10 @@ test.describe('live visitors', () => {
     await expect(page.locator('live-visitors')).toHaveClass(/is-tucked/)
   })
 
-  // Other tests run in parallel against the same server, so they may count too.
+  // Parallel tests share the server, so they may count too.
   test('counts every open tab', async ({ browser }) => {
     const first = await browser.newPage()
-    // The count stays out of the hero, so the home page would hide it.
+    // The count is hidden on the hero, so the home page wouldn't show it.
     await first.goto('/books')
     await expect(first.locator('live-visitors').getByRole('status')).toHaveText(/visit/)
 

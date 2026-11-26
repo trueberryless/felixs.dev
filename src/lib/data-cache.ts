@@ -2,10 +2,8 @@ import { getStore } from "@netlify/blobs";
 
 import { isOnNetlify } from "./netlify";
 
-// Every deploy empties the CDN cache, and server islands get new URLs with
-// every build anyway. So the data behind them is kept in Netlify Blobs, which
-// outlive deploys: the first visitor after a deploy gets the saved copy right
-// away instead of waiting for every service to answer again.
+// Deploys empty the CDN cache and islands get new URLs every build, so their
+// data is saved in Netlify Blobs, which outlive deploys.
 const STORE_NAME = "data-cache";
 // Bump to drop every saved copy, for example when a loader changes shape.
 const VERSION = 1;
@@ -25,10 +23,9 @@ export interface CacheLocals {
 }
 
 /**
- * Loads data through a saved copy, the same way the CDN caches pages: a copy
- * younger than a day is used as it is, one younger than two weeks is used
- * while a fresh one loads in the background, and when loading fails a copy
- * up to eight weeks old stands in. Without Netlify it simply loads.
+ * Loads data through a saved copy, like the CDN: fresh for a day, served
+ * while revalidating for two weeks and on errors for eight. Without Netlify
+ * it just loads.
  */
 export async function loadCached<T>(
   key: string,

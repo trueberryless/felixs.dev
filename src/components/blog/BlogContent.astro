@@ -253,9 +253,8 @@ const total = posts?.length ?? 0;
     display: none;
   }
 
-  /* Spans the section, so the space theme's parallax can keep the year
-     inside it. Absolutely positioned, its size never depends on the year,
-     which lets it be a size container. */
+  /* Spans the section so the space parallax keeps the year inside it. Absolute
+     positioning lets it be a size container. */
   .year-track {
     position: absolute;
     inset: -60px 0 0 -80px;
@@ -264,8 +263,7 @@ const total = posts?.length ?? 0;
     pointer-events: none;
   }
 
-  /* Drawn by CSS rather than written as text: the faint year only
-     decorates the list, and the heading above already names it. */
+  /* Drawn in CSS: the year is decorative and the heading already names it. */
   .year-watermark::before {
     content: attr(data-label);
   }
@@ -369,8 +367,8 @@ const total = posts?.length ?? 0;
     }
   }
 
-  /* Phones show the cover next to each post; with a mouse it follows the
-     pointer instead. */
+  /* Phones show the cover beside each post, mice get it following the pointer.
+     */
   .post-thumb {
     flex-shrink: 0;
     width: 96px;
@@ -466,8 +464,7 @@ const total = posts?.length ?? 0;
     }
   }
 
-  /* Pointing at a post lets the others step back, and every divider with
-     them, so none frames the post more than the others. */
+  /* Hovering a post dims the others and their dividers. */
   @media (hover: hover) and (pointer: fine) {
     .post {
       transition: border-color 0.35s ease;

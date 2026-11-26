@@ -8,10 +8,7 @@ interface Props {
   fill?: boolean;
   height?: number;
   label: string;
-  /**
-   * Sizes bubbles by the square root of their value, so a few huge values
-   * don't shrink everything else to dots. Tooltips keep the exact numbers.
-   */
+  /** Sizes bubbles by √value, so huge values don't shrink the rest to dots. */
   scale?: "linear" | "sqrt";
   /** Hides the numbers when the values only size the bubbles. */
   showValues?: boolean;
@@ -69,8 +66,7 @@ const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
             style={`--strength: ${Math.max(18, 72 - circle.index * 7)}%; --i: ${circle.index}`}
           />
           <g class="bubble-text">
-            {/* Spaces between the lines and the value keep them apart as
-                words, so the name read out matches the text on screen. */}
+            {/* Spaces keep the lines apart as words for screen readers. */}
             {lines.map((line, index) => (
               <>
                 {index > 0 && " "}
@@ -136,9 +132,8 @@ const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
 </div>
 
 <script>
-  // One tooltip per chart instead of the browser's plain title tooltip. With
-  // a mouse it glides after the pointer and leans into the movement, like
-  // the covers on the blog list. Keyboard focus puts it above the bubble.
+  // One shared tooltip instead of `title`. It follows the mouse like the blog
+  // covers and sits above the bubble on keyboard focus.
   const TIP_FOLLOW = 0.2;
   const TIP_LIFT = 18;
 
@@ -227,8 +222,7 @@ const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
   }
   enableTips();
   document.addEventListener("astro:page-load", enableTips);
-  // Islands arrive after the page, and the client router swaps the whole
-  // body on every navigation, so the watch is on the root.
+  // Islands load late and the router swaps the body, so observe the root.
   new MutationObserver(enableTips).observe(document.documentElement, {
     childList: true,
     subtree: true,
@@ -312,8 +306,8 @@ const hasLinks = bubbles.some((bubble) => bubble.href || bubble.key);
     }
   }
 
-  /* Repacked bubbles get their labels from a script, so these styles reach
-     past this component's scope. */
+  /* Labels of repacked bubbles come from a script, so these styles are global.
+     */
   .bubble-chart :global(:is(.bubble-label, .bubble-value)) {
     text-anchor: middle;
     dominant-baseline: central;

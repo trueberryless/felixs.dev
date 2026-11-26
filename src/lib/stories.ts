@@ -42,8 +42,8 @@ const ACTIVITIES = [
 ] as const;
 
 /**
- * Counts what I do online: likes, posts, replies, quotes and reposts on
- * Bluesky, and follows and stars on Bluesky, Tangled and GitHub.
+ * Counts likes, posts, replies, quotes and reposts on Bluesky, and follows
+ * and stars on Bluesky, Tangled and GitHub.
  */
 export function getSocialActivity(
   records: Map<string, { value: unknown }[]>,
@@ -87,10 +87,7 @@ export function getSocialActivity(
   }));
 }
 
-/**
- * Parses the resume's month labels ("Apr 2025", "2019") into timestamps for
- * the career timeline.
- */
+/** Parses resume month labels ("Apr 2025", "2019") into timestamps. */
 export function parseResumeDate(label: string | null | undefined): number {
   if (!label) return Number.NaN;
   if (/^\d{4}$/.test(label)) return Date.UTC(Number(label), 0, 1);
@@ -164,9 +161,8 @@ const OPEN_SOURCE_SINCE = Date.UTC(2023, 9, 26);
 const SHORT_MS = 92 * 24 * 60 * 60 * 1000;
 
 /**
- * The career timeline as I tell it: short stints like internships are left
- * out, and open source runs alongside everything else since my first merged
- * pull request.
+ * The career timeline without short stints like internships, with open source
+ * alongside since my first merged pull request.
  */
 export function tellCareer(rows: GanttRow[], nowMs: number): GanttRow[] {
   return [
@@ -182,10 +178,7 @@ export function tellCareer(rows: GanttRow[], nowMs: number): GanttRow[] {
   ].toSorted((a, b) => b.start - a.start);
 }
 
-/**
- * Splits a URL at the end of a text off the text, so it can be shown as a
- * proper link instead of raw text.
- */
+/** Splits a trailing URL off a text, so it can be shown as a link. */
 export function splitTrailingLink(text: string | null | undefined): {
   link?: { host: string; url: string };
   text: string;
@@ -200,9 +193,7 @@ export function splitTrailingLink(text: string | null | undefined): {
   };
 }
 
-/**
- * Skills as bubbles that grow with the number of positions using them.
- */
+/** Skills as bubbles sized by how many positions use them. */
 export function getSkillBubbles(
   skills: { name: string }[],
   usage: Map<string, number>

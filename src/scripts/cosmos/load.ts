@@ -1,12 +1,12 @@
-// The space theme's scene, styles and fonts live in their own chunk that is
-// only requested once someone actually flies there.
+// The space scene, styles and fonts live in their own chunk, loaded on the
+// first trip there.
 import stylesUrl from "./cosmos.css?url";
 
 let cosmos: Promise<typeof import("./index")> | undefined;
 
 export const loadCosmos = () => (cosmos ??= loadInParallel());
 
-// Starts the stylesheet download alongside the script instead of after it.
+// Starts the stylesheet download alongside the script.
 function loadInParallel() {
   const preload = document.createElement("link");
   preload.rel = "preload";

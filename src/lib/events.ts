@@ -20,10 +20,7 @@ export interface Person {
   name: string;
 }
 
-/**
- * Everyone I met at the events I went to, most met first. I'm not one of
- * them.
- */
+/** Everyone I met at the events I went to, most met first, without me. */
 export function getPeopleMet(events: EventLike[], nowMs: number): Person[] {
   const people = new Map<string, Person>();
   for (const event of events) {

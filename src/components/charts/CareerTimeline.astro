@@ -12,8 +12,7 @@ interface Props {
 const { label, nowMs, rows, visibleYears = 4 } = Astro.props;
 
 const YEAR_WIDTH = 110;
-// Every row is a label line over a bar, so a label always sits on its own
-// stint and never next to someone else's.
+// Each row is a label over its bar, so a label never sits beside another stint.
 const ROW = 60;
 const BAR = 24;
 const LABEL = 18;
@@ -75,9 +74,8 @@ const viewportRatio = Math.min(1, visibleYears / (lastYear - firstYear));
       const anchorX = isShort ? (start + end) / 2 : end;
       const labelWidth =
         row.label.length * 7.4 + (isShort ? " · internship".length * 6.4 : 0);
-      // Labels end where a stint ends, the side that is always in view,
-      // unless that would push them off the start of the chart. Internships
-      // are a single point, so their label starts there.
+      // Labels end where a stint ends, unless that pushes them off the chart's
+      // start. Internships are a point, so their label starts there.
       const alignEnd = !isShort && anchorX - labelWidth > 0;
 
       return (

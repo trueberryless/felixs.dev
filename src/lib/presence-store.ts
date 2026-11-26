@@ -12,10 +12,7 @@ export interface PresenceStore {
 
 let memoryStore: PresenceStore | undefined;
 
-/**
- * Returns the Netlify Blobs store on Netlify, and an in-memory one everywhere
- * else (local development, the e2e server).
- */
+/** Netlify Blobs on Netlify, an in-memory store elsewhere (dev, e2e). */
 export function getPresenceStore(): PresenceStore {
   if (!isOnNetlify()) {
     memoryStore ??= createMemoryStore();

@@ -1,6 +1,5 @@
-// The blog list as something to explore: a search field and a map of topics
-// narrow the list down as you type or pick, and with a mouse the cover of the
-// post you point at glides along next to the pointer.
+// Search and topic filters for the blog list. With a mouse, the hovered
+// post's cover follows the pointer.
 
 const PREVIEW_OFFSET = { x: 28, y: -40 };
 // How quickly the preview catches up with the pointer, per frame at 60 fps.
@@ -84,8 +83,8 @@ class BlogExplorer extends HTMLElement {
       }
     };
 
-    // A view transition would freeze the header's live blur for a moment, so
-    // posts that come back simply fade in.
+    // A view transition would freeze the header's blur, so posts just fade back
+    // in.
     const hiddenBefore = this.querySelectorAll<HTMLElement>(".post[hidden]");
     change();
     for (const post of hiddenBefore) {
@@ -133,8 +132,8 @@ class BlogExplorer extends HTMLElement {
       preview.classList.remove("is-visible");
     };
 
-    // The previous cover blurs away at once, so it never stands in for the
-    // next post. Until the next one has loaded, a glow shows in its place.
+    // The previous cover blurs away at once, and a glow stands in until the
+    // next one loads.
     const show = async (cover: string) => {
       const current = ++request;
       image.classList.add("is-loading");
@@ -173,11 +172,11 @@ class BlogExplorer extends HTMLElement {
       { signal }
     );
     this.addEventListener("pointerleave", hide, { signal });
-    // The page moves under a resting pointer while scrolling, so the preview
-    // waits for the pointer to move again.
+    // Scrolling moves the page under a resting pointer, so the preview waits
+    // for the pointer to move.
     window.addEventListener("scroll", hide, { passive: true, signal });
 
-    // Covers are small, so they load ahead while the page is idle.
+    // Covers are small, so preload them when idle.
     if (fine.matches) {
       const preload = () => {
         for (const link of this.querySelectorAll<HTMLElement>("[data-cover]")) {

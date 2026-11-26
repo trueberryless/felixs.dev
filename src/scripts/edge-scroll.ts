@@ -1,10 +1,7 @@
-// Sideways scrollers marked `data-edge-scroll` show that they go on: their
-// edges fade out wherever there is more to scroll to, and with a mouse,
-// buttons at those edges scroll on by a page. Touch screens swipe instead.
-// Keyboard focus and the picked item always scroll fully into view, clear
-// of the fades and the buttons. Timelines set `data-edge-scroll="end"`: they
-// start at their most recent end and stay there through every resize, until
-// the visitor scrolls them.
+// Sideways scrollers marked `data-edge-scroll` fade their edges where there is
+// more to scroll, and show page buttons there for mice. Focus and the picked
+// item always scroll fully into view. `data-edge-scroll="end"` starts at the
+// recent end and stays there on resize until the visitor scrolls.
 import "@/styles/edge-scroll.css";
 
 const SELECTOR = "[data-edge-scroll]:not([data-edge-ready])";
@@ -13,8 +10,7 @@ const OWN_SCROLL_MS = 1000;
 const PICKED = ":checked, [aria-current]:not([aria-current='false'])";
 
 /**
- * Marks the edges of a sideways scroller that have more to scroll to, as
- * `data-scroll="start end"`, for the styles to fade them out.
+ * Marks edges with more to scroll as `data-scroll="start end"` for the fades.
  */
 export function markScrollEdges(scroller: HTMLElement) {
   const hasMoreBefore = scroller.scrollLeft > 4;
@@ -37,10 +33,7 @@ function visiblePart(element: Element) {
   return element.closest("label") ?? element;
 }
 
-/**
- * Scrolls an item of the scroller fully into view, clear of the fades,
- * which are as wide as the scroller's scroll padding.
- */
+/** Scrolls an item fully into view, clear of the fades (the scroll padding). */
 function reveal(scroller: HTMLElement, item: Element, smooth: boolean) {
   const style = getComputedStyle(scroller);
   const paddingStart = Number.parseFloat(style.scrollPaddingInlineStart) || 0;
@@ -76,8 +69,8 @@ function chevron(direction: "start" | "end") {
 function enhance(scroller: HTMLElement) {
   scroller.dataset.edgeReady = "";
 
-  // A frame around the scroller holds the buttons at its edges. A page can
-  // render it itself, to style it before this runs.
+  // A frame around the scroller holds the buttons. Pages may render it
+  // themselves to style it before this runs.
   let frame = scroller.parentElement;
   if (!frame?.classList.contains("edge-scroll-frame")) {
     frame = document.createElement("div");
@@ -90,8 +83,7 @@ function enhance(scroller: HTMLElement) {
   let isPinned = pinsToEnd;
   let lastInput = -Infinity;
 
-  // The buttons only help a mouse, so they stay out of the keyboard order
-  // and away from screen readers, which reach every item on their own.
+  // The buttons only help mice, so they skip the tab order and screen readers.
   const buttons = (["start", "end"] as const).map((direction) => {
     const button = document.createElement("button");
     button.type = "button";
@@ -125,8 +117,8 @@ function enhance(scroller: HTMLElement) {
   scroller.addEventListener(
     "scroll",
     () => {
-      // Only the visitor's own scrolling lets go of the end, not the browser
-      // clamping the position while the scroller resizes.
+      // Only the visitor's scrolling lets go of the end, not the browser
+      // clamping it during a resize.
       if (performance.now() - lastInput < OWN_SCROLL_MS) {
         isPinned =
           pinsToEnd &&
@@ -142,8 +134,8 @@ function enhance(scroller: HTMLElement) {
       passive: true,
     });
   }
-  // The scroller can keep its width while what's inside it grows, like a
-  // group of ranges opening, so its children are watched as well.
+  // The content can grow without the scroller resizing, so watch the children
+  // too.
   const resizes = new ResizeObserver(() => {
     if (isPinned) scroller.scrollLeft = scroller.scrollWidth;
     mark();
@@ -151,7 +143,7 @@ function enhance(scroller: HTMLElement) {
   for (const element of [scroller, ...scroller.children]) {
     resizes.observe(element);
   }
-  // A group that animates open can end up fitting after the last resize.
+  // A group animating open may fit only after the last resize.
   scroller.addEventListener("transitionend", mark);
 
   scroller.addEventListener("focusin", (event) => {
@@ -176,9 +168,8 @@ function enhanceAll() {
 
 enhanceAll();
 document.addEventListener("astro:page-load", enhanceAll);
-// Most scrollers arrive after the page, in server islands or rendered by a
-// script, and the client router swaps the whole body, so the watch is on
-// the root.
+// Most scrollers arrive later in islands or scripts, and the router swaps the
+// body, so observe the root.
 new MutationObserver(enhanceAll).observe(document.documentElement, {
   childList: true,
   subtree: true,

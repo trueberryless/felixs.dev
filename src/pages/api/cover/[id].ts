@@ -6,9 +6,8 @@ export const prerender = false;
 const TRACK_ID = /^[A-Za-z0-9]{22}$/;
 
 /**
- * Redirects to the cover of a Spotify track. Covers come from Spotify's
- * oEmbed endpoint, which some phones and content blockers refuse to call
- * from the page, so it runs here and the edge remembers the answer.
+ * Redirects to a Spotify track's cover. Some phones and blockers refuse
+ * Spotify's oEmbed endpoint, so it's called here and cached at the edge.
  */
 export const GET: APIRoute = async ({ params }) => {
   const { id } = params;

@@ -63,8 +63,7 @@ const [topAuthor, topAuthorBooks = 0] =
     padding-bottom: 28px;
   }
 
-  /* A soft pool of shadow instead of a shelf board, so the books stand on
-     the page in every theme. */
+  /* A shadow instead of a shelf board, so the books stand in every theme. */
   .reading-shelf::after {
     content: "";
     position: absolute;
@@ -81,8 +80,8 @@ const [topAuthor, topAuthorBooks = 0] =
     z-index: -1;
   }
 
-  /* The script below moves the books like the Dock. The whole shelf is the
-     hover area, gaps included, so gliding across never drops a book back. */
+  /* The script moves the books like the macOS Dock. The whole shelf is the
+     hover area, so gliding over the gaps never drops a book. */
   @media (hover: hover) and (pointer: fine) and (min-width: 860px) {
     .reading-shelf {
       padding: 48px 32px 28px;
@@ -121,8 +120,7 @@ const [topAuthor, topAuthorBooks = 0] =
     rotate: var(--tilt, 0deg);
   }
 
-  /* The books shrink with the room the shelf has, wherever the layout puts
-     it, so they never reach past the edge of the screen. */
+  /* The books shrink with the shelf, so they never overflow the screen. */
   @container shelf (max-width: 420px) {
     .reading-book {
       margin-inline: -10px;
@@ -143,10 +141,9 @@ const [topAuthor, topAuthorBooks = 0] =
 </style>
 
 <script>
-  // The shelf works like the Dock. Books near the pointer grow and rise,
-  // the one right under it turns towards you, the others slide apart so
-  // nothing overlaps and lean away a little, and a soft light follows along.
-  // Every value eases on its own spring, so gliding across feels continuous.
+  // Dock-like shelf: books near the pointer grow and rise, the one under it
+  // turns towards you and the others slide apart and lean away. Each value
+  // eases on its own spring.
   const STIFFNESS = 0.09;
   const DAMPING = 0.74;
   const REACH = 1.3;
@@ -192,8 +189,8 @@ const [topAuthor, topAuthorBooks = 0] =
       const shelfBox = shelf.getBoundingClientRect();
       const zoom = Number(getComputedStyle(books[0]!.element).zoom) || 1;
 
-      // Where each book stands at rest, in screen pixels. Scaling happens
-      // around the bottom centre, so only the slide has to be taken out.
+      // Resting positions in screen pixels. Scaling is around the bottom
+      // centre, so only the slide has to be taken out.
       const homes = books.map((book) => {
         const box = book.element.getBoundingClientRect();
         return {
@@ -315,8 +312,7 @@ const [topAuthor, topAuthorBooks = 0] =
   }
   enableShelves();
   document.addEventListener("astro:page-load", enableShelves);
-  // Islands arrive after the page, and the client router swaps the whole
-  // body on every navigation, so the watch is on the root.
+  // Islands load late and the router swaps the body, so observe the root.
   new MutationObserver(enableShelves).observe(document.documentElement, {
     childList: true,
     subtree: true,

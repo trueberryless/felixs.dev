@@ -38,8 +38,7 @@ const numbers = [
   { label: "coming up", value: upcoming.length },
 ];
 const mostMet = people[0]?.count ?? 1;
-// Every face pops in one after another within about a second and a half,
-// however many there are, and the rest of the page follows the last one.
+// Faces pop in one by one within ~1.5s, then the rest of the page follows.
 const PEOPLE_MS = 1500;
 const peopleStep = Math.min(25, PEOPLE_MS / Math.max(people.length, 1));
 const afterPeople =
@@ -250,8 +249,7 @@ const afterPeople =
 </style>
 
 <script>
-  // A place narrows the timeline down to the events there. The "Today"
-  // divider only stays while events on both sides of it are shown.
+  // A place filters the timeline. "Today" only shows with events on both sides.
   class EventsTimeline extends HTMLElement {
     #place: string | undefined;
 

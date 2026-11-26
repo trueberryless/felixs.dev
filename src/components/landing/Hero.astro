@@ -59,9 +59,9 @@ interface Props {
 
 const { name } = Astro.props;
 
-// `depth` places an element between the far sky (0) and the page itself (1).
-// Closer elements scroll faster and stack above farther ones, so hexagons are
-// listed from far to near and every logo floats in front of the title.
+// `depth` runs from the far sky (0) to the page (1). Closer elements scroll
+// faster and stack higher, so hexagons go far to near and logos sit above
+// the title.
 const hexagons = [
   {
     borderStyle: "dashed",
@@ -113,14 +113,11 @@ const hexagons = [
   },
 ];
 
-// The logos start on the corners of a hex grid around the name: five rows
-// evenly apart, each half a step off the next. `x` is a share of the width,
-// `row` counts rows from the name and `dy` nudges a logo in pixels. The
-// script below then spreads them out evenly in the room the actual screen
-// leaves, so these spots are only where they start, and where they stay
-// without scripts. The projects I work on most are the planets, the smaller
-// ones moons, and each group scrolls at its own depth. Phones only show the
-// logos with a spot of their own.
+// Starting spots on a hex grid around the name: `x` is a share of the width,
+// `row` counts rows from the name and `dy` nudges in pixels. The script below
+// spreads them out, without scripts they stay here. Planets are my main
+// projects, moons the smaller ones, each group at its own depth. Phones only
+// show logos with a spot of their own.
 const DEPTH = { moon: 0.7, planet: 0.76 };
 
 const planets = [
@@ -335,9 +332,8 @@ const logos = [
   ),
 ];
 
-// The space theme turns every logo into a planet with the logo printed on
-// its surface. Only a custom property points at the print, so nobody
-// downloads it until a stylesheet uses it.
+// In space each logo becomes a planet. Only a custom property references the
+// print, so it downloads only when a stylesheet uses it.
 const prints = await Promise.all(
   logos.map((logo) => getImage({ format: "webp", src: logo.print, width: 192 }))
 );
@@ -378,8 +374,7 @@ const prints = await Promise.all(
           aria-label={logo.name}
         >
           <span class="planet-print" />
-          {/* The logos show at about 43px, so they ship small with sharper
-              copies for denser screens. */}
+          {/* Shown at ~43px, with sharper copies for denser screens. */}
           <Image
             src={logo.light}
             alt={`${logo.name} Logo`}
@@ -398,7 +393,7 @@ const prints = await Promise.all(
       </div>
     ))}
   </div>
-  {/* Hidden until the script below spreads the logos out, so they never jump. */}
+  {/* Hidden until the script places them, so they never jump. */}
   <script is:inline>
     document.currentScript?.previousElementSibling?.setAttribute(
       "data-placing",
@@ -414,11 +409,9 @@ const prints = await Promise.all(
 <script>
   import { spreadOut, type Obstacle, type Rect } from "@/lib/spread";
 
-  // The logos spread out evenly around the name, like particles pushing each
-  // other away, in whatever room this screen and theme leave them. The spots
-  // in the markup are where they start, and where they stay without scripts.
-  // The name keeps them at a good distance, the header and the edges at a
-  // smaller one, so the room towards them gets used too.
+  // Spreads the logos evenly around the name, like repelling particles, in the
+  // room this screen and theme leave. The name pushes harder than the header
+  // and edges, so the space near those gets used too.
   const NAME_SHARE = 0.55;
   const HEADER_SHARE = 0.3;
   // The music dock and the pause button sit at the bottom of the screen.
@@ -446,8 +439,8 @@ const prints = await Promise.all(
       ...logos.querySelectorAll<HTMLElement>(".logo-parallax"),
     ].filter((item) => item.offsetParent !== null);
     const frame = logos.getBoundingClientRect();
-    // In the logos' own coordinates, as the page lays out at the very top:
-    // the header stays put while scrolling and the name has its parallax.
+    // Logo coordinates at scroll top: the header is fixed, the name has
+    // parallax.
     const local = (rect: DOMRect, shiftY = 0): Rect => ({
       bottom: rect.bottom - frame.top - shiftY,
       left: rect.left - frame.left,
@@ -474,10 +467,8 @@ const prints = await Promise.all(
       });
     }
 
-    // Every layout starts from the spots in the markup, like a fresh load, so
-    // a resize ends up exactly where a reload would. The logos briefly go
-    // back there without a transition to be measured, then return to where
-    // they were, so the move to their new spots still glides.
+    // Every layout starts from the markup spots, so a resize matches a reload.
+    // The logos jump back there to be measured and return, so the move glides.
     const placed = items.map(({ style }) => [style.left, style.top] as const);
     for (const { style } of items) {
       style.transition = "none";
@@ -508,7 +499,7 @@ const prints = await Promise.all(
     }
   }
 
-  // Half a logo plus a little air, and Saturn's rings reach further out.
+  // Half a logo plus some air. Saturn's rings reach further.
   function reachOf(item: HTMLElement) {
     const logo = item.querySelector<HTMLElement>(".logo-wrapper");
     if (!logo) return 0;
@@ -529,8 +520,7 @@ const prints = await Promise.all(
 </script>
 
 <style is:global>
-  /* Specific enough to win over the global padding, whatever order the
-     stylesheets end up in. */
+  /* Specific enough to beat the global padding in any stylesheet order. */
   main:has(> #hero-section) {
     padding-top: 0;
     min-height: 0;
@@ -599,9 +589,8 @@ const prints = await Promise.all(
     transform: rotate(120deg);
   }
 
-  /* The logos keep well clear of the header and of every edge. Rows sit a
-     fixed gap apart, within limits, so the closest ones stay well away from
-     the name. */
+  /* Logos keep clear of the header and edges. Rows sit a clamped gap apart,
+     keeping the nearest ones away from the name. */
   .floating-logos {
     --gap: clamp(112px, 19%, 150px);
 
@@ -618,7 +607,7 @@ const prints = await Promise.all(
     transition: opacity 0.5s ease;
   }
 
-  /* A fallback reveal, in case the script that places them never runs. */
+  /* Fallback reveal in case the placing script never runs. */
   .floating-logos[data-placing] {
     opacity: 0;
     animation: logos-reveal 0.5s ease 2s forwards;
@@ -653,8 +642,8 @@ const prints = await Promise.all(
     pointer-events: auto;
   }
 
-  /* Scroll parallax runs on the compositor: translating by 100vh over
-     100vh / speed of scrolling moves an element by speed × scrollY. */
+  /* Compositor parallax: translating 100vh over 100vh / speed of scrolling
+     moves an element by speed × scrollY. */
   .parallax {
     --speed: calc(1 - var(--depth));
     will-change: transform;
@@ -667,9 +656,8 @@ const prints = await Promise.all(
         animation-range: 0 calc(100vh / var(--speed));
       }
 
-      /* A separate rule on purpose: minifiers fold a neighbouring
-         `animation-timeline` into the `animation` shorthand, which browsers
-         reject as a whole. */
+      /* Separate rule: minifiers fold `animation-timeline` into the `animation`
+         shorthand, which browsers reject. */
       .parallax.parallax {
         animation-timeline: scroll(root block);
       }
@@ -732,10 +720,9 @@ const prints = await Promise.all(
     display: none;
   }
 
-  /* The space theme's styles arrive after the first paint. Until they turn
-     the logos into planets, keep them out of sight instead of showing tiles
-     that change shape. Kept weak on purpose: after a client-side navigation
-     this rule comes after those styles. */
+  /* Space styles arrive after the first paint, so the logos stay hidden until
+     they become planets. Low specificity on purpose: after a client-side
+     navigation this rule comes after those styles. */
   :where(:root.space) .logo-wrapper {
     opacity: 0;
   }
@@ -767,8 +754,8 @@ const prints = await Promise.all(
     justify-content: center;
   }
 
-  /* Fades the hexagon lines behind the name. A gradient instead of a backdrop
-     blur, which would be recomputed on every frame the hexagons move. */
+  /* Fades the hexagons behind the name. A gradient, since a backdrop blur
+     would be recomputed every frame. */
   .hero-halo {
     position: absolute;
     top: 50%;
@@ -853,9 +840,8 @@ const prints = await Promise.all(
     border-radius: 14px;
   }
 
-  /* The logos beside the name need room next to it. The name fills the
-     width of narrower screens, and in space its wider letters need a very
-     wide one. */
+  /* Logos beside the name need room. The name fills narrower screens, and its
+     wider space font needs a very wide one. */
   @media (max-width: 1000px) {
     .logo-parallax.is-beside {
       display: none;

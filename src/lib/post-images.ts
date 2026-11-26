@@ -6,27 +6,25 @@ export interface PostImage {
   /** A resized copy from Bluesky's image CDN, or the original for GIFs. */
   src: string;
   /**
-   * The CDN's 1000 pixel copy next to the full one, so phones load a tenth of
-   * the bytes. Left out for GIFs.
+   * The CDN's 1000px copy, so phones load a tenth of the bytes. Not for GIFs.
    */
   srcset: string | undefined;
   /**
-   * A JPEG copy for link previews. Some social sites can't read WebP, and GIFs
-   * turn into their first frame.
+   * A JPEG for link previews, since some sites can't read WebP. GIFs become
+   * their first frame.
    */
   share: string;
   /** A small copy, for previews. */
   thumbnail: string;
   isAnimated: boolean;
   size: number | undefined;
-  /** A tilt between 0.6 and 2 degrees either way, the same on every visit. */
+  /** A stable tilt between 0.6 and 2 degrees either way. */
   tilt: number;
 }
 
 /**
- * Where to load a post image from. Photos go through Bluesky's image CDN,
- * which shrinks a 6 MB upload to about half a megabyte. GIFs keep their
- * original file, since the CDN would drop the animation.
+ * Where to load a post image from. Photos go through Bluesky's image CDN
+ * (6 MB down to about 0.5 MB). GIFs keep the original to stay animated.
  */
 export function getPostImage(blob: unknown): PostImage | undefined {
   if (!blob || typeof blob !== "object") return undefined;

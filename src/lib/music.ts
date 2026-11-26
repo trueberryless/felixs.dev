@@ -90,8 +90,8 @@ export interface MusicStats {
 }
 
 /**
- * Turns an `fm.teal.feed.play` record into a play, or `undefined` when it is
- * missing the fields every statistic needs.
+ * An `fm.teal.feed.play` record as a play, or `undefined` if fields are
+ * missing.
  */
 export function recordToPlay(value: unknown): Play | undefined {
   if (!value || typeof value !== "object") return;
@@ -124,9 +124,8 @@ export function recordToPlay(value: unknown): Play | undefined {
 }
 
 /**
- * Aggregates every play into the statistics the music page shows: rankings
- * for several time ranges and calendar years, a daily history, monthly top
- * artists and a few highlights.
+ * Aggregates every play into the music page's stats: rankings per range and
+ * year, daily history, monthly top artists and highlights.
  */
 export function computeMusicStats(
   _plays: Play[],
@@ -337,10 +336,7 @@ function computeMonths(
   }));
 }
 
-/**
- * The highlights of one range. Everything is counted within the range only,
- * so picking a year shows that year's streak, busiest day and so on.
- */
+/** One range's highlights, counted within that range only. */
 function computeHighlights(plays: Play[], toLocal: LocalTime): RangeHighlights {
   const perDay = new Map<string, number>();
   const perDayTrack = new Map<
@@ -397,7 +393,7 @@ function computeHighlights(plays: Play[], toLocal: LocalTime): RangeHighlights {
     if (!topRepeat || entry.plays > topRepeat.plays) topRepeat = entry;
   }
 
-  // Heard on the most different days, and on a tie over the longest span.
+  // Heard on the most days, ties broken by the longest span.
   let evergreen: RangeHighlights["evergreen"];
   for (const { days, ...track } of perTrack.values()) {
     if (days.size < 2) continue;
@@ -433,10 +429,7 @@ function computeHighlights(plays: Play[], toLocal: LocalTime): RangeHighlights {
   };
 }
 
-/**
- * The statistics of a single day in Vienna, for when a day in the calendar
- * is picked.
- */
+/** The statistics of a single day in Vienna, for a picked calendar day. */
 export function computeDayStats(
   _plays: Play[],
   date: string,
@@ -531,8 +524,8 @@ function getTop<T extends Ranked>(map: Map<string, T>, limit: number): T[] {
     );
 }
 
-// Spotify sometimes plays the same song under another track id, for example a
-// relinked release, so a track is known by its name and main artist.
+// Spotify may play a song under another track id, like a relinked release,
+// so tracks are keyed by name and main artist.
 function getTrackKey(play: Play) {
   return `${normalize(play.track)}\u0000${normalize(play.artists[0] ?? "")}`;
 }
@@ -543,8 +536,7 @@ function normalize(value: string) {
 
 type LocalTime = (ms: number) => { day: string; hour: number; weekday: number };
 
-// Converting every play with `Intl` is slow, so the UTC offset is looked up
-// once per hour and reused for every play in that hour.
+// `Intl` is slow, so the UTC offset is looked up once per hour.
 function createLocalTime(timeZone: string): LocalTime {
   const formatter = new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
@@ -580,16 +572,13 @@ function createLocalTime(timeZone: string): LocalTime {
   };
 }
 
-// Longer than this between two plays, and the same song starts over as a new
-// stop: last night's loop and this morning's are two different sessions.
+// A longer pause between plays of the same song starts a new entry.
 const REPEAT_GAP_MS = 30 * 60 * 1000;
 
 /**
- * Groups a song played several times in a row into one entry, with how many
- * times it played. Plays come newest first, and a long pause between two
- * plays of the same song splits them into separate entries. An entry keeps
- * the key of its first play, so it stays the same entry when the song plays
- * once more.
+ * Groups repeated plays of a song into one entry with a count. Plays come
+ * newest first, and a long pause splits them. An entry keeps its first
+ * play's key, so it stays stable when the song plays again.
  */
 export function groupRepeats<
   T extends {

@@ -3,8 +3,8 @@ import { fromUint8Array } from "@atcute/repo";
 import { actorDid, pdsEndpoint } from "./const";
 
 const TIMEOUT_MS = 20_000;
-// A function instance often serves several islands in a row, so the export is
-// reused for a few minutes instead of downloaded for each one.
+// Function instances often serve several islands in a row, so the export is
+// reused for a few minutes.
 const REUSE_MS = 5 * 60_000;
 
 let cached: { loadedAt: number; records: Promise<RepoRecords> } | undefined;
@@ -17,9 +17,8 @@ interface RepoRecord {
 }
 
 /**
- * Downloads the whole repository as one CAR file and groups its records by
- * collection. For collections with tens of thousands of records this is far
- * faster than paging through `listRecords`.
+ * Downloads the repository as one CAR file and groups records by collection,
+ * far faster than paging `listRecords` for large collections.
  */
 export function getRepoRecords(): Promise<RepoRecords> {
   if (cached && Date.now() - cached.loadedAt < REUSE_MS) return cached.records;
@@ -46,8 +45,8 @@ async function downloadRepoRecords(): Promise<RepoRecords> {
 
   const bytes = new Uint8Array(await response.arrayBuffer());
   const records: RepoRecords = new Map();
-  // The PDS is trusted and the transfer is over TLS, so skipping the per-block
-  // hash check saves most of the parsing time.
+  // The PDS is trusted and the transfer uses TLS, so skip the per-block hash
+  // check.
   for (const entry of fromUint8Array(bytes, { verifyBlocks: false })) {
     let collection = records.get(entry.collection);
     if (!collection) {

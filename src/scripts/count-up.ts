@@ -1,12 +1,11 @@
-// Numbers count up to their value as their card rises in, the same way on
-// every page. The page renders the final number, so it reads right without
-// scripts; here it starts from zero instead, while the card is still
-// transparent, and counts once the card is mostly in view.
+// Numbers count up as their card rises in. The page renders the final value
+// for no-JS, so this resets it to zero while the card is transparent and
+// counts once it's mostly in view.
 
 const DURATION_MS = 1200;
 // Matches the stagger of the cards rising in `NumberCards.astro`.
 const STAGGER_MS = 70;
-// How long a card takes to fade most of the way in before its number moves.
+// How long a card fades in before its number moves.
 const LEAD_MS = 220;
 
 const numberFormat = new Intl.NumberFormat("en-US", {
@@ -19,9 +18,9 @@ function prefersReducedMotion() {
 }
 
 /**
- * Counts an element's number from the value it shows now to a new one. A
- * count already running towards the same value carries on. A card's first
- * count is left to `countAll`, which knows when the card rises in.
+ * Counts an element's number from its current value to a new one. A count
+ * already heading there carries on. First counts are left to `countAll`,
+ * which knows when the card rises in.
  */
 export function countTo(element: Element, to: number, delayMs = 0) {
   const target = element.getAttribute("data-value");
@@ -68,8 +67,8 @@ function countAll() {
 
 countAll();
 document.addEventListener("astro:page-load", countAll);
-// Most numbers arrive after the page, in server islands. The client router
-// swaps the whole body on every navigation, so the watch is on the root.
+// Most numbers arrive later in server islands, and the router swaps the
+// body, so observe the root.
 new MutationObserver(countAll).observe(document.documentElement, {
   childList: true,
   subtree: true,
