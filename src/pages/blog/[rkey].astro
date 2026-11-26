@@ -215,10 +215,12 @@ async function getEmbeds(documentBlocks: unknown[]) {
 
   <article class="post">
     <header class="post-header">
-      <a class="post-back button" href="/blog">
-        <span aria-hidden="true">←</span> All posts
-      </a>
-      <h1 class="post-title">{title}</h1>
+      <div class="post-heading">
+        <h1 class="post-title">{title}</h1>
+        <a class="post-back button" href="/blog">
+          <span aria-hidden="true">←</span> All posts
+        </a>
+      </div>
       {description && <p class="post-lede">{description}</p>}
       {!record && (
         <p class="post-lede">
