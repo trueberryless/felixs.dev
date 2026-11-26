@@ -5,7 +5,6 @@
 
   max-width: var(--post-width);
   margin-inline: auto;
-  padding-top: 24px;
 }
 
 /* Reading progress, driven by the page's scroll. */
@@ -349,8 +348,28 @@ h4.post-heading {
   align-self: flex-start;
 }
 
-.post-header .post-back {
-  margin-bottom: 28px;
+/* The back button sits next to the title like the breadcrumbs on other
+   pages, and moves above it once there's no room left beside it. */
+.post-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px 32px;
+}
+
+.post-heading .post-back {
+  flex-shrink: 0;
+  margin-top: 0.4rem;
+}
+
+@media (max-width: 640px) {
+  .post-heading {
+    flex-direction: column-reverse;
+  }
+
+  .post-heading .post-back {
+    margin-top: 0;
+  }
 }
 
 .post-lightbox-close {

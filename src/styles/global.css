@@ -277,7 +277,9 @@ ul {
 }
 
 /* Skip link, hidden until focused. */
-.skip-link {
+/* Doubled up so `.button`, declared further down, can't make it take space
+   in the page flow again. */
+.skip-link.skip-link {
   position: fixed;
   top: 12px;
   left: 12px;
