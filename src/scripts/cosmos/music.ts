@@ -1,6 +1,5 @@
-// A generative space lullaby, synthesized live with the Web Audio API: soft
-// pad chords, a sine bass and sparse music-box notes in a long reverb. Nothing
-// to download and nothing to license, and it never loops exactly.
+// A generative space lullaby synthesized with Web Audio: pad chords, a sine
+// bass and sparse music-box notes in a long reverb. No files, never loops.
 
 const VOLUME = 0.16;
 const FADE_IN_S = 4;
@@ -19,8 +18,8 @@ const PROGRESSION = [
 const NOTE_GAPS_S = [0.45, 0.6, 0.9, 1.2, 1.8] as const;
 const GESTURES = ["pointerdown", "keydown", "touchend"] as const;
 
-// Opening the audio device takes a moment, long enough to stall the rocket,
-// so the countdown opens it ahead of the launch.
+// Opening the audio device can stall the rocket, so the countdown opens it
+// ahead.
 let preparedContext: AudioContext | undefined;
 
 export function prepareMusic() {
@@ -84,7 +83,7 @@ export function createSpaceMusic(): SpaceMusic {
     if (!context) setUp();
     const ctx = context!;
     void ctx.resume();
-    // Browsers only start audio after an interaction; until then, wait for one.
+    // Browsers only start audio after an interaction, so wait for one.
     if (ctx.state !== "running") waitForGesture();
 
     const now = ctx.currentTime;
@@ -154,7 +153,7 @@ export function createSpaceMusic(): SpaceMusic {
   }
 
   function playChord(ctx: AudioContext, chord: Chord, at: number) {
-    // Each chord fades in slowly and overlaps the next one, like a pad.
+    // Each chord fades in slowly and overlaps the next.
     const length = CHORD_S + 3;
     for (const note of chord.voicing) {
       for (const [type, detune] of [
@@ -231,10 +230,9 @@ function playTone(
   oscillator.stop(at + length + 0.05);
 }
 
-// Decaying stereo noise makes a convincing hall without any sample file. The
-// few hundred thousand samples would stall the rocket's launch if made in
-// one go, so they are made a slice per idle moment, and the reverb joins in
-// once they are ready, well within the music's fade in.
+// Decaying stereo noise makes a hall without a sample file. Its samples are
+// made a slice per idle moment so they don't stall the launch, and the
+// reverb joins once ready, within the music's fade-in.
 const IMPULSE_SLICE = 20_000;
 
 function fillReverb(ctx: AudioContext, reverb: ConvolverNode, seconds: number) {

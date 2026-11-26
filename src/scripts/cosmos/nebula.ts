@@ -1,14 +1,12 @@
 import type { Bodies } from "./bodies";
 import { createProgram, watchContext } from "./gl";
 
-// A single full-screen fragment shader paints the nebula and the gas giant
-// with its atmosphere. That is all three.js would do here as well, so
-// raw WebGL keeps the scene a few kilobytes instead of a ~150 KB dependency.
-// Once the sky needs real geometry (rings as meshes, models, post-processing),
-// switching to three.js is the better trade.
+// One full-screen fragment shader paints the nebula and the gas giant. Raw
+// WebGL keeps this a few kilobytes instead of ~150 KB of three.js, which only
+// pays off once the sky needs real geometry.
 //
-// The soft content renders well below native resolution and is scaled up:
-// every pixel runs a few dozen noise lookups, on every frame of scrolling.
+// It renders below native resolution and scales up, since every pixel runs a
+// few dozen noise lookups per frame.
 const MAX_PIXELS = 380_000;
 
 const VERTEX_SHADER = `
@@ -57,7 +55,7 @@ float fbm(vec2 p) {
   float value = 0.0;
   float amplitude = 0.5;
   mat2 rotation = mat2(1.6, 1.2, -1.2, 1.6);
-  // Four octaves: a fifth one only adds detail too fine to see in the fog.
+  // Four octaves: a fifth adds detail too fine to see.
   for (int i = 0; i < 4; i++) {
     value += amplitude * noise(p);
     p = rotation * p;
@@ -79,8 +77,7 @@ vec3 paintNebula(vec2 p, float t) {
     vec3(0.07, 0.035, 0.15),
     smoothstep(-0.8, 0.9, -p.y * 0.9 + p.x * 0.25)
   );
-  // The clouds drift on a slow closed loop, so the fog around the planet
-  // keeps coming back instead of wandering off for good.
+  // The clouds drift on a slow closed loop, so the fog keeps coming back.
   vec2 q = p * 1.7 + vec2(sin(t * 0.011), cos(t * 0.008)) * 0.45;
   vec2 warp = vec2(fbm(q), fbm(q + vec2(5.2, 1.3)));
   float density = fbm(q + 2.4 * warp + vec2(sin(t * 0.006), cos(t * 0.009)) * 0.3);
@@ -94,7 +91,7 @@ vec3 paintNebula(vec2 p, float t) {
   return color * (1.0 - lanes * 0.45 * band);
 }
 
-// The gas giant spins about a tilted axis; its bands and a storm drift past.
+// The gas giant spins on a tilted axis while its bands and a storm drift past.
 vec3 paintPlanetSurface(vec3 normal, float t) {
   float tilt = -0.35;
   vec3 n = vec3(
@@ -110,8 +107,7 @@ vec3 paintPlanetSurface(vec3 normal, float t) {
   float streaks = smoothstep(0.55, 0.8, fbm(vec2(n.y * 22.0 + turbulence * 4.0, longitude * 1.4)));
   surface = mix(surface, vec3(0.12, 0.3, 0.62), streaks);
 
-  // Wrapping the longitude keeps the storm continuous across the seam, which
-  // sits on the far side of the planet.
+  // Wrapping the longitude keeps the storm continuous across the far-side seam.
   float dLongitude = mod(longitude - 1.2 + 3.14159, 6.28318) - 3.14159;
   vec2 storm = vec2(dLongitude * 0.9, n.y - 0.62) / vec2(0.22, 0.07);
   float stormMask = smoothstep(1.0, 0.2, length(storm));
@@ -147,8 +143,7 @@ void main() {
   float lit = clamp(dot(direction, normalize(LIGHT.xy)) * 0.5 + 0.5, 0.0, 1.0);
   vec3 atmosphere = mix(vec3(0.45, 0.2, 0.85), vec3(0.3, 0.7, 1.0), smoothstep(0.35, 0.9, lit));
   atmosphere = mix(atmosphere, vec3(1.0, 0.5, 0.8), smoothstep(0.78, 1.0, lit) * 0.35);
-  // The planet centre sits below the screen, so the angle's seam (straight
-  // down) is never visible.
+  // The planet's centre is below the screen, so the angle's seam never shows.
   float angle = atan(direction.x, direction.y);
   float shimmer = 0.88 + 0.12 * noise(vec2(angle * 6.0, t * 0.25));
   color += atmosphere * limbGlow(altitude, 22.0, 70.0) * (0.15 + 0.85 * lit) * shimmer;
@@ -228,8 +223,7 @@ export function createNebula(canvas: HTMLCanvasElement): Nebula | undefined {
     gl!.drawArrays(gl!.TRIANGLES, 0, 3);
   }
 
-  // Converts CSS pixels into the shader's units: viewport heights from the
-  // centre of the screen, with y pointing up.
+  // CSS pixels to shader units: viewport heights from the screen centre, y up.
   function setBody(
     location: WebGLUniformLocation | null,
     body: Bodies["planet"]

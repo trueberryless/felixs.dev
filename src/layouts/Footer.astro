@@ -99,8 +99,8 @@ const socialLinks = [
     margin: 0 auto;
   }
 
-  /* The content trails the page by 35% while the footer scrolls into view,
-     driven by the compositor. The offsets include the footer's padding. */
+  /* The content trails the page by 35% as the footer enters, on the
+     compositor. The offsets include the footer's padding. */
   @media (prefers-reduced-motion: no-preference) {
     @supports (animation-timeline: view()) {
       footer {
@@ -124,8 +124,8 @@ const socialLinks = [
         }
       }
 
-      /* On phones the links stack into a tall column, and trailing the page
-         would keep the first row behind the divider until the very end. */
+      /* Phones stack the links tall, so trailing would hide the first row
+         behind the divider until the end. */
       @media (max-width: 480px) {
         .footer-container {
           animation: none;

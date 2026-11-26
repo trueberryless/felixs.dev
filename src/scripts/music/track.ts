@@ -7,9 +7,8 @@ const REFRESH_MS = 60_000;
 // The newest song sits near the right end, the oldest near the left.
 const NEWEST_AT = 0.9;
 const OLDEST_AT = 0.07;
-// Each song glides to its place on a critically damped spring: it never
-// overshoots and its speed never jumps, even when a new song pushes
-// everything along.
+// Songs glide on a critically damped spring, so they never overshoot or jerk
+// when a new song pushes everything along.
 const SPRING = 1.6;
 const STEM = 18;
 const DOT = 5;
@@ -44,9 +43,8 @@ interface Sample {
 }
 
 /**
- * Renders recent plays as covers hanging off a winding track. Every cover
- * hangs at a right angle off the track, and the songs keep drifting along as
- * time goes by.
+ * Renders recent plays as covers hanging at right angles off a winding
+ * track, drifting along as time passes.
  */
 export function renderTrack(
   container: HTMLElement,
@@ -90,8 +88,7 @@ export function renderTrack(
       ) || 64;
     lines.setAttribute("viewBox", `0 0 ${width} ${height}`);
     line.setAttribute("d", createWave(width, height));
-    // The path is sampled once, so every frame reads positions from this
-    // table instead of asking the browser about the path.
+    // The path is sampled once, so frames read this table instead of the DOM.
     const total = line.getTotalLength();
     samples = Array.from({ length: SAMPLES + 1 }, (_, index) => {
       const point = line.getPointAtLength((index / SAMPLES) * total);
@@ -120,8 +117,8 @@ export function renderTrack(
     };
   };
 
-  // How far along the track a song belongs: a mix of its place in the list
-  // and how long ago it played, so songs never pile up and gaps still show.
+  // A song's place on the track mixes its list position and age, so songs
+  // never pile up and gaps still show.
   const targetOf = (item: Item, nowMs: number) => {
     if (item.isLeaving) return 1.15;
     const index = order.indexOf(item.play);
@@ -183,7 +180,7 @@ export function renderTrack(
       const ny = point.ny * flip;
       const base = STEM + half / Math.max(Math.abs(nx), Math.abs(ny));
 
-      // Where the track curves towards a cover, it moves further out.
+      // Covers move further out where the track curves towards them.
       let needed = 0;
       while (
         needed < 80 &&
@@ -199,7 +196,7 @@ export function renderTrack(
         ? needed
         : item.extra + (needed - item.extra) * Math.min(1, dt * 6);
       const distance = base + item.extra;
-      // Covers stay whole on screen, however narrow the board gets.
+      // Covers stay fully on screen, however narrow the board.
       const cx = Math.min(
         Math.max(point.x + nx * distance, half),
         width - half
@@ -237,7 +234,7 @@ export function renderTrack(
       pulse.setAttribute("cx", point.x.toFixed(1));
       pulse.setAttribute("cy", point.y.toFixed(1));
       // Each trip fades and grows in at the start and fades out at the end,
-      // so the jump back to the newest song is never seen.
+      // hiding the jump back to the newest song.
       const presence = reduced.matches
         ? 1
         : smoothstep(progress / 0.14) * smoothstep((1 - progress) / 0.2);
@@ -274,8 +271,8 @@ export function renderTrack(
       if (!keys.has(item.play.key)) item.isLeaving = true;
     }
 
-    // New songs join just past the right end, on the side opposite the song
-    // before them, and every song keeps its side for good.
+    // New songs join past the right end, opposite the previous song, and keep
+    // their side.
     let newest = order[0] ? items.get(order[0].key) : undefined;
     for (const play of next.toReversed()) {
       const existing = items.get(play.key);
@@ -399,9 +396,8 @@ function createItem(play: TrackPlay, side: 1 | -1): Item {
   };
 }
 
-// A gentle wave through the middle of the board, drawn as a Catmull-Rom
-// curve through sampled points, so it looks hand drawn rather than like a
-// sine plot. It stays in a narrow band, so covers fit on both sides.
+// A gentle Catmull-Rom wave through the middle of the board, so it looks hand
+// drawn. It stays in a narrow band, so covers fit on both sides.
 function createWave(width: number, height: number) {
   const samples = 14;
   const amplitude = height * 0.12;
@@ -432,7 +428,7 @@ async function fetchPlays(pds: string, did: string): Promise<TrackPlay[]> {
   const url = new URL("/xrpc/com.atproto.repo.listRecords", pds);
   url.searchParams.set("repo", did);
   url.searchParams.set("collection", "fm.teal.feed.play");
-  // Enough to fill the track even when a song played many times in a row.
+  // Enough to fill the track even with many repeats in a row.
   url.searchParams.set("limit", "60");
 
   try {
@@ -451,7 +447,7 @@ async function fetchPlays(pds: string, did: string): Promise<TrackPlay[]> {
       }[];
     };
 
-    // A song played several times in a row becomes one stop on the track.
+    // Repeated plays of a song become one stop.
     const plays = groupRepeats(
       records.map(({ uri, value }) => ({
         artist:

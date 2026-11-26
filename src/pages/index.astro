@@ -141,10 +141,9 @@ export const prerender = true;
     flex-direction: column;
   }
 
-  /* On wide screens the sections share one stage pinned to the screen, like
-     slides: the page scrolls past it, and the section that matches the
-     scroll position plays in while the one before plays out. This applies
-     before the script runs, so the page never shows every section at once. */
+  /* Wide screens pin one stage like slides: the section matching the scroll
+     plays in while the previous one plays out. Applies before the script runs,
+     so all sections never show at once. */
   @media (min-width: 860px) and (min-height: 620px) and (prefers-reduced-motion: no-preference) {
     :global(html:has(.stories)) {
       scroll-snap-type: y proximity;
@@ -178,9 +177,8 @@ export const prerender = true;
       min-height: 0;
     }
 
-    /* The stage fills the screen and starts out over the end of the intro,
-       so only the section on stage takes the pointer, not the empty stage
-       around it. That keeps the intro text selectable. */
+    /* The stage overlaps the end of the intro, so only the active section takes
+       the pointer and the intro text stays selectable. */
     .stories-stage {
       pointer-events: none;
     }
@@ -189,11 +187,10 @@ export const prerender = true;
       pointer-events: auto;
     }
 
-    /* Where scroll timelines work, the stage glides in and out on the
-       compositor, in step with the scrolling and with its own pinning, so it
-       never lags a frame behind. The script moves it everywhere else. The
-       stops trace the script's curve: it follows the page right after the
-       intro, slows down into the middle and speeds up again at the end. */
+    /* With scroll timelines the stage glides on the compositor, in sync with
+       its pinning. The script handles other browsers. The stops trace its
+       curve: following the page, slowing in the middle, speeding up at the end.
+       */
     @supports (animation-timeline: view()) {
       .stories {
         view-timeline: --stories block;
@@ -206,8 +203,7 @@ export const prerender = true;
           stage-leave linear both;
       }
 
-      /* Separate on purpose, see the parallax in `Hero.astro`: a minifier
-         would fold these into the shorthand above, which browsers reject. */
+      /* Separate on purpose, see the parallax in `Hero.astro`. */
       .stories-stage.stories-stage {
         animation-timeline: --stories, --stories;
         animation-range:
@@ -348,7 +344,7 @@ export const prerender = true;
     }
   }
 
-  /* A section still loading never shows through the one on stage. */
+  /* A loading section never shows through the one on stage. */
   @media (prefers-reduced-motion: no-preference) {
     .stories :global(.story-frame > .story-skeleton) {
       transition: opacity 0.4s ease;

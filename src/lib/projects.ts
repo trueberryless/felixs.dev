@@ -28,9 +28,8 @@ export interface ProjectTotals {
 }
 
 /**
- * One lane per organisation with at least one merged pull request, ordered by
- * when I first contributed, so the chart reads like a story from top to
- * bottom.
+ * One lane per organisation with a merged pull request, ordered by my first
+ * contribution, so the chart reads top to bottom like a story.
  */
 export function getLanes(orgs: Org[]): Lane[] {
   return orgs

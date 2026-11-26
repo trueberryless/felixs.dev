@@ -1,5 +1,4 @@
-// The little WebGL plumbing the nebula and the starfield share. WebGL 1 is
-// frozen, so this code should never need to change.
+// Minimal WebGL plumbing shared by the nebula and the starfield.
 
 export function createProgram(
   gl: WebGLRenderingContext,
@@ -24,8 +23,8 @@ export function createProgram(
 }
 
 /**
- * A GPU reset or a backgrounded tab can drop the context. This asks for it
- * back and rebuilds once restored; until then the renderer should skip drawing.
+ * Recovers from a lost context (GPU reset, background tab) and rebuilds once
+ * restored. Until then the renderer should skip drawing.
  */
 export function watchContext(
   canvas: HTMLCanvasElement,

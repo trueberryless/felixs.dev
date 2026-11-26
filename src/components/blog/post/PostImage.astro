@@ -20,9 +20,8 @@ const megabytes = image?.size ? Math.round(image.size / 1_000_000) : 0;
     style={`--tilt: ${image.tilt}deg`}
   >
     {image.isAnimated && megabytes >= 2 ? (
-      // Big GIFs only load when asked to: they can weigh tens of
-      // megabytes and make phones stutter, and they never play on their
-      // own for people who prefer less motion.
+      // Big GIFs load on demand: they can weigh tens of megabytes and never
+      // autoplay with reduced motion.
       <button
         class="post-gif"
         type="button"

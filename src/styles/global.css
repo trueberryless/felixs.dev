@@ -81,10 +81,9 @@
 
 :root.space {
   color-scheme: dark;
-  /* No emoji fonts here, unlike the other stacks: fontless derives a fallback
-     from every named family and lists them first, and the emoji fonts' wide
-     spaces would rewrap the text until the web fonts arrive. Browsers find
-     an emoji font on their own. */
+  /* No emoji fonts: fontless lists a fallback for every named family first,
+     and the emoji fonts' wide spaces would rewrap text until the web fonts
+     load. Browsers find emoji fonts on their own. */
   --font-family: "Exo 2", ui-sans-serif, system-ui, sans-serif;
   --font-family-heading: "Audiowide", ui-sans-serif, system-ui, sans-serif;
   --bg: transparent;
@@ -120,8 +119,8 @@
     oklch(0.86 0.05 285) 100%
   );
 
-  /* Painted before the lazily loaded nebula canvas fades in, and kept as the
-     fallback when WebGL is unavailable. */
+  /* Shown before the nebula canvas fades in, and as the fallback without WebGL.
+     */
   background:
     radial-gradient(
       140% 60% at 70% 118%,
@@ -150,7 +149,7 @@
   }
 }
 
-/* Less transparency: every glass surface turns solid, wherever it is. */
+/* Less transparency: every glass surface turns solid. */
 @media (prefers-reduced-transparency: reduce) {
   :root {
     --header-bg: var(--header-bg-solid);
@@ -162,9 +161,8 @@
   }
 }
 
-/* Less motion: a safety net under every component's own rules. Anything
-   that still animates finishes at once and never loops, and nothing
-   scrolls smoothly. */
+/* Reduced motion safety net: animations finish at once, never loop, and
+   nothing scrolls smoothly. */
 @media (prefers-reduced-motion: reduce) {
   :root {
     scroll-behavior: auto !important;
@@ -194,9 +192,8 @@
   padding: 0;
 }
 
-/* `clip` rather than `hidden`: a hidden overflow would make the body a scroll
-   container that never scrolls, and every view timeline on the page would
-   follow it instead of the page. */
+/* `clip`, not `hidden`: a hidden overflow makes the body a scroll container,
+   and view timelines would follow it instead of the page. */
 html,
 body {
   overflow-x: clip;
@@ -204,7 +201,7 @@ body {
 
 html {
   height: 100%;
-  /* Never scroll or bounce past the page, where its backgrounds end. */
+  /* Never overscroll past the page's backgrounds. */
   overscroll-behavior: none;
 }
 
@@ -251,8 +248,6 @@ main {
 h1,
 h2 {
   font-family: var(--font-family-heading);
-  /* Optional: Adjust font-weight if Fraenkisch renders too boldly by default */
-  /*font-weight: normal; */
 }
 
 a {
@@ -281,7 +276,7 @@ ul {
   list-style: none;
 }
 
-/* The first stop for keyboard users, hidden until it has focus. */
+/* Skip link, hidden until focused. */
 .skip-link {
   position: fixed;
   top: 12px;
@@ -300,8 +295,8 @@ main:focus {
   outline: none;
 }
 
-/* Skeletons: a bone stands in for content that is still loading. Around
-   text it keeps the text's own size, so nothing moves when it arrives. */
+/* Skeletons: a bone stands in for loading content, keeping text at its own
+   size so nothing moves when it arrives. */
 .bone {
   display: inline-block;
   border-radius: 6px;
@@ -311,8 +306,7 @@ main:focus {
   animation: bone-pulse 1.5s ease-in-out infinite;
 }
 
-/* Parts like chips and buttons bring their own colours; a bone covers them
-   all, text and borders included. */
+/* A bone covers its parts' own colours, text and borders included. */
 .bone,
 .bone * {
   border-color: transparent !important;
@@ -327,13 +321,12 @@ main:focus {
   background: none !important;
 }
 
-/* Skeletons stand still apart from their pulse: the parts they borrow from
-   the page skip their entrance animations. */
+/* Skeletons only pulse: borrowed parts skip their entrance animations. */
 .skeleton :not(.bone) {
   animation: none !important;
 }
 
-/* Running text: every line gets its own bar, like the text it stands for. */
+/* Running text: one bar per line. */
 .bone.is-text {
   display: inline;
   -webkit-box-decoration-break: clone;
@@ -346,10 +339,10 @@ main:focus {
   }
 }
 
-/* Buttons: every pill link and button on the site shares this one look.
-   On hover a circle in the text colour grows from exactly where the pointer
-   came in and shrinks back to where it left, inverting the colours. The
-   pointer position comes from `scripts/magnetic.ts`. */
+/* Buttons: every pill link and button shares this look. On hover a circle
+   in the text colour grows from where the pointer entered and shrinks to
+   where it left, inverting the colours. `scripts/magnetic.ts` sets the
+   position. */
 .button {
   --fill-x: 50%;
   --fill-y: 50%;
@@ -442,8 +435,8 @@ main:focus {
   }
 }
 
-/* Links in running text that leave the site carry the same small arrow as
-   the external buttons and cards, so you know before you click. */
+/* External links in running text carry the same small arrow as external
+   buttons and cards. */
 :is(.post-body, .post-footnotes, .page-description, .intro-block)
   a[href^="http"]:not(.post-badge, .button, .bsky-embed, .badge)::after {
   content: "";

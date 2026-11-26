@@ -13,8 +13,7 @@ export interface RenderOptions {
 const FOOTNOTE_MARKER_RE = /^\s*\*\s*$/;
 
 /**
- * Renders rich text segments as HTML. All text and attributes are escaped,
- * and links only keep `http(s)` and `mailto` URLs.
+ * Renders rich text as escaped HTML. Links keep only `http(s)` and `mailto`.
  */
 export function segmentsToHtml(
   segments: Segment[],
@@ -26,7 +25,7 @@ export function segmentsToHtml(
       const footnote = segment.footnote
         ? footnotes.find((candidate) => candidate.id === segment.footnote)
         : undefined;
-      // Leaflet marks a footnote with a `*` in the text, which the number replaces.
+      // Leaflet marks a footnote with a `*`, which the number replaces.
       if (footnote && FOOTNOTE_MARKER_RE.test(segment.text))
         return renderFootnoteRef(footnote);
 
@@ -54,8 +53,8 @@ export function segmentsToHtml(
     .join("");
 }
 
-// People get a badge with their avatar, like the GitHub badges on my blog:
-// GitHub profiles, Bluesky profiles and mentions.
+// People get an avatar badge like the GitHub ones: GitHub and Bluesky
+// profiles and mentions.
 function renderLink(
   url: string,
   html: string,

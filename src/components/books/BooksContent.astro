@@ -111,8 +111,8 @@ const shelfAuthors = authors.filter((author) => author.count > 1);
 )}
 
 <script>
-  // Authors and years narrow the shelf down together. The years keep their
-  // place and only their counts follow the author.
+  // Authors and years filter together. Years keep their place, only their
+  // counts follow the author.
   class BooksShelf extends HTMLElement {
     #author: string | undefined;
     #year: string | undefined;

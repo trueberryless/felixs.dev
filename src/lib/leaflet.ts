@@ -1,5 +1,5 @@
-// Reads Leaflet documents (`pub.leaflet.content`) into plain shapes that the
-// blog post page renders.
+// Reads Leaflet documents (`pub.leaflet.content`) into plain shapes for the
+// blog.
 
 const FACET_PREFIX = "pub.leaflet.richtext.facet#";
 const WORDS_PER_MINUTE = 220;
@@ -27,9 +27,8 @@ interface Facet {
 }
 
 /**
- * Splits text into segments that each carry the formatting of every facet
- * covering them. Facet ranges are UTF-8 byte offsets, so the text is sliced as
- * bytes and decoded per segment.
+ * Splits text into segments carrying every covering facet's formatting. Facet
+ * ranges are UTF-8 byte offsets, so the text is sliced as bytes.
  */
 export function toSegments(plaintext: string, facets: Facet[] = []): Segment[] {
   const bytes = new TextEncoder().encode(plaintext);
@@ -67,9 +66,7 @@ export function toSegments(plaintext: string, facets: Facet[] = []): Segment[] {
   return segments;
 }
 
-/**
- * Numbers the footnotes in the order they appear in the document.
- */
+/** Numbers the footnotes in document order. */
 export function collectFootnotes(blocks: unknown[]): Footnote[] {
   const footnotes: Footnote[] = [];
 
@@ -105,9 +102,7 @@ export function collectFootnotes(blocks: unknown[]): Footnote[] {
   return footnotes;
 }
 
-/**
- * Estimates the reading time of a document from the words in its text.
- */
+/** Estimates a document's reading time from its word count. */
 export function getReadingMinutes(blocks: unknown[]): number {
   let words = 0;
 
@@ -132,9 +127,7 @@ export function getReadingMinutes(blocks: unknown[]): number {
   return Math.max(1, Math.round(words / WORDS_PER_MINUTE));
 }
 
-/**
- * Returns the blocks of every page of a Leaflet document, in order.
- */
+/** The blocks of every page of a Leaflet document, in order. */
 export function getDocumentBlocks(content: unknown): LeafletBlock[] {
   const pages =
     (
@@ -149,10 +142,7 @@ export function getDocumentBlocks(content: unknown): LeafletBlock[] {
   );
 }
 
-/**
- * Returns the CID of a blob reference, as `listRecords` and `getRecord`
- * return it.
- */
+/** The CID of a blob reference, as `listRecords` and `getRecord` return it. */
 export function getBlobCid(blob: unknown): string | undefined {
   const ref = (blob as { ref?: { $link?: string } } | undefined)?.ref;
   return typeof ref?.$link === "string" ? ref.$link : undefined;

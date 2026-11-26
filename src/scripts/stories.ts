@@ -1,20 +1,17 @@
-// The landing page tells its stories one at a time. On wide screens they
-// share a stage pinned to the screen and the scroll position picks the one
-// on stage; elsewhere each section plays in once as it scrolls into view.
-// With reduced motion nothing moves and every section simply shows.
-//
-// Sections start hidden in CSS, so nothing flashes before this script runs.
+// Wide screens pin one stage where the scroll picks the section, elsewhere
+// sections play in once as they appear. Reduced motion shows them all.
+// Sections start hidden in CSS, so nothing flashes before this runs.
 
 const STAGE_QUERY =
   "(min-width: 860px) and (min-height: 620px) and (prefers-reduced-motion: no-preference)";
 const REDUCED_QUERY = "(prefers-reduced-motion: reduce)";
-// Browsers with scroll timelines move the stage in CSS, off the main thread.
+// With scroll timelines, CSS moves the stage off the main thread.
 const HAS_SCROLL_TIMELINE = CSS.supports("animation-timeline: view()");
 // Before and after the stage, a section's middle sits this share of the screen
-// from the edge of the stories, so the first one follows right after the intro.
+// from the stories' edge, so the first follows right after the intro.
 const FLOW_GAP = 0.32;
-// How far, as a share of the screen, a section glides while it slows down into
-// the middle of the screen, and while it speeds up again to leave.
+// The share of the screen a section glides while slowing into the middle and
+// speeding up to leave.
 const GLIDE = 0.25;
 
 function setup() {
@@ -23,8 +20,8 @@ function setup() {
   if (!root || !stage || root.dataset.ready !== undefined) return;
   root.dataset.ready = "";
 
-  // Listeners on the window end with the page, as the client router swaps
-  // pages without reloading.
+  // Window listeners end with the page, since the router swaps without
+  // reloading.
   const cleanup = new AbortController();
   document.addEventListener("astro:before-swap", () => cleanup.abort(), {
     once: true,
@@ -52,8 +49,7 @@ function setup() {
     return top + ((index + 0.5) / frames.length) * travel;
   };
 
-  // Snap points in the middle of every section's stretch of scrolling, so a
-  // quick flick stops at the next section instead of rushing past it.
+  // Snap points mid-section, so a quick flick stops at the next section.
   const placeSnaps = () => {
     for (const snap of root.querySelectorAll(".stories-snap")) snap.remove();
     if (!staged.matches) return;
@@ -77,7 +73,7 @@ function setup() {
     const rect = root.getBoundingClientRect();
     const view = window.innerHeight;
     if (!staged.matches) {
-      // Without a stage, sections play in once as they scroll into view.
+      // Without a stage, sections play in once as they appear.
       root.style.removeProperty("--stage-shift");
       for (const frame of frames) {
         if (frame.getBoundingClientRect().top < view * 0.85)
@@ -89,7 +85,7 @@ function setup() {
     const travel = Math.max(1, rect.height - view);
     const passed = -rect.top;
     const progress = Math.min(Math.max(passed / travel, 0), 0.9999);
-    // The first section is already on stage as it scrolls into view.
+    // The first section is already on stage as it appears.
     setActive(rect.top >= view ? -1 : Math.floor(progress * frames.length));
 
     if (!HAS_SCROLL_TIMELINE) {
@@ -111,10 +107,9 @@ function setup() {
     update();
   };
 
-  // Keyboard users tab through every section: focusing a link in a section
-  // that isn't on stage scrolls it onto the stage.
-  // Only a Tab press counts: coming back to the browser tab refocuses the last
-  // focused link, which must not scroll anywhere.
+  // Tabbing to a link in an off-stage section scrolls it onto the stage. Only a
+  // Tab press counts, since returning to the browser tab refocuses the last
+  // link.
   let tabbedAt = 0;
   document.addEventListener(
     "keydown",
@@ -134,7 +129,7 @@ function setup() {
     update();
   });
 
-  // Server islands replace their placeholders after the page has loaded.
+  // Server islands replace their placeholders after load.
   new MutationObserver(collect).observe(stage, { childList: true });
   window.addEventListener("scroll", schedule, { passive: true, signal });
   window.addEventListener("resize", schedule, { signal });
@@ -147,10 +142,9 @@ setup();
 document.addEventListener("astro:page-load", setup);
 
 /**
- * How far the stage moves away from its pinned place, so a section never stops
- * dead. It follows the page right after the intro, glides into the middle of
- * the screen and slows down until it rests there, and at the end it speeds up
- * the same way until it moves with the page again and the footer follows.
+ * How far the stage moves from its pinned place, so a section never stops
+ * dead: it glides in after the intro, eases to rest mid-screen, and speeds
+ * up again at the end until the footer follows.
  */
 function getStageShift(passed: number, travel: number, view: number) {
   const middle = view / 2;

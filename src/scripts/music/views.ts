@@ -135,8 +135,8 @@ interface CurrentColumn {
 }
 
 /**
- * The columns of the currents chart: months for relative ranges and years,
- * and calendar years for all time.
+ * Currents chart columns: months for relative ranges and years, years for all
+ * time.
  */
 export function getCurrentColumns(
   stats: MusicStats,
@@ -175,8 +175,8 @@ export function getCurrentColumns(
   });
 }
 
-// The `count` calendar months up to and including `last`, oldest first, so
-// quiet months still get their column.
+// The `count` months up to `last`, oldest first, so quiet months get a column
+// too.
 function getMonthKeys(last: string, count: number) {
   const [year, month] = last.split("-").map(Number);
   return Array.from({ length: count }, (_, index) => {
@@ -186,9 +186,9 @@ function getMonthKeys(last: string, count: number) {
 }
 
 /**
- * A chart in the spirit of tangled's activity graph: one column per period,
- * the top artists ranked inside it, and a line linking each artist from
- * period to period. Hovering or focusing an artist follows its whole path.
+ * A chart like tangled's activity graph: a column per period with its top
+ * artists ranked, and lines linking each artist across periods. Hover or
+ * focus follows an artist's path.
  */
 export function renderCurrents(
   container: HTMLElement,
@@ -225,7 +225,7 @@ export function renderCurrents(
           type: "button",
         },
         [
-          // The name read out keeps the visible count and artist, in order.
+          // The accessible name keeps the visible count and artist, in order.
           html("span", {
             class: "ms-current-count",
             text: formatNumber(artist.plays),
@@ -332,8 +332,8 @@ function drawCurrentLines(board: HTMLElement, lines: SVGSVGElement) {
   );
   lines.replaceChildren();
 
-  // Layout offsets instead of screen boxes, so the entrance animation of the
-  // columns can't shift the lines away from the names.
+  // Layout offsets instead of screen boxes, so the columns' entrance can't
+  // shift the lines.
   const columns = [
     ...board.querySelectorAll<HTMLElement>(".ms-current-column"),
   ];
@@ -341,8 +341,8 @@ function drawCurrentLines(board: HTMLElement, lines: SVGSVGElement) {
     const next = columns[index + 1];
     if (!next) return;
 
-    // Lines run straight out of the name, and only bend in the gutter
-    // between two columns, so they never cross another artist's name.
+    // Lines leave the name straight and only bend in the gutter, so they never
+    // cross another name.
     const gutter = offsetWithin(column, board).right - 30;
     for (const from of column.querySelectorAll<HTMLElement>(".ms-current")) {
       const to = next.querySelector<HTMLElement>(
@@ -580,7 +580,7 @@ export function renderCalendar(
     const week = Math.floor(index / 7);
     if (index % 7 !== 0 || month === lastMonth || day.ms < start) return;
     lastMonth = month;
-    // A month that starts within three weeks of the last label has no room.
+    // A month within three weeks of the last label has no room.
     if (week - lastLabelWeek < 3) return;
     lastLabelWeek = week;
     monthLabels.push(
@@ -647,8 +647,8 @@ export function renderCalendar(
 }
 
 /**
- * Days are picked with a click, or with the arrow keys and Enter: only one
- * day is in the tab order at a time, so the calendar is a single tab stop.
+ * Days are picked by click or arrow keys and Enter. Only one day is tabbable,
+ * so the calendar is a single tab stop.
  */
 function enableDayPicking(
   calendar: SVGSVGElement,
@@ -656,7 +656,7 @@ function enableDayPicking(
   onPick: (date: string) => void,
   onIntent?: (date: string) => void
 ) {
-  // Resting on a day for a moment loads it ahead of the click.
+  // Hovering a day for a moment preloads it.
   let intent = 0;
   const prepare = (cell: Element | null) => {
     clearTimeout(intent);

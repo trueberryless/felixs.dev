@@ -2,9 +2,8 @@ import { type Bodies, POINTER_REACH } from "./bodies";
 import { createProgram, watchContext } from "./gl";
 import { BRIGHT_NEARNESS, STAR_COLORS, type Star } from "./stars";
 
-// Every star is a point sprite, so the whole field is a single draw call and
-// costs the main thread almost nothing per frame. The vertex shader mirrors
-// `projectStar` in `stars.ts`.
+// Every star is a point sprite, so the field is one draw call. The vertex
+// shader mirrors `projectStar` in `stars.ts`.
 const FLOATS_PER_STAR = 10;
 
 const VERTEX_SHADER = `
@@ -49,7 +48,7 @@ void main() {
   vHasSpikes = aTwinkle.y;
 
   float radius = 0.35 + nearness * mix(0.8, 1.9, vIsBright);
-  // Bright stars get a glow seven radii wide; spikes need room for 18.
+  // Bright stars glow seven radii wide, spikes need 18.
   float span = vIsBright > 0.5 ? (vHasSpikes > 0.5 ? 18.0 : 7.0) : 2.0;
   vHalo = vIsBright > 0.5 ? 7.0 / span : 1.0;
   vSize = radius * span + 1.0;

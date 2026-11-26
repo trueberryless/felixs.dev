@@ -1,8 +1,7 @@
 ---
 interface Props {
   /**
-   * Leave out the values to show the cards as a skeleton. A `key` lets a
-   * page find a number again to update it, as `[data-stat="key"]`.
+   * Omit the values for a skeleton. `key` marks the card `[data-stat="key"]`.
    */
   numbers: { key?: string; label: string; value?: number | string }[];
 }

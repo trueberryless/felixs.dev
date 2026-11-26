@@ -1,10 +1,9 @@
-/* Loaded together with the scene, so only visitors of the space theme
-   ever download these rules. Colors live as tokens in `global.css`.
+/* Loaded with the scene, so only space visitors download these rules. Colors
+   are tokens in `global.css`.
 
-   Performance rules for everything below: animate only transform, translate,
-   rotate and opacity with literal keyframes, so the compositor runs them; and
-   keep backdrop blurs to small surfaces, because every blurred element is
-   re-blurred on each frame the sky behind it moves. */
+   Performance: animate only transform, translate, rotate and opacity with
+   literal keyframes so the compositor runs them, and keep backdrop blurs
+   small, since they re-blur on every frame the sky moves. */
 
 .cosmos-layer {
   position: fixed;
@@ -28,9 +27,8 @@
   display: block;
 }
 
-/* Launch: the rocket climbs over a sky that darkens from atmosphere into
-   space. The sky is drawn at half height and scaled up to keep its texture
-   small. */
+/* Launch: the rocket climbs as the sky darkens into space. The sky is drawn
+   at half height and scaled up. */
 .cosmos-launch,
 .cosmos-sky {
   position: fixed;
@@ -93,8 +91,7 @@
   text-shadow: 0 1px 14px oklch(0.06 0.03 285 / 0.9);
 }
 
-/* Text filled with a gradient would show the halo through its letters and
-   look muddy, so it goes without. */
+/* Gradient text would show the halo through its letters, so it goes without. */
 :root.space
   :is(
     .story-title-text,
@@ -114,10 +111,8 @@
   -webkit-text-fill-color: transparent;
 }
 
-/* The planet rises behind the landing sections, and its bright rim would
-   wash out any text crossing it. A soft dark backing that fades out at its
-   edges keeps the copy and the charts readable, and it comes and goes with
-   its section. */
+/* The planet's bright rim would wash out text crossing it, so each landing
+   section gets a soft dark backing that fades in and out with it. */
 :root.space .story-frame :is(.story-copy, .story-visual) {
   position: relative;
   isolation: isolate;
@@ -155,9 +150,8 @@
   }
 }
 
-/* Blurring the landing sections in and out would redraw every glowing
-   letter on every frame over the moving sky, so in space they only fade
-   and drift, which stays on the compositor. */
+/* Blurring landing sections over the moving sky would redraw every glowing
+   letter each frame, so in space they only fade and drift. */
 :root.space .story-frame :is(.story-copy > *, .story-visual) {
   filter: none !important;
 }
@@ -167,8 +161,7 @@
   outline-offset: 3px;
 }
 
-/* Tinted glass: a sheen, an inner highlight and a glowing edge over a deep
-   translucent violet, without a live backdrop blur. */
+/* Tinted glass on deep translucent violet, without a live backdrop blur. */
 
 :root.space :is(.fallback, .card-container, .number-card) {
   background:
@@ -184,14 +177,14 @@
   border-color: oklch(0.82 0.12 300 / 0.6);
 }
 
-/* The header floats over the moving sky, so a backdrop blur would be redone
-   on every frame. A deeper tint keeps it legible instead. */
+/* A backdrop blur over the moving sky would rerun every frame, so the header
+   gets a deeper tint instead. */
 :root.space :is(.unified-bg, .pill-bg) {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
 
-/* The toast only shows for a moment, so it can afford a real blur. */
+/* The toast is brief, so it can afford a real blur. */
 :root.space .easter-egg-toast {
   -webkit-backdrop-filter: blur(14px) saturate(150%);
   backdrop-filter: blur(14px) saturate(150%);
@@ -215,10 +208,10 @@
   );
 }
 
-/* Planets: every logo becomes a body of the solar system, with the logo
-   printed onto its surface. `scripts/print-planet-logos.ts` wraps the print
-   around a sphere ahead of time, so here it is only a mask in the planet's
-   ink, lit together with the surface by the shading on top. */
+/* Planets: each logo becomes a solar system body.
+   `scripts/print-planet-logos.ts` wraps the print around a sphere ahead of
+   time, so here it is only a mask in the planet's ink, shaded with the surface.
+   */
 
 :root.space.dark .logo-wrapper[data-planet] {
   --planet-size: 72px;
@@ -279,8 +272,7 @@
     );
 }
 
-/* A crater is a dark bowl with a lit rim. Its radius scales with the
-   planet. */
+/* A crater is a dark bowl with a lit rim, scaled with the planet. */
 :root.space.dark
   .logo-wrapper:is([data-planet="mercury"], [data-planet="mars"]) {
   --crater:
@@ -402,8 +394,8 @@
   );
 }
 
-/* The rings pass in front of the planet below its middle and behind it
-   above, where the mask cuts the planet's disc out of them. */
+/* The rings pass in front of the planet below its middle and behind it above,
+   where the mask cuts out the disc. */
 :root.space.dark .logo-wrapper[data-planet="saturn"]::before {
   content: "";
   position: absolute;
@@ -442,8 +434,8 @@
     linear-gradient(transparent 50%, #000 50%);
 }
 
-/* On narrower screens the moons sit closer, so the rings are a little
-   tighter to keep clear of them. */
+/* Narrower screens bring the moons closer, so the rings tighten to clear them.
+   */
 @media (max-width: 900px) {
   :root.space.dark .logo-wrapper[data-planet="saturn"]::before {
     width: 170%;
@@ -479,9 +471,8 @@
     0 14px 30px oklch(0.04 0.03 290 / 0.6);
 }
 
-/* The smaller projects: moons that all share one cheap surface, a few
-   craters over a flat tint, so ten more bodies cost almost nothing to paint.
-   Each logo picks its own hue. */
+/* Moons for the smaller projects share one cheap surface, a few craters over
+   a flat tint, each logo with its own hue. */
 :root.space.dark .logo-wrapper[data-planet="moon"] {
   --planet-size: 50px;
   --planet-glow: oklch(0.8 0.06 var(--hue) / 0.4);
@@ -584,8 +575,8 @@
   mask: linear-gradient(90deg, #000 50%, transparent 50%);
 }
 
-/* Floating: every element traces its own slow ∞ through space. Phases and
-   paces come from `index.ts`. */
+/* Floating: each element traces its own slow ∞. Phases and paces come from
+   `index.ts`. */
 
 :root.space
   :is(
@@ -633,15 +624,14 @@
     .year-depth,
     .footer-container
   ) {
-  /* Stopped rather than frozen, so everything lines up again, the parallax
-     included. `index.ts` eases each element back into place. */
+  /* Stopped rather than frozen, so everything lines up again, parallax
+     included. `index.ts` eases each element back. */
   animation: none;
 }
 
-/* The blog's years are the nearest layer of the sky, just behind the page:
-   they trail it by 12% while scrolling past, but only as far as their
-   section leaves room below them, so a year never sinks into the next one.
-   `translate` keeps this apart from the drift, which animates `transform`. */
+/* The blog's years are the sky's nearest layer: they trail the page by 12%,
+   but never sink into the next section. `translate` keeps this apart from
+   the drift on `transform`. */
 @media (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: view()) {
     :root.space .year-track {
@@ -651,8 +641,8 @@
     :root.space .year-depth {
       will-change: translate;
       animation: cosmos-year-depth linear both;
-      /* Starts once the section passes the middle of the screen, so years
-         that are visible on load are where they always are. */
+      /* Starts once the section passes mid-screen, so years visible on load
+         stay put. */
       animation-range: cover 75vh cover calc(175vh + 14rem);
     }
 
@@ -670,11 +660,11 @@
   }
 }
 
-/* Bernoulli's lemniscate in three sizes, sampled every 22.5°. Keyframes
-   animate `transform` with literal values so the compositor runs them; hover
-   lifts on drifting elements use `translate`, which composes with it. The
-   hexagons also tilt with their sideways swing. Every loop passes its resting
-   place at 25% and 75%, where `index.ts` restarts it after a pause. */
+/* Bernoulli's lemniscate in three sizes, sampled every 22.5°, with literal
+   `transform` keyframes for the compositor. Hover lifts use `translate`, which
+   composes with it. Hexagons also tilt with their swing. Loops pass their
+   resting place at 25% and 75%, where `index.ts` restarts them after a pause.
+   */
 @keyframes cosmos-drift {
   0% {
     transform: translate(5px, 0);
@@ -893,7 +883,7 @@
 
 /* Pause control */
 
-/* Bottom left, out of the way of the visitor count on the right. */
+/* Bottom left, clear of the visitor count on the right. */
 .cosmos-still-toggle {
   position: fixed;
   left: 16px;

@@ -76,13 +76,9 @@ const GITHUB_MAX_RETRIES = 5;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
- * GitHub fetch with per-request timeout and rate-limit-aware retries.
- *
- * GitHub's Search API in particular enforces a low secondary rate limit
- * (~30 req/min authenticated). When we hit it, GitHub answers 403/429 with a
- * `Retry-After` header (or `x-ratelimit-reset` when the primary budget is
- * exhausted). We honour those and retry instead of silently dropping data,
- * which is what previously caused undercounted contributions.
+ * GitHub fetch with a per-request timeout and retries that honour
+ * `Retry-After` and `x-ratelimit-reset`. The Search API's secondary limit is
+ * about 30 requests a minute.
  */
 async function githubFetch(
   url: string,
@@ -99,8 +95,7 @@ async function githubFetch(
         signal: controller.signal,
       });
     } catch (err) {
-      // Transient network failure (ECONNRESET, timeout abort, DNS, ...).
-      // Retry with backoff so a single blip doesn't undercount contributions.
+      // Network blip (reset, timeout, DNS): retry with backoff.
       if (attempt < GITHUB_MAX_RETRIES) {
         const waitMs = Math.min(2 ** attempt * 1000, 30000);
         console.warn(
@@ -227,9 +222,9 @@ export interface GitHubActivity {
 }
 
 /**
- * How many people I follow and how many repositories I starred on GitHub.
- * The starred count comes from the last page number of a one-per-page list.
- * This runs on request, so it doesn't wait out rate limits like the build.
+ * How many people I follow and repositories I starred on GitHub. Stars come
+ * from the last page number of a one-per-page list. Runs on request, so it
+ * doesn't wait out rate limits.
  */
 export async function fetchGitHubActivity(): Promise<GitHubActivity | null> {
   try {
@@ -262,8 +257,7 @@ async function searchPRs(owner: string) {
   const items: any[] = [];
   let totalCount = 0;
   const perPage = 100;
-  // GitHub's Search API hard-caps at 1000 results (10 pages x 100), so this is
-  // the maximum retrievable. `total_count` still reports the true total.
+  // The Search API caps at 1000 results, `total_count` has the real total.
   const maxPages = 10;
 
   for (let page = 1; page <= maxPages; page++) {
@@ -275,8 +269,7 @@ async function searchPRs(owner: string) {
         )}&per_page=${perPage}&page=${page}`
       );
     } catch (err) {
-      // A genuine failure after retries: keep what we have but flag it so an
-      // undercount is visible in logs rather than passing silently.
+      // Failed after retries: keep what we have and log the undercount.
       console.warn(`[data] searchPRs incomplete for ${owner}:`, err);
       break;
     }
@@ -345,8 +338,7 @@ async function fetchOrg(
 let projectsPromise: Promise<ProjectsData | null> | undefined;
 
 /**
- * Fetches the projects once per build, so the landing page and the projects
- * page share one set of GitHub requests and stay within its rate limits.
+ * Fetches the projects once per build for both pages, saving GitHub requests.
  */
 export function fetchProjects(): Promise<ProjectsData | null> {
   projectsPromise ??= fetchProjectsUncached();
@@ -360,8 +352,7 @@ async function fetchProjectsUncached(): Promise<ProjectsData | null> {
   }
   const [own, contributed] = await Promise.allSettled([
     fetchOwnRepos(),
-    // Low concurrency: the Search API secondary rate limit is strict, so we
-    // trade a little build time for complete, reliable contribution counts.
+    // Low concurrency for the Search API's strict secondary rate limit.
     batchAll(SHOWCASE_ORGS, 2, ([o, d]) => fetchOrg(o, d)),
   ]);
   const ownProjects = own.status === "fulfilled" ? own.value : [];
@@ -460,8 +451,8 @@ export interface Book {
   stars?: number;
 }
 
-// The page count lives on Bookhive's shared catalog record, not on the
-// reader's own copy, which only has it while progress is being tracked.
+// The page count lives on Bookhive's catalog record. The reader's copy only
+// has it while progress is tracked.
 async function processBook(raw: any): Promise<Book> {
   const catalogBook = raw.data.hiveBookUri
     ? await fetchRecord(raw.data.hiveBookUri)
@@ -604,8 +595,7 @@ export async function fetchEvents(): Promise<Event[] | null> {
     batchAll(uris, 10, fetchRecord),
     batchAll(uris, 10, fetchBacklinks),
   ]);
-  // Only people who said they're going count as going, so each of their
-  // answers is read too.
+  // Going only counts for people who said so, so their answers are read too.
   const answers = await batchAll(allBacklinks.flat(), 10, fetchRecord);
   const isGoingAnswer = new Map(
     allBacklinks
@@ -692,8 +682,7 @@ export async function fetchEvents(): Promise<Event[] | null> {
           imageUrl = `https://cdn.bsky.app/img/feed_thumbnail/plain/${did}/${thumb.content.ref.$link}@jpeg`;
       }
 
-      // Past events only count when I went, upcoming ones also when I'm
-      // interested, and never when I said no.
+      // Past events count when I went, upcoming ones also when I'm interested.
       const status = myStatus.get(uri) ?? "";
       const going = isGoing(status);
       if (status.endsWith("#notgoing")) return null;

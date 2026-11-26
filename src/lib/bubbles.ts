@@ -16,8 +16,8 @@ export interface PackedBubble extends Bubble {
 }
 
 /**
- * Packs bubbles into a box, biggest first, and fits each label into its
- * bubble. With `sqrt`, a few huge values don't shrink everything else to dots.
+ * Packs bubbles into a box, biggest first, and fits a label into each. `sqrt`
+ * keeps huge values from shrinking the rest to dots.
  */
 export function packBubbles(
   bubbles: Bubble[],
@@ -53,9 +53,8 @@ export function packBubbles(
 }
 
 /**
- * Packs bubbles into a cluster shaped like the box instead of a circle, so a
- * wide or tall box is filled. Each bubble goes, biggest first, to the free
- * spot touching the others that's closest to the middle.
+ * Packs bubbles into a cluster shaped like the box, so wide or tall boxes are
+ * filled. Biggest first, each takes the touching spot closest to the middle.
  */
 export function fillBubbles(
   bubbles: Bubble[],
@@ -113,9 +112,8 @@ export function fillBubbles(
 }
 
 /**
- * The biggest label size that fits a bubble, on one line or split over two,
- * or nothing when even the smallest size won't fit. Glyphs are about 0.56em
- * wide on average.
+ * The biggest label size that fits a bubble on one or two lines, or nothing.
+ * Glyphs average about 0.56em wide.
  */
 function fitBubbleLabel(
   text: string,
@@ -145,8 +143,8 @@ function fitBubbleLabel(
 }
 
 /**
- * Where a long single word can break with a hyphen: between a consonant and
- * a vowel, as close to the middle as possible, like "Internation-alization".
+ * Where a long word can be hyphenated: between a consonant and a vowel, near
+ * the middle, like "Internation-alization".
  */
 function getHyphenIndex(word: string): number {
   if (word.length <= 12) return -1;

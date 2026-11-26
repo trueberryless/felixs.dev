@@ -79,8 +79,7 @@ const {
     transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  /* A shelf can steer the lift itself: `is-steered` turns off the plain
-     hover and `is-lifted` lifts the book. */
+  /* `is-steered` disables the plain hover, `is-lifted` lifts the book. */
   @media (hover: hover) {
     .book-item:is(:hover:not(.is-steered), .is-lifted) .book-3d {
       transform: translateY(-16px) translateX(8px)

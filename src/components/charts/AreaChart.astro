@@ -25,8 +25,7 @@ const coordinates = points.map((point, index) => ({
   y: TOP + (1 - point.value / max) * (baseline - TOP),
 }));
 
-// A Catmull-Rom curve through the points, with control points clamped to the
-// chart so the line never dips below zero between two quiet months.
+// Catmull-Rom curve with clamped control points, so it never dips below zero.
 const line = coordinates
   .map((point, index) => {
     if (index === 0) return `M ${point.x} ${point.y}`;

@@ -45,17 +45,16 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
     padding-block: clamp(48px, 10vh, 112px);
   }
 
-  /* Copy and visual sit side by side as soon as there is room, so a chart
-     never grows to the full width of a tablet and taller than the screen.
-     The pinned stage of the landing page only starts at 860px. */
+  /* Copy and visual go side by side once there is room, so charts never get
+     tablet-wide and taller than the screen. The pinned stage starts at 860px.
+     */
   @media (min-width: 640px) {
     .story {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
     }
 
-    /* Copy and visual swap sides from one section to the next. Counting the
-       rendered frames keeps the rhythm right when a section has nothing to
-       show and renders nothing. */
+    /* Sides alternate per section. Counting rendered frames keeps the rhythm
+       when a section renders nothing. */
     :global(.story-frame:nth-child(even of .story-frame)) .story {
       grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
     }
@@ -135,8 +134,7 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
     min-width: 0;
   }
 
-  /* Stacked below the copy, a chart keeps to about the size it has next to
-     it on wider screens. */
+  /* Stacked below the copy, a chart keeps its side-by-side size. */
   @media (max-width: 639px) {
     .story-visual {
       width: 100%;
@@ -144,10 +142,9 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
     }
   }
 
-  /* Every part of a section arrives on its own, a few frames apart, and
-     leaves in the direction you scroll: it fades, blurs and drifts a little.
-     The landing page script marks the sections that aren't on stage with
-     `data-active="false"`. */
+  /* Each part arrives a few frames apart and leaves in the scroll direction,
+     fading, blurring and drifting. The landing page script marks off-stage
+     sections with `data-active="false"`. */
   .story-copy > :global(:nth-child(2)) {
     --k: 1;
   }
@@ -182,8 +179,7 @@ const isExternal = href ? /^https?:\/\//.test(href) : false;
       transition-delay: calc(var(--k, 0) * 30ms);
     }
 
-    /* Only the text blurs: blurring a whole chart or the shelf would redraw
-       it on every frame of the transition. */
+    /* Only text blurs. Blurring charts would redraw them every frame. */
     :global(.story-frame:not([data-active="true"])) .story-copy > :global(*) {
       filter: blur(6px);
     }

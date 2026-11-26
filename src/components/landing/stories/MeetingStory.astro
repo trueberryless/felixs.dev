@@ -20,9 +20,8 @@ const dateFormat = new Intl.DateTimeFormat("en-US", {
   weekday: "long",
 });
 const others = next ? Math.max(next.totalAttendees - MAX_AVATARS, 0) : 0;
-// How soon the event is decides how to ask: "See you Tuesday?" within the
-// week, "See you on November 23?" within the month and "See you in
-// January?" after that.
+// Asks by how soon the event is: "See you Tuesday?", "See you on
+// November 23?" or "See you in January?".
 const daysAway = next
   ? (Date.parse(next.startDate) - nowMs) / 86_400_000
   : Number.POSITIVE_INFINITY;
@@ -123,8 +122,7 @@ const when = startDate
 <style>
   .meeting-card {
     display: grid;
-    /* Keeps a long place name or a crowd of avatars from widening the card
-       past narrow screens. */
+    /* Stops long places or many avatars from widening the card. */
     grid-template-columns: minmax(0, 1fr);
     overflow: hidden;
     border: 1px solid var(--border);
@@ -143,8 +141,8 @@ const when = startDate
     }
   }
 
-  /* Covers come in every shape, so the whole image is shown, centred on a
-     blurred copy of itself that fills the rest. */
+  /* Covers vary in shape, so the whole image sits on a blurred copy of itself.
+     */
   .meeting-cover {
     position: relative;
     display: block;
@@ -206,8 +204,7 @@ const when = startDate
     margin-top: 8px;
   }
 
-  /* Avatars wrap on narrow screens. The padding makes room for the overlap of
-     whichever avatar starts a row. */
+  /* Avatars wrap on narrow screens. The padding leaves room for the overlap. */
   .meeting-avatars {
     display: flex;
     flex-wrap: wrap;

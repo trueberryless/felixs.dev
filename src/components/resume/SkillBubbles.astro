@@ -45,10 +45,8 @@ const label = `${skills.length} skills, bigger the more positions use them`;
 </div>
 
 <script>
-  // The skill bubbles react to the pointer: the one under it leans after it,
-  // the ones around it make way, and they bump into each other before they
-  // spring back to their places. Only for a mouse, and not for people who
-  // prefer less motion.
+  // The bubbles react to the mouse: the hovered one leans after it, neighbours
+  // make way and bump before springing back. Off for touch and reduced motion.
   const SPRING = 0.006;
   const DAMPING = 0.92;
   const FOLLOW = 0.012;
@@ -210,8 +208,7 @@ const label = `${skills.length} skills, bigger the more positions use them`;
   }
   enableAll();
   document.addEventListener("astro:page-load", enableAll);
-  // Islands arrive after the page, and the client router swaps the whole
-  // body on every navigation, so the watch is on the root.
+  // Islands load late and the router swaps the body, so observe the root.
   new MutationObserver(enableAll).observe(document.documentElement, {
     childList: true,
     subtree: true,

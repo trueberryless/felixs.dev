@@ -12,8 +12,8 @@ import type { APIRoute } from "astro";
 
 export const prerender = false;
 
-// About one heartbeat in twenty also sweeps out old windows, so the store
-// never grows without a scheduled cleanup job.
+// About one heartbeat in twenty sweeps out old windows, so no cleanup job is
+// needed.
 const CLEANUP_CHANCE = 0.05;
 
 export const POST: APIRoute = async ({ request }) => {

@@ -13,8 +13,7 @@ const GAP = 6;
 const LABEL_WIDTH = 64;
 const WIDTH = 320;
 
-// One row per quarter, newest at the top like a feed. Posts from the same
-// quarter line up to the right, so busy quarters stand out.
+// One row per quarter, newest first. Busy quarters grow to the right.
 const quarterOf = (ms: number) => {
   const date = new Date(ms);
   return date.getUTCFullYear() * 4 + Math.floor(date.getUTCMonth() / 3);
@@ -138,8 +137,7 @@ const dateFormat = new Intl.DateTimeFormat("en-US", {
     }
   }
 
-  /* The dots fade in one after another, and leave together with the rest
-     of the chart. */
+  /* Dots fade in one by one and leave with the chart. */
   @media (prefers-reduced-motion: no-preference) {
     .posts-link {
       transition: opacity 0.5s ease;

@@ -15,11 +15,9 @@ const MIN_STARS = 90;
 const MAX_STARS = 420;
 const BAND_SHARE = 0.35;
 const SHOOTING_STAR_GAP = [5, 13] as const;
-// Clicks this close together share a direction, so spam-clicking fires
-// parallel arrows instead of stars crossing each other.
+// Clicks this close share a direction, so spam-clicking fires parallel arrows.
 const AIM_LOCK_S = 1.5;
-// Successive clicks fan out sideways from the click, so they fly side by side
-// instead of along one line.
+// Successive clicks fan out sideways, so the stars fly side by side.
 const SHOT_OFFSETS = [0, 36, -36, 72, -72, 18, -18, 54, -54] as const;
 // Now and then shooting stars travel together.
 const FAMILY_ODDS = { pair: 0.25, trio: 0.07 } as const;
@@ -35,11 +33,11 @@ export function createStars(width: number, height: number): Star[] {
   const aspect = width / Math.max(height, 1);
 
   return Array.from({ length: count }, (): Star => {
-    // Most stars are far away. Nearness drives everything else: closer stars
-    // are larger, brighter and move further, exactly like the rest of the sky.
+    // Most stars are far. Nearness drives size, brightness and motion, like the
+    // rest of the sky.
     const nearness = Math.random() ** 2.2;
     const x = Math.random();
-    // A share of the stars gathers along the same diagonal as the nebula.
+    // Some stars gather along the nebula's diagonal.
     const y =
       Math.random() < BAND_SHARE
         ? 0.34 + 0.55 * aspect * (x - 0.5) + gaussian() * 0.08
@@ -59,8 +57,8 @@ export function createStars(width: number, height: number): Star[] {
 }
 
 /**
- * Where a star is on screen, in CSS pixels. The starfield's vertex shader does
- * the same math on the GPU; this copy serves the effects drawn on top.
+ * A star's screen position in CSS pixels. Mirrors the starfield's vertex
+ * shader for the effects drawn on top.
  */
 function projectStar(
   star: Star,
@@ -71,7 +69,7 @@ function projectStar(
     star.y * height - scroll * star.depth - view.y * star.depth * POINTER_REACH,
     height
   );
-  // While dropping out of warp the stars stream outwards into place.
+  // Dropping out of warp, the stars stream outwards into place.
   const travel = 0.25 + 0.75 * (1 - warp);
 
   return {
@@ -81,9 +79,8 @@ function projectStar(
 }
 
 /**
- * The sparse effects on top of the stars: constellation links near the
- * pointer, shooting stars and the warp tails. The canvas is only redrawn while
- * one of them is visible.
+ * Effects on top of the stars: constellation links near the pointer, shooting
+ * stars and warp tails. Only redrawn while one is visible.
  */
 export function createSkyEffects(
   canvas: HTMLCanvasElement
@@ -188,7 +185,7 @@ export function createSkyEffects(
     }
   }
 
-  // Stars near the pointer federate into a tiny constellation.
+  // Stars near the pointer link into a tiny constellation.
   function drawLinks(
     ctx: CanvasRenderingContext2D,
     input: ProjectionInput,
@@ -238,7 +235,7 @@ export function createSkyEffects(
   function updateShootingStars(time: number) {
     if (nextShootingStar === 0) nextShootingStar = time + random(2, 5);
     if (time >= nextShootingStar) {
-      // Ambient ones come from anywhere, aimed to cross the upper sky.
+      // Ambient ones come from anywhere and cross the upper sky.
       const angle = random(0, Math.PI * 2);
       const through = {
         x: random(0.15, 0.85) * width,
@@ -251,7 +248,7 @@ export function createSkyEffects(
           : roll < FAMILY_ODDS.trio + FAMILY_ODDS.pair
             ? 2
             : 1;
-      // A family shares its speed and lifetime, so it stays together.
+      // A family shares speed and lifetime, so it stays together.
       const speed = random(700, 1100);
       const life = random(0.7, 1.1);
       for (let member = 0; member < size; member++) {
@@ -287,7 +284,7 @@ export function createSkyEffects(
       if (age < 0) continue;
       const headX = star.x + star.vx * age;
       const headY = star.y + star.vy * age;
-      // Ambient ones burn up far behind the planet; clicked ones fly in front.
+      // Ambient ones burn up behind the planet, clicked ones fly in front.
       if (!star.isNear && isOccluded(bodies, headX, headY)) continue;
 
       const speed = Math.hypot(star.vx, star.vy);
@@ -306,7 +303,7 @@ export function createSkyEffects(
       ctx.moveTo(headX, headY);
       ctx.lineTo(tailX, tailY);
       ctx.stroke();
-      // A glowing head makes clicked stars read as arrows of light.
+      // A glowing head makes clicked stars look like arrows of light.
       ctx.fillStyle = "rgb(255, 255, 255)";
       ctx.shadowColor = "rgb(200, 170, 255)";
       ctx.shadowBlur = star.isNear ? 10 : 6;
@@ -383,7 +380,7 @@ export interface SkyEffects {
 interface ProjectionInput {
   height: number;
   scroll: number;
-  /** The smoothed pointer position, from -0.5 to 0.5, that shifts the view. */
+  /** The smoothed pointer position, -0.5 to 0.5, that shifts the view. */
   view: { x: number; y: number };
   warp: number;
   width: number;
@@ -398,7 +395,7 @@ interface PointerState {
 interface EffectsFrame {
   animate: boolean;
   bodies: Bodies;
-  /** Where the pointer is, in CSS pixels, and how visible its links are. */
+  /** The pointer in CSS pixels, and how visible its links are. */
   pointer: PointerState;
   scroll: number;
   time: number;

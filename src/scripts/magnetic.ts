@@ -1,11 +1,7 @@
-// Buttons and small links lean towards the pointer as it comes near, like a
-// gentle pull of gravity: the closer the pointer, the stronger the pull. It
-// helps to hit them and replaces the little jump they used to make on hover.
-//
-// Only standalone controls take part, never links inside running text, cards
-// or big charts: every `.button`, the footer links and icons and the dots of
-// the writing timeline. It only runs with a fine pointer that can hover, and
-// never with reduced motion.
+// Buttons and small links lean towards a nearby pointer, more the closer it
+// gets. Only standalone controls take part: every `.button`, the footer links
+// and icons and the writing timeline's dots. Needs a fine hover pointer and
+// no reduced motion.
 
 const SELECTOR = [
   ".button",
@@ -19,7 +15,7 @@ const SELECTOR = [
 const REACH = 70;
 // The share of the distance to the pointer an element may travel.
 const PULL = 0.28;
-// How far an element moves at most: a few pixels, less for small ones.
+// The most an element moves: a few pixels, less for small ones.
 const MAX_SHIFT = 7;
 // How quickly an element follows its target, per frame at 60 fps.
 const FOLLOW = 0.16;
@@ -46,9 +42,9 @@ function collect() {
     ? [...document.querySelectorAll<HTMLElement | SVGElement>(SELECTOR)].map(
         (element) => ({
           element,
-          // Elements that float in space already move with `transform`, so
-          // they lean with `translate`. Everything else leans with
-          // `transform`, since `translate` drives their entrance.
+          // Elements floating in space already use `transform`, so they lean
+          // with `translate`. Others lean with `transform`, since `translate`
+          // drives their entrance.
           property:
             getComputedStyle(element).animationName === "none"
               ? "transform"
@@ -83,7 +79,7 @@ function step(now: number) {
       continue;
     }
 
-    // Where the element would be without the pull, wherever it floats.
+    // The element's position without the pull, wherever it floats.
     const left = box.left - magnet.x;
     const top = box.top - magnet.y;
     let targetX = 0;
@@ -136,8 +132,8 @@ function step(now: number) {
   if (!frame) last = 0;
 }
 
-// A frame asked for in a background tab may never come, so a request that
-// is still waiting after a moment is replaced.
+// A frame requested in a background tab may never come, so replace stale
+// requests.
 let requestedAt = 0;
 function wake() {
   if (magnets.length === 0) return;
@@ -160,8 +156,8 @@ document.documentElement.addEventListener("pointerleave", () => {
   pointer = undefined;
   wake();
 });
-// Buttons fill with a circle that grows from where the pointer came in and
-// shrinks back to where it left.
+// The button fill grows from where the pointer entered and shrinks to where it
+// left.
 function fill(event: PointerEvent, isEntering: boolean) {
   if (!supported.matches) return;
   const button = (event.target as Element | null)?.closest<HTMLElement>(
