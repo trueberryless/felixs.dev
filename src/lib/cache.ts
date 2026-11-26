@@ -3,7 +3,7 @@
  * long `stale-while-revalidate` means only the first visitor after a deploy
  * waits. Slow pages like the GitHub projects are prerendered instead.
  *
- * - `Cache-Control`: browsers, fresh for a minute, then revalidated.
+ * - `Cache-Control`: browsers.
  * - `CDN-Cache-Control`: generic CDNs.
  * - `Netlify-CDN-Cache-Control`: Netlify's durable cache, which wins there.
  */
@@ -23,9 +23,20 @@ const cdn = (maxAge: number, swr: number, sie: number) =>
   `public, durable, s-maxage=${maxAge}, stale-while-revalidate=${swr}, stale-if-error=${sie}`;
 
 /**
- * For data from other services. Fresh for a day at the edge, served stale
- * while revalidating for two weeks and on errors for eight. Browsers reuse it
- * for a few minutes.
+ * For records that change whenever I post, RSVP or read something, like the
+ * blog, events and books. Fresh for a minute at the edge, then served stale
+ * while revalidating for two weeks and on errors for eight, so visitors never
+ * wait for a refresh and new records show up a minute later.
+ */
+export const liveCache: CacheProfile = {
+  browser: `public, max-age=${ONE_MINUTE}`,
+  cdn: cdn(ONE_MINUTE, 2 * ONE_WEEK, 8 * ONE_WEEK),
+};
+
+/**
+ * For data that changes at most once a day, like the music stats. Fresh for a
+ * day at the edge, served stale while revalidating for two weeks and on errors
+ * for eight. Browsers reuse it for a few minutes.
  */
 export const dataCache: CacheProfile = {
   browser: `public, max-age=${5 * ONE_MINUTE}, stale-while-revalidate=${ONE_DAY}`,
