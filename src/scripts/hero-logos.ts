@@ -23,7 +23,19 @@ function placeAll(glide = false) {
   for (const logos of document.querySelectorAll<HTMLElement>(
     ".floating-logos"
   )) {
+    loadShown(logos);
     place(logos, glide);
+  }
+}
+
+// The logos are lazy, so the copies for the other theme and the ones a phone
+// leaves out never load. The shown ones are loaded right away instead of
+// waiting for layout.
+function loadShown(logos: HTMLElement) {
+  for (const image of logos.querySelectorAll<HTMLImageElement>(
+    "img[loading='lazy']"
+  )) {
+    if (image.offsetWidth > 0) image.loading = "eager";
   }
 }
 
